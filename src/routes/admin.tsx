@@ -39,7 +39,7 @@ function AdminPage() {
               <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white uppercase">
                 Admin
               </p>
-              <h1 className="font-title mt-3 text-5xl text-slate-900">Gaiser Verwaltung</h1>
+              <h1 className="font-title mt-3 text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
               <p className="mt-3 text-slate-600">
                 Geschuetzter Bereich fuer Produktpflege und Firmenanlage.
               </p>
@@ -85,7 +85,7 @@ function AdminPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Admin Bereich</p>
-              <h1 className="font-title text-5xl text-slate-900">Gaiser Verwaltung</h1>
+              <h1 className="font-title text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
             </div>
 
             <button
