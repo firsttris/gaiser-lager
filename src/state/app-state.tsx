@@ -98,6 +98,8 @@ const STORAGE_KEYS = {
   companies: 'gaiser.mock.companies.v1',
   products: 'gaiser.mock.products.v1',
   records: 'gaiser.mock.records.v1',
+  selectedCompanyId: 'gaiser.mock.selectedCompanyId.v1',
+  adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
 }
 
 function readStorage<T>(key: string, fallback: T): T {
@@ -131,9 +133,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [storageReady, setStorageReady] = useState(false)
 
   useEffect(() => {
-    setCompanies(readStorage(STORAGE_KEYS.companies, companiesSeed))
-    setProducts(readStorage(STORAGE_KEYS.products, productsSeed))
-    setRecords(readStorage(STORAGE_KEYS.records, []))
+    const storedCompanies = readStorage(STORAGE_KEYS.companies, companiesSeed)
+    const storedProducts = readStorage(STORAGE_KEYS.products, productsSeed)
+    const storedRecords = readStorage(STORAGE_KEYS.records, [])
+    const storedSelectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
+    const storedAdminLoggedIn = readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false)
+
+    setCompanies(storedCompanies)
+    setProducts(storedProducts)
+    setRecords(storedRecords)
+    setSelectedCompany(storedCompanies.find((company) => company.id === storedSelectedCompanyId) ?? null)
+    setIsAdminLoggedIn(storedAdminLoggedIn)
     setStorageReady(true)
   }, [])
 
@@ -153,6 +163,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [records, storageReady])
 
   useEffect(() => {
+    if (!storageReady) return
+    writeStorage(STORAGE_KEYS.selectedCompanyId, selectedCompany?.id ?? null)
+  }, [selectedCompany, storageReady])
+
+  useEffect(() => {
+    if (!storageReady) return
+    writeStorage(STORAGE_KEYS.adminLoggedIn, isAdminLoggedIn)
+  }, [isAdminLoggedIn, storageReady])
+
+  useEffect(() => {
+    if (!selectedCompany) return
+
+    const exists = companies.some((company) => company.id === selectedCompany.id)
+    if (!exists) {
+      setSelectedCompany(null)
+    }
+  }, [companies, selectedCompany])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return
 
     function onStorage(event: StorageEvent) {
@@ -168,6 +197,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       if (event.key === STORAGE_KEYS.records) {
         setRecords(readStorage(STORAGE_KEYS.records, []))
+      }
+
+      if (event.key === STORAGE_KEYS.selectedCompanyId) {
+        const selectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
+        const nextCompanies = readStorage(STORAGE_KEYS.companies, companiesSeed)
+        setSelectedCompany(nextCompanies.find((company) => company.id === selectedCompanyId) ?? null)
+      }
+
+      if (event.key === STORAGE_KEYS.adminLoggedIn) {
+        setIsAdminLoggedIn(readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false))
       }
     }
 
