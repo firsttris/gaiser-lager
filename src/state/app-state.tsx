@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type FlowType = 'pickup' | 'dropoff'
 
@@ -94,13 +94,86 @@ const productsSeed: Product[] = [
 
 const AppStateContext = createContext<AppState | null>(null)
 const ADMIN_PASSWORD = 'admin'
+const STORAGE_KEYS = {
+  companies: 'gaiser.mock.companies.v1',
+  products: 'gaiser.mock.products.v1',
+  records: 'gaiser.mock.records.v1',
+}
+
+function readStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+    return JSON.parse(raw) as T
+  } catch {
+    return fallback
+  }
+}
+
+function writeStorage<T>(key: string, value: T) {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Ignore quota/serialization errors in mock mode.
+  }
+}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [companies, setCompanies] = useState<Company[]>(companiesSeed)
+  const [companies, setCompanies] = useState<Company[]>(() => readStorage(STORAGE_KEYS.companies, companiesSeed))
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
-  const [products, setProducts] = useState<Product[]>(productsSeed)
-  const [records, setRecords] = useState<RecordItem[]>([])
+  const [products, setProducts] = useState<Product[]>(() => readStorage(STORAGE_KEYS.products, productsSeed))
+  const [records, setRecords] = useState<RecordItem[]>(() => readStorage(STORAGE_KEYS.records, []))
+  const [storageReady, setStorageReady] = useState(false)
+
+  useEffect(() => {
+    setCompanies(readStorage(STORAGE_KEYS.companies, companiesSeed))
+    setProducts(readStorage(STORAGE_KEYS.products, productsSeed))
+    setRecords(readStorage(STORAGE_KEYS.records, []))
+    setStorageReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (!storageReady) return
+    writeStorage(STORAGE_KEYS.companies, companies)
+  }, [companies, storageReady])
+
+  useEffect(() => {
+    if (!storageReady) return
+    writeStorage(STORAGE_KEYS.products, products)
+  }, [products, storageReady])
+
+  useEffect(() => {
+    if (!storageReady) return
+    writeStorage(STORAGE_KEYS.records, records)
+  }, [records, storageReady])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    function onStorage(event: StorageEvent) {
+      if (!event.key) return
+
+      if (event.key === STORAGE_KEYS.companies) {
+        setCompanies(readStorage(STORAGE_KEYS.companies, companiesSeed))
+      }
+
+      if (event.key === STORAGE_KEYS.products) {
+        setProducts(readStorage(STORAGE_KEYS.products, productsSeed))
+      }
+
+      if (event.key === STORAGE_KEYS.records) {
+        setRecords(readStorage(STORAGE_KEYS.records, []))
+      }
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   const value = useMemo<AppState>(
     () => ({
