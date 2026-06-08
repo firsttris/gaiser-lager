@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 export type FlowType = 'pickup' | 'dropoff'
 export type RecordStatus = 'offen' | 'in_bearbeitung' | 'abgerechnet' | 'bezahlt' | 'storniert'
+export type PriceCategory = 'private' | 'business'
 
 export type Company = {
   id: string
   shortCode: string
   name: string
   pin: string
+  priceCategory: PriceCategory
 }
 
 export type Product = {
@@ -15,8 +17,10 @@ export type Product = {
   name: string
   unit: string
   flow: FlowType
-  pickupPrice: number
-  dropoffPrice: number
+  pickupPrivatePrice: number
+  pickupBusinessPrice: number
+  dropoffPrivatePrice: number
+  dropoffBusinessPrice: number
 }
 
 export type RecordItem = {
@@ -47,6 +51,7 @@ type CreateCompanyInput = {
   shortCode: string
   name: string
   pin: string
+  priceCategory: PriceCategory
 }
 
 type AppState = {
@@ -67,32 +72,104 @@ type AppState = {
 }
 
 const companiesSeed: Company[] = [
-  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', pin: '1234' },
-  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', pin: '2468' },
-  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', pin: '7777' },
-  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', pin: '2222' },
+  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', pin: '1234', priceCategory: 'business' },
+  { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', pin: '2468', priceCategory: 'business' },
+  { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', pin: '7777', priceCategory: 'business' },
+  { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', pin: '2222', priceCategory: 'business' },
 ]
 
 const productsSeed: Product[] = [
   // Annahme → Material bringen (dropoff)
-  { id: 1,  name: 'Unbewehrter Betonschutt, Pflastersteine, Stahlbeton', unit: 't',  flow: 'dropoff', pickupPrice: 0, dropoffPrice: 8 },
-  { id: 3,  name: 'Stark bewehrter Betonschutt',              unit: 't',  flow: 'dropoff', pickupPrice: 0, dropoffPrice: 45 },
-  { id: 4,  name: 'Bituminöser Straßenaufbruch',              unit: 't',  flow: 'dropoff', pickupPrice: 0, dropoffPrice: 15 },
-  { id: 5,  name: 'Gemischter Bauschutt',                     unit: 't',  flow: 'dropoff', pickupPrice: 0, dropoffPrice: 25 },
-  { id: 6,  name: 'Aushub',                                   unit: 't',  flow: 'dropoff', pickupPrice: 0, dropoffPrice: 40 },
-  { id: 7,  name: 'Aushub mit Bauschutt o.ä. vermischt',      unit: 'm³', flow: 'dropoff', pickupPrice: 0, dropoffPrice: 60 },
+  { id: 1,  name: 'Unbewehrter Betonschutt, Pflastersteine, Stahlbeton', unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 8,  dropoffBusinessPrice: 8 },
+  { id: 3,  name: 'Stark bewehrter Betonschutt',              unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 45, dropoffBusinessPrice: 45 },
+  { id: 4,  name: 'Bituminöser Straßenaufbruch',              unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 15, dropoffBusinessPrice: 15 },
+  { id: 5,  name: 'Gemischter Bauschutt',                     unit: 't',  flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 25, dropoffBusinessPrice: 25 },
+  { id: 6,  name: 'Aushub',                                   unit: 'm³', flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 45, dropoffBusinessPrice: 40 },
+  { id: 7,  name: 'Aushub mit Bauschutt o.ä. vermischt',      unit: 'm³', flow: 'dropoff', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 60, dropoffBusinessPrice: 60 },
   // Verkauf → Material holen (pickup)
-  { id: 8,  name: 'Betonrecycling 0/45 FSS-STS',              unit: 't',  flow: 'pickup', pickupPrice: 8,    dropoffPrice: 0 },
-  { id: 9,  name: 'Bauschuttrecycling 0/56',                  unit: 't',  flow: 'pickup', pickupPrice: 0,    dropoffPrice: 0 },
-  { id: 10, name: 'Gesiebt Mutterboden',                      unit: 't',  flow: 'pickup', pickupPrice: 8.5,  dropoffPrice: 0 },
-  { id: 11, name: 'Rollkies 8/16',                            unit: 't',  flow: 'pickup', pickupPrice: 24.2, dropoffPrice: 0 },
-  { id: 12, name: 'Mischkies 0/16',                           unit: 't',  flow: 'pickup', pickupPrice: 25.3, dropoffPrice: 0 },
-  { id: 13, name: 'Sand 0/2',                                 unit: 't',  flow: 'pickup', pickupPrice: 24.4, dropoffPrice: 0 },
-  { id: 14, name: 'Schwemmsand',                              unit: 't',  flow: 'pickup', pickupPrice: 15.5, dropoffPrice: 0 },
-  { id: 15, name: 'Mineralgemisch 0/16',                      unit: 't',  flow: 'pickup', pickupPrice: 16.7, dropoffPrice: 0 },
-  { id: 16, name: 'Mineralgemisch 0/32',                      unit: 't',  flow: 'pickup', pickupPrice: 15.1, dropoffPrice: 0 },
-  { id: 17, name: 'Splitt 2/5',                               unit: 't',  flow: 'pickup', pickupPrice: 20.4, dropoffPrice: 0 },
+  { id: 8,  name: 'Betonrecycling 0/45 FSS-STS',              unit: 't',  flow: 'pickup', pickupPrivatePrice: 10,   pickupBusinessPrice: 8,    dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 9,  name: 'Bauschuttrecycling 0/56',                  unit: 't',  flow: 'pickup', pickupPrivatePrice: 0,    pickupBusinessPrice: 0,    dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 10, name: 'Gesiebt Mutterboden',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 12.5, pickupBusinessPrice: 8.5,  dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 11, name: 'Rollkies 8/16',                            unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 24.2, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 12, name: 'Mischkies 0/16',                           unit: 't',  flow: 'pickup', pickupPrivatePrice: 29,   pickupBusinessPrice: 25.3, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 13, name: 'Sand 0/2',                                 unit: 't',  flow: 'pickup', pickupPrivatePrice: 28,   pickupBusinessPrice: 24.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 14, name: 'Schwemmsand',                              unit: 't',  flow: 'pickup', pickupPrivatePrice: 18,   pickupBusinessPrice: 15.5, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 15, name: 'Mineralgemisch 0/16',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 24,   pickupBusinessPrice: 16.7, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 16, name: 'Mineralgemisch 0/32',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 22,   pickupBusinessPrice: 15.1, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+  { id: 17, name: 'Splitt 2/5',                               unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 20.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
 ]
+
+type LegacyCompany = Omit<Company, 'priceCategory'> & { priceCategory?: PriceCategory }
+type LegacyProduct = Omit<
+  Product,
+  'pickupPrivatePrice' | 'pickupBusinessPrice' | 'dropoffPrivatePrice' | 'dropoffBusinessPrice'
+> & {
+  pickupPrice?: number
+  dropoffPrice?: number
+  pickupPrivatePrice?: number
+  pickupBusinessPrice?: number
+  dropoffPrivatePrice?: number
+  dropoffBusinessPrice?: number
+}
+
+function normalizeCompanies(raw: LegacyCompany[]): Company[] {
+  return raw.map((company) => ({
+    ...company,
+    priceCategory: company.priceCategory ?? 'business',
+  }))
+}
+
+function normalizeProducts(raw: LegacyProduct[]): Product[] {
+  const defaultsById = new Map(productsSeed.map((product) => [product.id, product]))
+
+  const normalized = raw.map((product) => {
+    const defaults = defaultsById.get(product.id)
+
+    return {
+      id: product.id,
+      name: product.name,
+      unit: product.unit,
+      flow: product.flow,
+      // Legacy datasets had only one price field. We keep business from legacy,
+      // but initialize missing private prices from the official 2026 price list seed.
+      pickupPrivatePrice: product.pickupPrivatePrice ?? defaults?.pickupPrivatePrice ?? product.pickupPrice ?? 0,
+      pickupBusinessPrice: product.pickupBusinessPrice ?? product.pickupPrice ?? defaults?.pickupBusinessPrice ?? 0,
+      dropoffPrivatePrice: product.dropoffPrivatePrice ?? defaults?.dropoffPrivatePrice ?? product.dropoffPrice ?? 0,
+      dropoffBusinessPrice: product.dropoffBusinessPrice ?? product.dropoffPrice ?? defaults?.dropoffBusinessPrice ?? 0,
+    }
+  })
+
+  const hasAnyTierDifference = normalized.some((product) => {
+    if (product.flow === 'pickup') {
+      return product.pickupPrivatePrice !== product.pickupBusinessPrice
+    }
+
+    return product.dropoffPrivatePrice !== product.dropoffBusinessPrice
+  })
+
+  if (!hasAnyTierDifference) {
+    return normalized.map((product) => {
+      const defaults = defaultsById.get(product.id)
+      if (!defaults) return product
+
+      return {
+        ...product,
+        pickupPrivatePrice: defaults.pickupPrivatePrice,
+        dropoffPrivatePrice: defaults.dropoffPrivatePrice,
+      }
+    })
+  }
+
+  return normalized
+}
+
+function getUnitPrice(product: Product, type: FlowType, priceCategory: PriceCategory) {
+  if (type === 'pickup') {
+    return priceCategory === 'private' ? product.pickupPrivatePrice : product.pickupBusinessPrice
+  }
+
+  return priceCategory === 'private' ? product.dropoffPrivatePrice : product.dropoffBusinessPrice
+}
 
 const AppStateContext = createContext<AppState | null>(null)
 const ADMIN_PASSWORD = 'admin'
@@ -127,16 +204,24 @@ function writeStorage<T>(key: string, value: T) {
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [companies, setCompanies] = useState<Company[]>(() => readStorage(STORAGE_KEYS.companies, companiesSeed))
+  const [companies, setCompanies] = useState<Company[]>(() =>
+    normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
+  )
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
-  const [products, setProducts] = useState<Product[]>(() => readStorage(STORAGE_KEYS.products, productsSeed))
+  const [products, setProducts] = useState<Product[]>(() =>
+    normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
+  )
   const [records, setRecords] = useState<RecordItem[]>(() => readStorage(STORAGE_KEYS.records, []))
   const [storageReady, setStorageReady] = useState(false)
 
   useEffect(() => {
-    const storedCompanies = readStorage(STORAGE_KEYS.companies, companiesSeed)
-    const storedProducts = readStorage(STORAGE_KEYS.products, productsSeed)
+    const storedCompanies = normalizeCompanies(
+      readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed),
+    )
+    const storedProducts = normalizeProducts(
+      readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed),
+    )
     const storedRecords = readStorage(STORAGE_KEYS.records, [])
     const storedSelectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
     const storedAdminLoggedIn = readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false)
@@ -190,11 +275,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (!event.key) return
 
       if (event.key === STORAGE_KEYS.companies) {
-        setCompanies(readStorage(STORAGE_KEYS.companies, companiesSeed))
+        setCompanies(normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)))
       }
 
       if (event.key === STORAGE_KEYS.products) {
-        setProducts(readStorage(STORAGE_KEYS.products, productsSeed))
+        setProducts(normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)))
       }
 
       if (event.key === STORAGE_KEYS.records) {
@@ -203,7 +288,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
       if (event.key === STORAGE_KEYS.selectedCompanyId) {
         const selectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
-        const nextCompanies = readStorage(STORAGE_KEYS.companies, companiesSeed)
+        const nextCompanies = normalizeCompanies(
+          readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed),
+        )
         setSelectedCompany(nextCompanies.find((company) => company.id === selectedCompanyId) ?? null)
       }
 
@@ -254,7 +341,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       createRecord: ({ type, product, amount, note }: CreateRecordInput) => {
         if (!selectedCompany) return
 
-        const unitPrice = type === 'pickup' ? product.pickupPrice : product.dropoffPrice
+        const unitPrice = getUnitPrice(product, type, selectedCompany.priceCategory)
         const total = unitPrice * amount
         const nextRecord: RecordItem = {
           id: Date.now(),
@@ -272,7 +359,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         setRecords((prev) => [nextRecord, ...prev])
       },
-      createCompany: ({ shortCode, name, pin }: CreateCompanyInput) => {
+      createCompany: ({ shortCode, name, pin, priceCategory }: CreateCompanyInput) => {
         const cleanedShortCode = shortCode.trim().toUpperCase()
         const cleanedName = name.trim()
         const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
@@ -295,6 +382,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           shortCode: cleanedShortCode,
           name: cleanedName,
           pin: cleanedPin,
+          priceCategory,
         }
 
         setCompanies((prev) => [...prev, company])
@@ -305,7 +393,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           prev.map((item) => {
             if (item.id !== productId) return item
 
-            if (field === 'pickupPrice' || field === 'dropoffPrice') {
+            if (
+              field === 'pickupPrivatePrice' ||
+              field === 'pickupBusinessPrice' ||
+              field === 'dropoffPrivatePrice' ||
+              field === 'dropoffBusinessPrice'
+            ) {
               return {
                 ...item,
                 [field]: Number(value) || 0,

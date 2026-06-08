@@ -37,10 +37,19 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis</label>
+                    <label className="text-xs font-semibold text-slate-600">Preis Privat</label>
                     <input
-                      value={product.dropoffPrice}
-                      onChange={(event) => updateProduct(product.id, 'dropoffPrice', event.target.value)}
+                      value={product.dropoffPrivatePrice}
+                      onChange={(event) => updateProduct(product.id, 'dropoffPrivatePrice', event.target.value)}
+                      inputMode="decimal"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen</label>
+                    <input
+                      value={product.dropoffBusinessPrice}
+                      onChange={(event) => updateProduct(product.id, 'dropoffBusinessPrice', event.target.value)}
                       inputMode="decimal"
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                     />
@@ -56,7 +65,8 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis</th>
+                  <th className="px-3 py-2">Preis Privat</th>
+                  <th className="px-3 py-2">Preis Unternehmen</th>
                 </tr>
               </thead>
               <tbody>
@@ -78,8 +88,16 @@ function AdminProductsPage() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        value={product.dropoffPrice}
-                        onChange={(event) => updateProduct(product.id, 'dropoffPrice', event.target.value)}
+                        value={product.dropoffPrivatePrice}
+                        onChange={(event) => updateProduct(product.id, 'dropoffPrivatePrice', event.target.value)}
+                        inputMode="decimal"
+                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={product.dropoffBusinessPrice}
+                        onChange={(event) => updateProduct(product.id, 'dropoffBusinessPrice', event.target.value)}
                         inputMode="decimal"
                         className="w-28 rounded-lg border border-slate-300 px-3 py-2"
                       />
@@ -115,10 +133,19 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis</label>
+                    <label className="text-xs font-semibold text-slate-600">Preis Privat</label>
                     <input
-                      value={product.pickupPrice}
-                      onChange={(event) => updateProduct(product.id, 'pickupPrice', event.target.value)}
+                      value={product.pickupPrivatePrice}
+                      onChange={(event) => updateProduct(product.id, 'pickupPrivatePrice', event.target.value)}
+                      inputMode="decimal"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen</label>
+                    <input
+                      value={product.pickupBusinessPrice}
+                      onChange={(event) => updateProduct(product.id, 'pickupBusinessPrice', event.target.value)}
                       inputMode="decimal"
                       className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                     />
@@ -134,7 +161,8 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis</th>
+                  <th className="px-3 py-2">Preis Privat</th>
+                  <th className="px-3 py-2">Preis Unternehmen</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,8 +184,16 @@ function AdminProductsPage() {
                     </td>
                     <td className="px-3 py-2">
                       <input
-                        value={product.pickupPrice}
-                        onChange={(event) => updateProduct(product.id, 'pickupPrice', event.target.value)}
+                        value={product.pickupPrivatePrice}
+                        onChange={(event) => updateProduct(product.id, 'pickupPrivatePrice', event.target.value)}
+                        inputMode="decimal"
+                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={product.pickupBusinessPrice}
+                        onChange={(event) => updateProduct(product.id, 'pickupBusinessPrice', event.target.value)}
                         inputMode="decimal"
                         className="w-28 rounded-lg border border-slate-300 px-3 py-2"
                       />

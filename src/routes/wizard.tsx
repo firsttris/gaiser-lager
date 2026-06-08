@@ -67,7 +67,7 @@ function FlowChoiceCard({
 }
 
 function WizardPage() {
-  const { isLoggedIn, products, createRecord } = useAppState()
+  const { isLoggedIn, products, selectedCompany, createRecord } = useAppState()
   const [step, setStep] = useState(1)
   const [flowType, setFlowType] = useState<FlowType>('pickup')
   const [selectedProductId, setSelectedProductId] = useState(
@@ -108,9 +108,14 @@ function WizardPage() {
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0
   const currentUnitPrice = selectedProduct
     ? flowType === 'pickup'
-      ? selectedProduct.pickupPrice
-      : selectedProduct.dropoffPrice
+      ? selectedCompany?.priceCategory === 'private'
+        ? selectedProduct.pickupPrivatePrice
+        : selectedProduct.pickupBusinessPrice
+      : selectedCompany?.priceCategory === 'private'
+        ? selectedProduct.dropoffPrivatePrice
+        : selectedProduct.dropoffBusinessPrice
     : 0
+  const priceCategoryLabel = selectedCompany?.priceCategory === 'private' ? 'Privat' : 'Unternehmen'
   const total = validAmount ? parsedAmount * currentUnitPrice : 0
 
   function resetWizard() {
@@ -235,6 +240,8 @@ function WizardPage() {
             </div>
 
             <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+              Tarif: <strong>{priceCategoryLabel}</strong>
+              <br />
               Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {selectedProduct?.unit}
             </div>
 
@@ -280,7 +287,9 @@ function WizardPage() {
               </div>
               <div className="rounded-xl bg-slate-50 p-4">
                 <dt className="text-slate-500">Einzelpreis</dt>
-                <dd className="font-semibold">{money(currentUnitPrice)}</dd>
+                <dd className="font-semibold">
+                  {money(currentUnitPrice)} ({priceCategoryLabel})
+                </dd>
               </div>
               <div className="rounded-xl bg-amber-50 p-4">
                 <dt className="text-amber-700">Gesamtsumme</dt>

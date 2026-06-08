@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useAppState } from '../state/app-state'
+import { type PriceCategory, useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/companies')({ component: AdminCompaniesPage })
 
@@ -9,6 +9,7 @@ function AdminCompaniesPage() {
   const [shortCode, setShortCode] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [pin, setPin] = useState('')
+  const [priceCategory, setPriceCategory] = useState<PriceCategory>('business')
   const [companyError, setCompanyError] = useState('')
   const [companySuccess, setCompanySuccess] = useState('')
 
@@ -19,6 +20,7 @@ function AdminCompaniesPage() {
       shortCode,
       name: companyName,
       pin,
+      priceCategory,
     })
 
     if (!result.ok) {
@@ -32,6 +34,7 @@ function AdminCompaniesPage() {
     setShortCode('')
     setCompanyName('')
     setPin('')
+    setPriceCategory('business')
   }
 
   return (
@@ -39,7 +42,7 @@ function AdminCompaniesPage() {
       <h2 className="font-title text-4xl text-slate-900">Firmen</h2>
       <p className="mt-2 text-sm text-slate-600">Neue Firmen koennen hier direkt fuer den Login angelegt werden.</p>
 
-      <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-4">
+      <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-5">
         <div>
           <label className="text-sm font-semibold text-slate-700">Kuerzel</label>
           <input
@@ -71,7 +74,19 @@ function AdminCompaniesPage() {
           />
         </div>
 
-        <div className="md:col-span-4">
+        <div>
+          <label className="text-sm font-semibold text-slate-700">Tarifgruppe</label>
+          <select
+            value={priceCategory}
+            onChange={(event) => setPriceCategory(event.target.value as PriceCategory)}
+            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-800"
+          >
+            <option value="business">Unternehmen</option>
+            <option value="private">Privat</option>
+          </select>
+        </div>
+
+        <div className="md:col-span-5">
           <button
             type="submit"
             className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black"
@@ -97,6 +112,11 @@ function AdminCompaniesPage() {
 
             <p className="mt-3 text-xs text-slate-500">PIN</p>
             <p className="text-sm font-semibold text-slate-800">{company.pin}</p>
+
+            <p className="mt-3 text-xs text-slate-500">Tarifgruppe</p>
+            <p className="text-sm font-semibold text-slate-800">
+              {company.priceCategory === 'private' ? 'Privat' : 'Unternehmen'}
+            </p>
           </article>
         ))}
       </div>
@@ -108,6 +128,7 @@ function AdminCompaniesPage() {
               <th className="px-3 py-2">Kuerzel</th>
               <th className="px-3 py-2">Firma</th>
               <th className="px-3 py-2">PIN</th>
+              <th className="px-3 py-2">Tarifgruppe</th>
             </tr>
           </thead>
           <tbody>
@@ -116,6 +137,7 @@ function AdminCompaniesPage() {
                 <td className="px-3 py-2 font-semibold text-slate-800">{company.shortCode}</td>
                 <td className="px-3 py-2">{company.name}</td>
                 <td className="px-3 py-2">{company.pin}</td>
+                <td className="px-3 py-2">{company.priceCategory === 'private' ? 'Privat' : 'Unternehmen'}</td>
               </tr>
             ))}
           </tbody>
