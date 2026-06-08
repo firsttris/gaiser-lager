@@ -416,7 +416,9 @@ function AdminIndexPage() {
                     </div>
                   </dl>
 
-                  <p className="mt-3 text-xs text-slate-600">Notiz: {record.note || '-'}</p>
+                  <p className="mt-3 max-w-full whitespace-pre-wrap wrap-break-word text-xs text-slate-600">
+                    Notiz: {record.note || '-'}
+                  </p>
 
                   <label className="mt-3 block text-xs font-semibold text-slate-700">
                     Status
@@ -436,11 +438,11 @@ function AdminIndexPage() {
               ))}
             </div>
 
-            <div className="mt-4 hidden overflow-x-auto md:block">
-              <table className="w-full min-w-5xl border-collapse text-sm">
+            <div className="mt-4 hidden md:block">
+              <table className="w-full table-fixed border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-slate-500">
-                    <th className="px-3 py-2">
+                    <th className="w-8 px-2 py-2">
                       <input
                         type="checkbox"
                         checked={filteredRecords.length > 0 && filteredRecords.every((record) => selectedSet.has(record.id))}
@@ -455,21 +457,21 @@ function AdminIndexPage() {
                         aria-label="Alle sichtbaren Eintraege markieren"
                       />
                     </th>
-                    <th className="px-3 py-2">Zeit</th>
-                    <th className="px-3 py-2">Firma</th>
-                    <th className="px-3 py-2">Typ</th>
-                    <th className="px-3 py-2">Produkt</th>
-                    <th className="px-3 py-2">Menge</th>
-                    <th className="px-3 py-2">Einzelpreis</th>
-                    <th className="px-3 py-2">Gesamt</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2">Notiz</th>
+                    <th className="w-28 px-2 py-2">Zeit</th>
+                    <th className="hidden w-28 px-2 py-2 lg:table-cell">Firma</th>
+                    <th className="w-20 px-2 py-2">Typ</th>
+                    <th className="px-2 py-2">Produkt</th>
+                    <th className="w-16 px-2 py-2">Menge</th>
+                    <th className="hidden w-24 px-2 py-2 xl:table-cell">Preis</th>
+                    <th className="w-24 px-2 py-2">Gesamt</th>
+                    <th className="hidden w-44 px-2 py-2 2xl:table-cell">Notiz</th>
+                    <th className="w-32 px-2 py-2">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRecords.map((record) => (
                     <tr key={record.id} className="border-b border-slate-100 align-top">
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2">
                         <input
                           type="checkbox"
                           checked={selectedSet.has(record.id)}
@@ -478,16 +480,21 @@ function AdminIndexPage() {
                           aria-label={`Eintrag ${record.id} markieren`}
                         />
                       </td>
-                      <td className="px-3 py-2 text-slate-600">{record.createdAt}</td>
-                      <td className="px-3 py-2 font-semibold text-slate-900">{record.company}</td>
-                      <td className="px-3 py-2">{flowLabel(record.type)}</td>
-                      <td className="px-3 py-2">{record.productName}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-2 py-2 text-xs text-slate-600">{record.createdAt}</td>
+                      <td className="hidden px-2 py-2 font-semibold text-slate-900 lg:table-cell">{record.company}</td>
+                      <td className="px-2 py-2">{flowLabel(record.type)}</td>
+                      <td className="px-2 py-2">
+                        <p className="truncate" title={record.productName}>{record.productName}</p>
+                      </td>
+                      <td className="px-2 py-2 text-xs">
                         {record.amount} {record.unit}
                       </td>
-                      <td className="px-3 py-2">{money(record.unitPrice)}</td>
-                      <td className="px-3 py-2 font-semibold text-slate-900">{money(record.total)}</td>
-                      <td className="px-3 py-2">
+                      <td className="hidden px-2 py-2 xl:table-cell">{money(record.unitPrice)}</td>
+                      <td className="px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
+                      <td className="hidden px-2 py-2 text-slate-600 2xl:table-cell">
+                        <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.note || '-'}</p>
+                      </td>
+                      <td className="px-2 py-2">
                         <select
                           value={record.status}
                           onChange={(event) => updateRecordStatus(record.id, event.target.value as RecordStatus)}
@@ -500,7 +507,6 @@ function AdminIndexPage() {
                           ))}
                         </select>
                       </td>
-                      <td className="px-3 py-2 text-slate-600">{record.note || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
