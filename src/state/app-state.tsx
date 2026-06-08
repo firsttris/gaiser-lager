@@ -242,6 +242,14 @@ const STORAGE_KEYS = {
   adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
 }
 
+type PersistedState = {
+  companies: Company[]
+  products: Product[]
+  records: RecordItem[]
+  selectedCompanyId: string | null
+  adminLoggedIn: boolean
+}
+
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
 
@@ -264,63 +272,45 @@ function writeStorage<T>(key: string, value: T) {
   }
 }
 
+function loadPersistedState(): PersistedState {
+  return {
+    companies: normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
+    products: normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
+    records: normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
+    selectedCompanyId: readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null),
+    adminLoggedIn: readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false),
+  }
+}
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [companies, setCompanies] = useState<Company[]>(() =>
-    normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
+  const initialState = useMemo(() => loadPersistedState(), [])
+  const [companies, setCompanies] = useState<Company[]>(initialState.companies)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(
+    initialState.companies.find((company) => company.id === initialState.selectedCompanyId) ?? null,
   )
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
-  const [products, setProducts] = useState<Product[]>(() =>
-    normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
-  )
-  const [records, setRecords] = useState<RecordItem[]>(() =>
-    normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
-  )
-  const [storageReady, setStorageReady] = useState(false)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(initialState.adminLoggedIn)
+  const [products, setProducts] = useState<Product[]>(initialState.products)
+  const [records, setRecords] = useState<RecordItem[]>(initialState.records)
 
   useEffect(() => {
-    const storedCompanies = normalizeCompanies(
-      readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed),
-    )
-    const storedProducts = normalizeProducts(
-      readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed),
-    )
-    const storedRecords = normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, []))
-    const storedSelectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
-    const storedAdminLoggedIn = readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false)
-
-    setCompanies(storedCompanies)
-    setProducts(storedProducts)
-    setRecords(storedRecords)
-    setSelectedCompany(storedCompanies.find((company) => company.id === storedSelectedCompanyId) ?? null)
-    setIsAdminLoggedIn(storedAdminLoggedIn)
-    setStorageReady(true)
-  }, [])
-
-  useEffect(() => {
-    if (!storageReady) return
     writeStorage(STORAGE_KEYS.companies, companies)
-  }, [companies, storageReady])
+  }, [companies])
 
   useEffect(() => {
-    if (!storageReady) return
     writeStorage(STORAGE_KEYS.products, products)
-  }, [products, storageReady])
+  }, [products])
 
   useEffect(() => {
-    if (!storageReady) return
     writeStorage(STORAGE_KEYS.records, records)
-  }, [records, storageReady])
+  }, [records])
 
   useEffect(() => {
-    if (!storageReady) return
     writeStorage(STORAGE_KEYS.selectedCompanyId, selectedCompany?.id ?? null)
-  }, [selectedCompany, storageReady])
+  }, [selectedCompany])
 
   useEffect(() => {
-    if (!storageReady) return
     writeStorage(STORAGE_KEYS.adminLoggedIn, isAdminLoggedIn)
-  }, [isAdminLoggedIn, storageReady])
+  }, [isAdminLoggedIn])
 
   useEffect(() => {
     if (!selectedCompany) return
