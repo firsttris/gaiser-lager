@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
-import { HistorySummaryCards } from '../components/history-summary-cards'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import {
@@ -49,10 +48,6 @@ function AdminIndexPage() {
       return haystack.includes(query)
     })
   }, [companyFilter, records, searchText, statusFilter, typeFilter])
-
-  const pickupCount = filteredRecords.filter((record) => record.type === 'pickup').length
-  const dropoffCount = filteredRecords.filter((record) => record.type === 'dropoff').length
-  const totalAmount = filteredRecords.reduce((sum, record) => sum + record.total, 0)
 
   const {
     selectedSet,
@@ -350,13 +345,6 @@ function AdminIndexPage() {
             />
           </label>
         </div>
-
-        <HistorySummaryCards
-          pickupCount={pickupCount}
-          dropoffCount={dropoffCount}
-          totalAmount={totalAmount}
-          totalTone="green"
-        />
 
         {filteredRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">

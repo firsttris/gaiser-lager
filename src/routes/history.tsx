@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { HistorySummaryCards } from '../components/history-summary-cards'
 import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
@@ -35,10 +34,6 @@ function HistoryPage() {
       return haystack.includes(query)
     })
   }, [companyRecords, searchText, statusFilter, typeFilter])
-
-  const pickupCount = filteredRecords.filter((record) => record.type === 'pickup').length
-  const dropoffCount = filteredRecords.filter((record) => record.type === 'dropoff').length
-  const totalAmount = filteredRecords.reduce((sum, record) => sum + record.total, 0)
 
   const {
     selectedSet,
@@ -140,13 +135,6 @@ function HistoryPage() {
             />
           </label>
         </div>
-
-        <HistorySummaryCards
-          pickupCount={pickupCount}
-          dropoffCount={dropoffCount}
-          totalAmount={totalAmount}
-          totalTone="red"
-        />
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
