@@ -31,13 +31,6 @@ export function TopNav() {
         >
           Historie
         </Link>
-        <Link
-          to="/admin"
-          className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-          activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white' }}
-        >
-          Admin
-        </Link>
 
         {isLoggedIn && (
           <button

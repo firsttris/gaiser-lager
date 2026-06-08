@@ -33,6 +33,7 @@ export type RecordItem = {
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }
+type CreateCompanyResult = { ok: true } | { ok: false; message: string }
 
 type CreateRecordInput = {
   type: FlowType
@@ -41,15 +42,25 @@ type CreateRecordInput = {
   note: string
 }
 
+type CreateCompanyInput = {
+  shortCode: string
+  name: string
+  pin: string
+}
+
 type AppState = {
   companies: Company[]
   selectedCompany: Company | null
   isLoggedIn: boolean
+  isAdminLoggedIn: boolean
   products: Product[]
   records: RecordItem[]
   login: (companyId: string, pin: string) => LoginResult
   logout: () => void
+  adminLogin: (password: string) => LoginResult
+  adminLogout: () => void
   createRecord: (input: CreateRecordInput) => void
+  createCompany: (input: CreateCompanyInput) => CreateCompanyResult
   updateProduct: (productId: number, field: keyof Product, value: string) => void
 }
 
@@ -82,21 +93,25 @@ const productsSeed: Product[] = [
 ]
 
 const AppStateContext = createContext<AppState | null>(null)
+const ADMIN_PASSWORD = 'admin'
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
+  const [companies, setCompanies] = useState<Company[]>(companiesSeed)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [products, setProducts] = useState<Product[]>(productsSeed)
   const [records, setRecords] = useState<RecordItem[]>([])
 
   const value = useMemo<AppState>(
     () => ({
-      companies: companiesSeed,
+      companies,
       selectedCompany,
       isLoggedIn: selectedCompany !== null,
+      isAdminLoggedIn,
       products,
       records,
       login: (companyId: string, pin: string) => {
-        const company = companiesSeed.find((item) => item.id === companyId)
+        const company = companies.find((item) => item.id === companyId)
         if (!company) {
           return { ok: false, message: 'Bitte waehle eine Firma aus.' }
         }
@@ -110,6 +125,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       logout: () => {
         setSelectedCompany(null)
+      },
+      adminLogin: (password: string) => {
+        if (password.trim() !== ADMIN_PASSWORD) {
+          return { ok: false, message: 'Admin-Passwort ist falsch.' }
+        }
+
+        setIsAdminLoggedIn(true)
+        return { ok: true }
+      },
+      adminLogout: () => {
+        setIsAdminLoggedIn(false)
       },
       createRecord: ({ type, product, amount, note }: CreateRecordInput) => {
         if (!selectedCompany) return
@@ -132,6 +158,34 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
         setRecords((prev) => [nextRecord, ...prev])
       },
+      createCompany: ({ shortCode, name, pin }: CreateCompanyInput) => {
+        const cleanedShortCode = shortCode.trim().toUpperCase()
+        const cleanedName = name.trim()
+        const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
+
+        if (!cleanedShortCode || !cleanedName) {
+          return { ok: false, message: 'Bitte Firmenname und Kuerzel ausfuellen.' }
+        }
+
+        if (cleanedPin.length !== 4) {
+          return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
+        }
+
+        const hasShortCode = companies.some((company) => company.shortCode === cleanedShortCode)
+        if (hasShortCode) {
+          return { ok: false, message: 'Das Firmenkuerzel ist bereits vergeben.' }
+        }
+
+        const company: Company = {
+          id: `${cleanedShortCode.toLowerCase()}-${Date.now()}`,
+          shortCode: cleanedShortCode,
+          name: cleanedName,
+          pin: cleanedPin,
+        }
+
+        setCompanies((prev) => [...prev, company])
+        return { ok: true }
+      },
       updateProduct: (productId: number, field: keyof Product, value: string) => {
         setProducts((prev) =>
           prev.map((item) => {
@@ -152,7 +206,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         )
       },
     }),
-    [products, records, selectedCompany],
+    [companies, isAdminLoggedIn, products, records, selectedCompany],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

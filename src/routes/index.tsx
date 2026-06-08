@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
@@ -121,6 +121,15 @@ function App() {
             >
               In den Wizard starten
             </button>
+
+            <div className="border-t border-slate-200 pt-3 text-center">
+              <Link
+                to="/admin"
+                className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900"
+              >
+                Zum Admin-Bereich
+              </Link>
+            </div>
           </form>
         </div>
       </section>
