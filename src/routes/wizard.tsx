@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ArrowDownToLine, ArrowUpFromLine, Truck } from 'lucide-react'
 import { TopNav } from '../components/top-nav'
 import { useAppState, type FlowType } from '../state/app-state'
 
@@ -11,6 +12,58 @@ function money(value: number) {
     currency: 'EUR',
     minimumFractionDigits: 2,
   }).format(value)
+}
+
+function FlowChoiceCard({
+  type,
+  title,
+  subtitle,
+  onClick,
+}: {
+  type: FlowType
+  title: string
+  subtitle: string
+  onClick: () => void
+}) {
+  const isPickup = type === 'pickup'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-3xl border p-5 text-left shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 ${
+        isPickup
+          ? 'border-amber-200 bg-amber-50 hover:border-amber-300'
+          : 'border-sky-200 bg-sky-50 hover:border-sky-300'
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
+            isPickup ? 'border-amber-200 bg-white text-amber-700' : 'border-sky-200 bg-white text-sky-700'
+          }`}
+        >
+          <Truck className="h-7 w-7" strokeWidth={1.9} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+            {isPickup ? 'Abholung' : 'Annahme'}
+          </p>
+          <h3 className="font-title mt-1 text-4xl text-slate-900">{title}</h3>
+          <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+        </div>
+
+        <div
+          className={`hidden h-12 w-12 items-center justify-center rounded-full sm:flex ${
+            isPickup ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'
+          }`}
+        >
+          {isPickup ? <ArrowDownToLine className="h-6 w-6" strokeWidth={2.2} /> : <ArrowUpFromLine className="h-6 w-6" strokeWidth={2.2} />}
+        </div>
+      </div>
+    </button>
+  )
 }
 
 function WizardPage() {
@@ -113,33 +166,27 @@ function WizardPage() {
 
         {step === 1 && (
           <div className="grid gap-4 md:grid-cols-2">
-            <button
-              type="button"
+            <FlowChoiceCard
+              type="pickup"
+              title="Material holen"
+              subtitle="Material abholen."
               onClick={() => {
                 setFlowType('pickup')
                 setSelectedProductId(products.find((p) => p.flow === 'pickup')?.id ?? 0)
                 setStep(2)
               }}
-              className="rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-slate-300"
-            >
-              <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Vorgang</p>
-              <h3 className="font-title mt-2 text-5xl text-slate-900">Material holen</h3>
-              <p className="mt-2 text-slate-600">Kunde holt neues Material ab.</p>
-            </button>
+            />
 
-            <button
-              type="button"
+            <FlowChoiceCard
+              type="dropoff"
+              title="Bauschutt bringen"
+              subtitle="Material anliefern."
               onClick={() => {
                 setFlowType('dropoff')
                 setSelectedProductId(products.find((p) => p.flow === 'dropoff')?.id ?? 0)
                 setStep(2)
               }}
-              className="rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:border-slate-300"
-            >
-              <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Vorgang</p>
-              <h3 className="font-title mt-2 text-5xl text-slate-900">Material bringen</h3>
-              <p className="mt-2 text-slate-600">Kunde liefert Aushub oder Bauschutt an.</p>
-            </button>
+            />
           </div>
         )}
 
