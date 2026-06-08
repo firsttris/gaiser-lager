@@ -21,7 +21,7 @@ const config = defineConfig({
     viteReact(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: null,
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'Gaiser Dashboard',
