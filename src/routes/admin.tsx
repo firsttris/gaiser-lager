@@ -2,6 +2,7 @@ import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Blocks, Building2, LogOut, Menu, ReceiptText, X } from 'lucide-react'
 import { InstallAppButton } from '../components/install-app-button'
+import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 
@@ -100,45 +101,33 @@ function AdminPage() {
 
           {isMenuOpen && (
             <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
-              <Link
+              <NavLink 
                 to="/admin"
-                onClick={() => setIsMenuOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-200"
+                compact
                 activeOptions={{ exact: true }}
-                activeProps={{
-                  className:
-                    'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline',
-                }}
+                onClick={() => setIsMenuOpen(false)}
+                icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
               >
-                <ReceiptText className="h-4 w-4" strokeWidth={2.25} />
                 History
-              </Link>
+              </NavLink>
 
-              <Link
+              <NavLink 
                 to="/admin/products"
+                compact
                 onClick={() => setIsMenuOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-200"
-                activeProps={{
-                  className:
-                    'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline',
-                }}
+                icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
               >
-                <Blocks className="h-4 w-4" strokeWidth={2.25} />
                 Produkte
-              </Link>
+              </NavLink>
 
-              <Link
+              <NavLink 
                 to="/admin/companies"
+                compact
                 onClick={() => setIsMenuOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-200"
-                activeProps={{
-                  className:
-                    'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline',
-                }}
+                icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
               >
-                <Building2 className="h-4 w-4" strokeWidth={2.25} />
                 Firmen
-              </Link>
+              </NavLink>
 
               <InstallAppButton compact className="w-full justify-center" />
 
@@ -157,40 +146,25 @@ function AdminPage() {
           )}
 
           <div className="mt-4 hidden items-center gap-2 sm:flex sm:flex-row sm:flex-wrap">
-            <Link
+            <NavLink 
               to="/admin"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:-translate-y-0.5 hover:bg-slate-200"
               activeOptions={{ exact: true }}
-              activeProps={{
-                className:
-                  'inline-flex items-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_10px_24px_rgba(15,23,42,0.2)]',
-              }}
+              icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
-              <ReceiptText className="h-4 w-4" strokeWidth={2.25} />
               History
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink 
               to="/admin/products"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:-translate-y-0.5 hover:bg-slate-200"
-              activeProps={{
-                className:
-                  'inline-flex items-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_10px_24px_rgba(15,23,42,0.2)]',
-              }}
+              icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
             >
-              <Blocks className="h-4 w-4" strokeWidth={2.25} />
               Produkte
-            </Link>
-            <Link
+            </NavLink>
+            <NavLink 
               to="/admin/companies"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition hover:-translate-y-0.5 hover:bg-slate-200"
-              activeProps={{
-                className:
-                  'inline-flex items-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_10px_24px_rgba(15,23,42,0.2)]',
-              }}
+              icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
             >
-              <Building2 className="h-4 w-4" strokeWidth={2.25} />
               Firmen
-            </Link>
+            </NavLink>
 
             <div className="ml-auto flex items-center gap-2">
               <InstallAppButton />

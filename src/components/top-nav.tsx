@@ -1,7 +1,8 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { InstallAppButton } from './install-app-button'
+import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
 
 export function TopNav() {
@@ -35,31 +36,23 @@ export function TopNav() {
 
         {isMenuOpen && (
           <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
-            <Link
-              to="/wizard"
+            <NavLink 
+              to="/wizard" 
+              compact 
               onClick={() => setIsMenuOpen(false)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-              activeProps={{
-                className:
-                  'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white',
-              }}
+              icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
             >
-              <ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />
               Neuer Vorgang
-            </Link>
+            </NavLink>
 
-            <Link
-              to="/history"
+            <NavLink 
+              to="/history" 
+              compact
               onClick={() => setIsMenuOpen(false)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
-              activeProps={{
-                className:
-                  'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white',
-              }}
+              icon={<History className="h-4 w-4" strokeWidth={2.3} />}
             >
-              <History className="h-4 w-4" strokeWidth={2.3} />
               Historie
-            </Link>
+            </NavLink>
 
             <InstallAppButton compact className="w-full justify-center" />
             <button
@@ -78,28 +71,18 @@ export function TopNav() {
         )}
 
         <div className="mt-4 hidden items-center gap-2 sm:flex sm:flex-row sm:flex-wrap">
-          <Link
+          <NavLink 
             to="/wizard"
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-200"
-            activeProps={{
-              className:
-                'inline-flex items-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]',
-            }}
+            icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
           >
-            <ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />
             Neuer Vorgang
-          </Link>
-          <Link
+          </NavLink>
+          <NavLink 
             to="/history"
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-200"
-            activeProps={{
-              className:
-                'inline-flex items-center gap-2 rounded-2xl border border-slate-900 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]',
-            }}
+            icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
-            <History className="h-4 w-4" strokeWidth={2.3} />
             Historie
-          </Link>
+          </NavLink>
 
           <div className="ml-auto flex items-center gap-2">
             <InstallAppButton />
