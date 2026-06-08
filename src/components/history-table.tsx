@@ -110,8 +110,8 @@ export function HistoryTable({
               <th className="w-20 px-2 py-2">Typ</th>
               <th className="px-2 py-2">Produkt</th>
               <th className="w-16 px-2 py-2">Menge</th>
-              <th className={`hidden w-24 px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>Preis</th>
-              <th className="w-24 px-2 py-2">Gesamt</th>
+              <th className={`hidden w-28 px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>Preis</th>
+              <th className="w-28 px-2 py-2">Gesamt</th>
               {onStatusChange ? (
                 <th className="w-32 px-2 py-2">Status</th>
               ) : (
@@ -143,10 +143,10 @@ export function HistoryTable({
                 <td className="px-2 py-2 text-xs">
                   {record.amount} {record.unit}
                 </td>
-                <td className={`hidden px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>
+                <td className={`hidden whitespace-nowrap px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>
                   {money(record.unitPrice)}
                 </td>
-                <td className="px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
+                <td className="whitespace-nowrap px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
                 {onStatusChange ? (
                   <td className="px-2 py-2">
                     <select
