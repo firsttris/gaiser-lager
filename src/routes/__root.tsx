@@ -43,11 +43,11 @@ export const Route = createRootRoute({
       },
       {
         rel: 'manifest',
-        href: '/manifest.webmanifest',
+        href: `${import.meta.env.BASE_URL}manifest.webmanifest`,
       },
       {
         rel: 'apple-touch-icon',
-        href: '/logo192.png',
+        href: `${import.meta.env.BASE_URL}logo192.png`,
       },
     ],
   }),
@@ -65,7 +65,8 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+      const base = import.meta.env.BASE_URL
+      navigator.serviceWorker.register(`${base}sw.js`, { scope: base })
     }
   }, [])
 
