@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
 import { useId, useState } from 'react'
+import { InstallAppButton } from './install-app-button'
 import { useAppState } from '../state/app-state'
 
 export function TopNav() {
@@ -47,6 +48,8 @@ export function TopNav() {
           Historie
         </Link>
 
+        <InstallAppButton />
+
         <button
           type="button"
           onClick={() => {
@@ -77,6 +80,8 @@ export function TopNav() {
           >
             Historie
           </Link>
+
+          <InstallAppButton compact className="w-full justify-center" />
 
           <button
             type="button"

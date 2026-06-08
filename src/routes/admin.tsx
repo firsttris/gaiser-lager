@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
+import { InstallAppButton } from '../components/install-app-button'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 
@@ -119,6 +120,7 @@ function AdminPage() {
           >
             Firmen
           </Link>
+          <InstallAppButton />
           <button
             type="button"
             onClick={adminLogout}
@@ -155,6 +157,9 @@ function AdminPage() {
             >
               Firmen
             </Link>
+
+            <InstallAppButton compact className="w-full justify-center" />
+
             <button
               type="button"
               onClick={() => {
