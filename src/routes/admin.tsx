@@ -95,18 +95,12 @@ function AdminPage() {
           >
             Firmen
           </Link>
-          <Link
-            to="/"
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
-          >
-            Zur Startseite
-          </Link>
           <button
             type="button"
             onClick={adminLogout}
             className="rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-200"
           >
-            Admin abmelden
+            Abmelden
           </button>
         </div>
       </header>

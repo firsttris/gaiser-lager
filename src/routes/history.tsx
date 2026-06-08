@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
 import { TopNav } from '../components/top-nav'
-import { useAppState } from '../state/app-state'
+import { type RecordItem, useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
 
@@ -13,29 +14,80 @@ function money(value: number) {
   }).format(value)
 }
 
+function typeLabel(type: 'pickup' | 'dropoff') {
+  return type === 'pickup' ? 'Verkauf' : 'Annahme'
+}
+
+function toFileSafeDate(value: string) {
+  return value.replace(/[^0-9A-Za-z]/g, '-')
+}
+
+function downloadDeliveryNote(record: RecordItem, companyName: string) {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  const left = 15
+  let y = 20
+
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(18)
+  pdf.text('Lieferschein', left, y)
+
+  y += 8
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(11)
+  pdf.text('Gaiser Baustoffe', left, y)
+
+  y += 6
+  pdf.setFontSize(10)
+  pdf.text(`Belegnummer: ${record.id}`, left, y)
+  y += 5
+  pdf.text(`Datum: ${record.createdAt}`, left, y)
+  y += 5
+  pdf.text(`Firma: ${companyName}`, left, y)
+  y += 5
+  pdf.text(`Vorgang: ${typeLabel(record.type)}`, left, y)
+
+  y += 10
+  pdf.setFont('helvetica', 'bold')
+  pdf.text('Position', left, y)
+  y += 6
+  pdf.setDrawColor(180)
+  pdf.line(left, y, 195, y)
+
+  y += 8
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(`Material: ${record.productName}`, left, y)
+  y += 6
+  pdf.text(`Menge: ${record.amount} ${record.unit}`, left, y)
+  y += 6
+  pdf.text(`Einzelpreis: ${money(record.unitPrice)}`, left, y)
+  y += 6
+  pdf.setFont('helvetica', 'bold')
+  pdf.text(`Gesamt: ${money(record.total)}`, left, y)
+
+  y += 8
+  pdf.setFont('helvetica', 'normal')
+  pdf.text(`Status: ${record.status}`, left, y)
+  y += 6
+  pdf.text(`Notiz: ${record.note || '-'}`, left, y)
+
+  y += 14
+  pdf.setDrawColor(180)
+  pdf.line(left, y, 95, y)
+  pdf.line(115, y, 195, y)
+  y += 5
+  pdf.setFontSize(9)
+  pdf.text('Unterschrift Kunde', left, y)
+  pdf.text('Unterschrift Gaiser', 115, y)
+
+  const fileName = `lieferschein-${record.id}-${toFileSafeDate(record.createdAt)}.pdf`
+  pdf.save(fileName)
+}
+
 function HistoryPage() {
   const { isLoggedIn, records, selectedCompany } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
-
-  if (!isLoggedIn) {
-    return (
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
-        <TopNav />
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
-          <p className="mt-2 text-slate-600">Die Historie ist nur nach Firmen-PIN verfuegbar.</p>
-          <Link
-            to="/"
-            className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline"
-          >
-            Zum Login
-          </Link>
-        </section>
-      </main>
-    )
-  }
 
   const companyRecords = records.filter((record) => record.company === selectedCompany?.name)
 
@@ -65,6 +117,24 @@ function HistoryPage() {
   const totalCosts = filteredRecords
     .filter((record) => record.type === 'dropoff')
     .reduce((sum, record) => sum + record.total, 0)
+
+  if (!isLoggedIn) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+        <TopNav />
+        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
+          <p className="mt-2 text-slate-600">Die Historie ist nur nach Firmen-PIN verfuegbar.</p>
+          <Link
+            to="/"
+            className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline"
+          >
+            Zum Login
+          </Link>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
@@ -146,40 +216,99 @@ function HistoryPage() {
             Keine Eintraege fuer die aktuellen Filter vorhanden.
           </p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-5xl border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-slate-500">
-                  <th className="px-3 py-2">Zeit</th>
-                  <th className="px-3 py-2">Firma</th>
-                  <th className="px-3 py-2">Typ</th>
-                  <th className="px-3 py-2">Produkt</th>
-                  <th className="px-3 py-2">Menge</th>
-                  <th className="px-3 py-2">Einzelpreis</th>
-                  <th className="px-3 py-2">Gesamt</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Notiz</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.map((record) => (
-                  <tr key={record.id} className="border-b border-slate-100 align-top">
-                    <td className="px-3 py-2 text-slate-600">{record.createdAt}</td>
-                    <td className="px-3 py-2 font-semibold text-slate-900">{record.company}</td>
-                    <td className="px-3 py-2">{record.type === 'pickup' ? 'Verkauf' : 'Annahme'}</td>
-                    <td className="px-3 py-2">{record.productName}</td>
-                    <td className="px-3 py-2">
-                      {record.amount} {record.unit}
-                    </td>
-                    <td className="px-3 py-2">{money(record.unitPrice)}</td>
-                    <td className="px-3 py-2 font-semibold text-slate-900">{money(record.total)}</td>
-                    <td className="px-3 py-2">{record.status}</td>
-                    <td className="px-3 py-2 text-slate-600">{record.note || '-'}</td>
+          <>
+            <div className="mt-4 space-y-3 md:hidden">
+              {filteredRecords.map((record) => (
+                <article key={record.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">{record.createdAt}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{record.productName}</p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+                      {typeLabel(record.type)}
+                    </span>
+                  </div>
+
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <dt className="text-slate-500">Menge</dt>
+                      <dd className="font-semibold text-slate-800">
+                        {record.amount} {record.unit}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Einzelpreis</dt>
+                      <dd className="font-semibold text-slate-800">{money(record.unitPrice)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Gesamt</dt>
+                      <dd className="font-semibold text-slate-900">{money(record.total)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Status</dt>
+                      <dd className="font-semibold text-slate-800">{record.status}</dd>
+                    </div>
+                  </dl>
+
+                  <p className="mt-3 text-xs text-slate-600">Notiz: {record.note || '-'}</p>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDeliveryNote(record, selectedCompany?.name ?? record.company)}
+                    className="mt-3 w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                  >
+                    Lieferschein PDF
+                  </button>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-4 hidden overflow-x-auto md:block">
+              <table className="w-full min-w-5xl border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-slate-500">
+                    <th className="px-3 py-2">Zeit</th>
+                    <th className="px-3 py-2">Firma</th>
+                    <th className="px-3 py-2">Typ</th>
+                    <th className="px-3 py-2">Produkt</th>
+                    <th className="px-3 py-2">Menge</th>
+                    <th className="px-3 py-2">Einzelpreis</th>
+                    <th className="px-3 py-2">Gesamt</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Notiz</th>
+                    <th className="px-3 py-2 text-right">Aktion</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredRecords.map((record) => (
+                    <tr key={record.id} className="border-b border-slate-100 align-top">
+                      <td className="px-3 py-2 text-slate-600">{record.createdAt}</td>
+                      <td className="px-3 py-2 font-semibold text-slate-900">{record.company}</td>
+                      <td className="px-3 py-2">{typeLabel(record.type)}</td>
+                      <td className="px-3 py-2">{record.productName}</td>
+                      <td className="px-3 py-2">
+                        {record.amount} {record.unit}
+                      </td>
+                      <td className="px-3 py-2">{money(record.unitPrice)}</td>
+                      <td className="px-3 py-2 font-semibold text-slate-900">{money(record.total)}</td>
+                      <td className="px-3 py-2">{record.status}</td>
+                      <td className="px-3 py-2 text-slate-600">{record.note || '-'}</td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => downloadDeliveryNote(record, selectedCompany?.name ?? record.company)}
+                          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                        >
+                          Lieferschein PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
     </main>
