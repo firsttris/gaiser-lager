@@ -66,7 +66,7 @@ function AdminIndexPage() {
   } = useRecordSelection(filteredRecords)
 
   const selectedCompanies = Array.from(new Set(selectedRecords.map((record) => record.company)))
-  const canCreateInvoice = selectedRecords.length > 0 && selectedCompanies.length === 1
+  const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1
 
   function exportSelectedAsCsv() {
     const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
@@ -80,20 +80,9 @@ function AdminIndexPage() {
 
   function createDeliveryNotes() {
     if (selectedRecords.length === 0) return
+    if (selectedCompanies.length !== 1) return
 
-    // Group records by company
-    const recordsByCompany: Record<string, typeof selectedRecords> = {}
-    for (const record of selectedRecords) {
-      if (!recordsByCompany[record.company]) {
-        recordsByCompany[record.company] = []
-      }
-      recordsByCompany[record.company].push(record)
-    }
-
-    // Create a delivery note for each company
-    for (const [company, records] of Object.entries(recordsByCompany)) {
-      downloadCombinedDeliveryNote(records, company)
-    }
+    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0])
   }
 
   function exportSelectedAsInvoicePdf() {
@@ -282,7 +271,7 @@ function AdminIndexPage() {
           <button
             type="button"
             onClick={createDeliveryNotes}
-            disabled={selectedCount === 0}
+            disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Lieferschein ({selectedCount})
@@ -290,16 +279,16 @@ function AdminIndexPage() {
           <button
             type="button"
             onClick={exportSelectedAsInvoicePdf}
-            disabled={!canCreateInvoice}
+            disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             PDF Rechnung ({selectedCount})
           </button>
         </div>
 
-        {selectedCount > 0 && !canCreateInvoice && (
+        {selectedCount > 0 && !canCreateCompanyDocuments && (
           <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-            Rechnung ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.
+            Lieferschein und Rechnung sind nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.
           </p>
         )}
 
