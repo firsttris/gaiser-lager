@@ -92,6 +92,9 @@ function AdminIndexPage() {
 
   const selectedSet = useMemo(() => new Set(selectedRecordIds), [selectedRecordIds])
   const selectedCount = filteredRecords.filter((record) => selectedSet.has(record.id)).length
+  const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
+  const selectedCompanies = Array.from(new Set(selectedRecords.map((record) => record.company)))
+  const canCreateInvoice = selectedRecords.length > 0 && selectedCompanies.length === 1
 
   function toggleRecordSelection(recordId: number) {
     setSelectedRecordIds((prev) => {
@@ -154,94 +157,150 @@ function AdminIndexPage() {
   }
 
   function exportSelectedAsInvoicePdf() {
-    const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
     if (selectedRecords.length === 0) return
+    if (selectedCompanies.length !== 1) return
+
+    const customerName = selectedCompanies[0]
+    const customer = companies.find((company) => company.name === customerName)
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
     const left = 12
+    const right = 198
     let y = 16
 
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(17)
-    pdf.text('Rechnung', left, y)
+    const invoiceNo = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
 
-    y += 7
+    pdf.setDrawColor(220)
+    pdf.setFillColor(248, 250, 252)
+    pdf.roundedRect(left, y, 186, 26, 2, 2, 'FD')
+
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(20)
+    pdf.text('RECHNUNG', left + 4, y + 9)
+    pdf.setFontSize(11)
+    pdf.text('Gaiser Baustoffe', left + 4, y + 16)
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(10)
-    pdf.text(`Erstellt: ${new Date().toLocaleString('de-DE')}`, left, y)
-    y += 5
-    pdf.text(`Positionen: ${selectedRecords.length}`, left, y)
+    pdf.setFontSize(9)
+    pdf.text('Musterstrasse 1, 10115 Berlin', left + 4, y + 21)
 
-    y += 7
     pdf.setFont('helvetica', 'bold')
-    pdf.text('Zeit', left, y)
-    pdf.text('Firma', 46, y)
-    pdf.text('Typ', 95, y)
-    pdf.text('Produkt', 116, y)
-    pdf.text('Gesamt', 193, y, { align: 'right' })
+    pdf.setFontSize(10)
+    pdf.text(`Nr.: ${invoiceNo}`, right - 4, y + 10, { align: 'right' })
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, right - 4, y + 16, { align: 'right' })
+    pdf.text(`Positionen: ${selectedRecords.length}`, right - 4, y + 21, { align: 'right' })
 
-    y += 2
-    pdf.setDrawColor(180)
-    pdf.line(left, y, 198, y)
-    y += 5
+    y += 36
 
-    let totalPickup = 0
-    let totalDropoff = 0
+    pdf.setDrawColor(225)
+    pdf.roundedRect(left, y, 120, 24, 2, 2)
 
-    for (const record of selectedRecords) {
-      if (record.type === 'pickup') totalPickup += record.total
-      if (record.type === 'dropoff') totalDropoff += record.total
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.text('Rechnungsadresse', left + 3, y + 6)
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(customerName, left + 3, y + 11)
+    if (customer?.shortCode) {
+      pdf.text(`Kuerzel: ${customer.shortCode}`, left + 3, y + 16)
+    }
+    pdf.text('z. Hd. Buchhaltung', left + 3, y + 21)
+
+    y += 40
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text(
+      `Leistungszeitraum: ${selectedRecords[0].createdAt} bis ${selectedRecords[selectedRecords.length - 1].createdAt}`,
+      left,
+      y,
+    )
+
+    y += 10
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFillColor(241, 245, 249)
+    pdf.rect(left, y - 4.5, 186, 7.5, 'F')
+    pdf.text('Pos.', left, y)
+    pdf.text('Datum', 24, y)
+    pdf.text('Leistung', 56, y)
+    pdf.text('Menge', 132, y)
+    pdf.text('EP', 158, y)
+    pdf.text('Betrag', right, y, { align: 'right' })
+
+    y += 3
+    pdf.setDrawColor(190)
+    pdf.line(left, y, right, y)
+    y += 7
+
+    let subtotal = 0
+
+    for (const [index, record] of selectedRecords.entries()) {
+      subtotal += record.total
 
       if (y > 270) {
         pdf.addPage()
-        y = 16
+        y = 20
       }
 
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(9)
 
-      const createdAt = record.createdAt.slice(0, 16)
-      const company = record.company.length > 24 ? `${record.company.slice(0, 21)}...` : record.company
-      const product = record.productName.length > 36 ? `${record.productName.slice(0, 33)}...` : record.productName
+      const createdAt = record.createdAt.slice(0, 10)
+      const service = `${flowLabel(record.type)}: ${record.productName}`
+      const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
 
-      pdf.text(createdAt, left, y)
-      pdf.text(company, 46, y)
-      pdf.text(flowLabel(record.type), 95, y)
-      pdf.text(product, 116, y)
-      pdf.text(money(record.total), 193, y, { align: 'right' })
+      pdf.text(String(index + 1), left, y)
+      pdf.text(createdAt, 24, y)
+      pdf.text(serviceShort, 56, y)
+      pdf.text(`${record.amount} ${record.unit}`, 132, y)
+      pdf.text(money(record.unitPrice), 158, y)
+      pdf.text(money(record.total), right, y, { align: 'right' })
 
-      y += 4.5
+      y += 4
 
-      pdf.setTextColor(100)
-      pdf.text(`${record.amount} ${record.unit} x ${money(record.unitPrice)} | Status: ${record.status}`, 116, y)
-      pdf.setTextColor(0)
+      pdf.setDrawColor(235)
+      pdf.line(left, y, right, y)
 
-      y += 5.5
+      y += 6
     }
 
-    if (y > 255) {
+    if (y > 210) {
       pdf.addPage()
-      y = 16
     }
 
-    const net = totalPickup - totalDropoff
+    const vat = subtotal * 0.19
+    const gross = subtotal + vat
+    const summaryBoxWidth = 72
+    const summaryBoxX = 126
+    const summaryTop = 236
 
-    pdf.setDrawColor(180)
-    pdf.line(left, y, 198, y)
-    y += 8
+    pdf.setDrawColor(220)
+    pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 24, 2, 2)
+    y = summaryTop + 7
 
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(10)
-    pdf.text(`Summe Verkauf: ${money(totalPickup)}`, 198, y, { align: 'right' })
+    pdf.text('Zwischensumme (netto):', summaryBoxX + 3, y)
+    pdf.text(money(subtotal), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
     y += 5
-    pdf.text(`Summe Annahme: ${money(totalDropoff)}`, 198, y, { align: 'right' })
+    pdf.text('zzgl. 19% USt.:', summaryBoxX + 3, y)
+    pdf.text(money(vat), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
     y += 6
     pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(12)
-    pdf.text(`Saldo: ${money(net)}`, 198, y, { align: 'right' })
+    pdf.setFontSize(11)
+    pdf.text('Rechnungsbetrag:', summaryBoxX + 3, y)
+    pdf.text(money(gross), summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
+
+    y += 14
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.text('Zahlbar ohne Abzug innerhalb von 14 Tagen.', left, y)
+    y += 5
+    pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
 
     const stamp = toSafeFileDate(new Date().toLocaleString('de-DE'))
-    pdf.save(`rechnung-markierte-eintraege-${stamp}.pdf`)
+    pdf.save(`rechnung-${customer?.shortCode ?? 'kunde'}-${stamp}.pdf`)
   }
 
   return (
@@ -283,12 +342,18 @@ function AdminIndexPage() {
           <button
             type="button"
             onClick={exportSelectedAsInvoicePdf}
-            disabled={selectedCount === 0}
+            disabled={!canCreateInvoice}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             PDF Rechnung ({selectedCount})
           </button>
         </div>
+
+        {selectedCount > 0 && !canCreateInvoice && (
+          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+            Rechnung ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.
+          </p>
+        )}
 
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
