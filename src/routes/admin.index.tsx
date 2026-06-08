@@ -1,50 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
+import { HistorySummaryCards } from '../components/history-summary-cards'
+import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
+import {
+  createHistoryCsv,
+  downloadCsvFile,
+  flowLabel,
+  money,
+  statusLabel,
+  statusStages,
+} from '../utils/history-utils'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
-
-function money(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-  }).format(value)
-}
-
-function flowLabel(type: 'pickup' | 'dropoff') {
-  return type === 'pickup' ? 'Verkauf' : 'Annahme'
-}
-
-const statusStages: Array<{ value: RecordStatus; label: string }> = [
-  { value: 'offen', label: 'Offen' },
-  { value: 'in_bearbeitung', label: 'In Bearbeitung' },
-  { value: 'abgerechnet', label: 'Abgerechnet' },
-  { value: 'bezahlt', label: 'Bezahlt' },
-  { value: 'storniert', label: 'Storniert' },
-]
-
-function statusLabel(status: string) {
-  return statusStages.find((stage) => stage.value === status)?.label ?? status
-}
-
-function csvCell(value: string | number) {
-  const text = String(value).replace(/"/g, '""')
-  return `"${text}"`
-}
-
-function downloadCsvFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
 
 function toSafeFileDate(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, '-')
@@ -56,7 +25,6 @@ function AdminIndexPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
-  const [selectedRecordIds, setSelectedRecordIds] = useState<number[]>([])
 
   const companyOptions = useMemo(() => {
     return companies.map((company) => company.name).sort((a, b) => a.localeCompare(b, 'de'))
@@ -90,67 +58,25 @@ function AdminIndexPage() {
     .filter((record) => record.type === 'dropoff')
     .reduce((sum, record) => sum + record.total, 0)
 
-  const selectedSet = useMemo(() => new Set(selectedRecordIds), [selectedRecordIds])
-  const selectedCount = filteredRecords.filter((record) => selectedSet.has(record.id)).length
-  const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
+  const {
+    selectedSet,
+    selectedRecords,
+    selectedCount,
+    areAllVisibleSelected,
+    toggleRecordSelection,
+    selectAllVisible,
+    deselectVisible,
+    clearSelection,
+  } = useRecordSelection(filteredRecords)
+
   const selectedCompanies = Array.from(new Set(selectedRecords.map((record) => record.company)))
   const canCreateInvoice = selectedRecords.length > 0 && selectedCompanies.length === 1
-
-  function toggleRecordSelection(recordId: number) {
-    setSelectedRecordIds((prev) => {
-      if (prev.includes(recordId)) {
-        return prev.filter((id) => id !== recordId)
-      }
-
-      return [...prev, recordId]
-    })
-  }
-
-  function selectAllVisible() {
-    setSelectedRecordIds((prev) => {
-      const next = new Set(prev)
-      filteredRecords.forEach((record) => next.add(record.id))
-      return Array.from(next)
-    })
-  }
-
-  function clearSelection() {
-    setSelectedRecordIds([])
-  }
 
   function exportSelectedAsCsv() {
     const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
     if (selectedRecords.length === 0) return
 
-    const header = [
-      'Zeit',
-      'Firma',
-      'Typ',
-      'Produkt',
-      'Menge',
-      'Einheit',
-      'Einzelpreis EUR',
-      'Gesamt EUR',
-      'Status',
-      'Notiz',
-    ]
-
-    const rows = selectedRecords.map((record) => [
-      record.createdAt,
-      record.company,
-      flowLabel(record.type),
-      record.productName,
-      record.amount,
-      record.unit,
-      record.unitPrice,
-      record.total,
-      statusLabel(record.status),
-      record.note || '-',
-    ])
-
-    const csv = [header, ...rows]
-      .map((row) => row.map((cell) => csvCell(cell)).join(';'))
-      .join('\n')
+    const csv = createHistoryCsv(selectedRecords, true)
 
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
@@ -412,24 +338,12 @@ function AdminIndexPage() {
           </label>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Annahme</p>
-            <p className="text-lg font-semibold text-slate-900">{dropoffCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Verkauf</p>
-            <p className="text-lg font-semibold text-slate-900">{pickupCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Summe Verkauf</p>
-            <p className="text-lg font-semibold text-emerald-700">{money(totalRevenue)}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Summe Annahme</p>
-            <p className="text-lg font-semibold text-rose-700">{money(totalCosts)}</p>
-          </div>
-        </div>
+        <HistorySummaryCards
+          pickupCount={pickupCount}
+          dropoffCount={dropoffCount}
+          totalRevenue={totalRevenue}
+          totalCosts={totalCosts}
+        />
 
         {filteredRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -510,12 +424,12 @@ function AdminIndexPage() {
                     <th className="w-8 px-2 py-2">
                       <input
                         type="checkbox"
-                        checked={filteredRecords.length > 0 && filteredRecords.every((record) => selectedSet.has(record.id))}
+                        checked={areAllVisibleSelected}
                         onChange={(event) => {
                           if (event.target.checked) {
                             selectAllVisible()
                           } else {
-                            setSelectedRecordIds((prev) => prev.filter((id) => !filteredRecords.some((record) => record.id === id)))
+                            deselectVisible()
                           }
                         }}
                         className="h-4 w-4 rounded border-slate-300"

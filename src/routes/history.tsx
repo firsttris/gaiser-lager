@@ -1,22 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
+import { HistorySummaryCards } from '../components/history-summary-cards'
+import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
+import { createHistoryCsv, downloadCsvFile, flowLabel, money } from '../utils/history-utils'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
-
-function money(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-  }).format(value)
-}
-
-function typeLabel(type: 'pickup' | 'dropoff') {
-  return type === 'pickup' ? 'Verkauf' : 'Annahme'
-}
 
 function toFileSafeDate(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, '-')
@@ -52,7 +43,7 @@ function appendDeliveryNotePage(pdf: jsPDF, record: RecordItem, companyName: str
   y += 5
   pdf.text(`Firma: ${companyName}`, left, y)
   y += 5
-  pdf.text(`Vorgang: ${typeLabel(record.type)}`, left, y)
+  pdf.text(`Vorgang: ${flowLabel(record.type)}`, left, y)
 
   y += 10
   pdf.setFont('helvetica', 'bold')
@@ -145,7 +136,7 @@ function downloadCombinedDeliveryNote(records: RecordItem[], companyName: string
 
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(9)
-    pdf.text(`Belegnummer: ${record.id} | Vorgang: ${typeLabel(record.type)} | Zeit: ${record.createdAt}`, left, y)
+    pdf.text(`Belegnummer: ${record.id} | Vorgang: ${flowLabel(record.type)} | Zeit: ${record.createdAt}`, left, y)
     y += 5
     pdf.text(`Menge: ${record.amount} ${record.unit} | Einzelpreis: ${money(record.unitPrice)} | Gesamt: ${money(record.total)}`, left, y)
     y += 5
@@ -188,7 +179,6 @@ function HistoryPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
-  const [selectedRecordIds, setSelectedRecordIds] = useState<number[]>([])
 
   const companyRecords = records.filter((record) => record.company === selectedCompany?.name)
 
@@ -219,36 +209,30 @@ function HistoryPage() {
     .filter((record) => record.type === 'dropoff')
     .reduce((sum, record) => sum + record.total, 0)
 
-  const selectedSet = useMemo(() => new Set(selectedRecordIds), [selectedRecordIds])
-  const selectedCount = filteredRecords.filter((record) => selectedSet.has(record.id)).length
-
-  function toggleRecordSelection(recordId: number) {
-    setSelectedRecordIds((prev) => {
-      if (prev.includes(recordId)) {
-        return prev.filter((id) => id !== recordId)
-      }
-
-      return [...prev, recordId]
-    })
-  }
-
-  function selectAllVisible() {
-    setSelectedRecordIds((prev) => {
-      const next = new Set(prev)
-      filteredRecords.forEach((record) => next.add(record.id))
-      return Array.from(next)
-    })
-  }
-
-  function clearSelection() {
-    setSelectedRecordIds([])
-  }
+  const {
+    selectedSet,
+    selectedRecords,
+    selectedCount,
+    areAllVisibleSelected,
+    toggleRecordSelection,
+    selectAllVisible,
+    deselectVisible,
+    clearSelection,
+  } = useRecordSelection(filteredRecords)
 
   function createCombinedDeliveryNote() {
-    const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
     if (selectedRecords.length === 0) return
 
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '')
+  }
+
+  function exportSelectedAsCsv() {
+    if (selectedRecords.length === 0) return
+
+    const csv = createHistoryCsv(selectedRecords, false)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const company = selectedCompany?.shortCode?.toLowerCase() ?? 'kunde'
+    downloadCsvFile(`history-${company}-${stamp}.csv`, csv)
   }
 
   if (!isLoggedIn) {
@@ -325,24 +309,12 @@ function HistoryPage() {
           </label>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Annahme</p>
-            <p className="text-lg font-semibold text-slate-900">{dropoffCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Verkauf</p>
-            <p className="text-lg font-semibold text-slate-900">{pickupCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Summe Verkauf</p>
-            <p className="text-lg font-semibold text-emerald-700">{money(totalRevenue)}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs text-slate-500">Summe Annahme</p>
-            <p className="text-lg font-semibold text-rose-700">{money(totalCosts)}</p>
-          </div>
-        </div>
+        <HistorySummaryCards
+          pickupCount={pickupCount}
+          dropoffCount={dropoffCount}
+          totalRevenue={totalRevenue}
+          totalCosts={totalCosts}
+        />
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
@@ -367,6 +339,14 @@ function HistoryPage() {
           >
             Lieferschein erstellen ({selectedCount})
           </button>
+          <button
+            type="button"
+            onClick={exportSelectedAsCsv}
+            disabled={selectedCount === 0}
+            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            CSV Export ({selectedCount})
+          </button>
         </div>
 
         {filteredRecords.length === 0 ? (
@@ -384,7 +364,7 @@ function HistoryPage() {
                       <p className="mt-1 text-sm font-semibold text-slate-900">{record.productName}</p>
                     </div>
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                      {typeLabel(record.type)}
+                      {flowLabel(record.type)}
                     </span>
                     <input
                       type="checkbox"
@@ -431,12 +411,12 @@ function HistoryPage() {
                     <th className="w-8 px-2 py-2">
                       <input
                         type="checkbox"
-                        checked={filteredRecords.length > 0 && filteredRecords.every((record) => selectedSet.has(record.id))}
+                        checked={areAllVisibleSelected}
                         onChange={(event) => {
                           if (event.target.checked) {
                             selectAllVisible()
                           } else {
-                            setSelectedRecordIds((prev) => prev.filter((id) => !filteredRecords.some((record) => record.id === id)))
+                            deselectVisible()
                           }
                         }}
                         className="h-4 w-4 rounded border-slate-300"
@@ -466,7 +446,7 @@ function HistoryPage() {
                       />
                     </td>
                     <td className="px-2 py-2 text-xs text-slate-600">{record.createdAt}</td>
-                    <td className="px-2 py-2">{typeLabel(record.type)}</td>
+                    <td className="px-2 py-2">{flowLabel(record.type)}</td>
                     <td className="px-2 py-2">
                       <p className="truncate" title={record.productName}>{record.productName}</p>
                     </td>
