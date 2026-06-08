@@ -57,8 +57,7 @@ function App() {
               ohne Umwege.
             </h1>
             <p className="max-w-sm text-slate-600">
-              Firma suchen, PIN eingeben, Vorgang anlegen. Komplett mobilfreundlich und ohne
-              komplizierten Account-Prozess.
+              Firma suchen, PIN eingeben, Vorgang anlegen. Lieferschein runterladen.
             </p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold">Demo-Hinweis</p>
