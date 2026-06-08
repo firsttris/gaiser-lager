@@ -67,7 +67,7 @@ type AppState = {
 }
 
 const companiesSeed: Company[] = [
-  { id: 'kr', shortCode: 'KR', name: 'Kramfahrt GmbH', pin: '1234' },
+  { id: 'kr', shortCode: 'KR', name: 'Krampfert Wohnbau GmbH', pin: '1234' },
   { id: 'be', shortCode: 'BE', name: 'Bergbau Erden AG', pin: '2468' },
   { id: 'no', shortCode: 'NO', name: 'Nordstein Bau', pin: '7777' },
   { id: 'wa', shortCode: 'WA', name: 'Walter Tiefbau KG', pin: '2222' },

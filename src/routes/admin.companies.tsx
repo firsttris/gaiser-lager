@@ -55,7 +55,7 @@ function AdminCompaniesPage() {
           <input
             value={companyName}
             onChange={(event) => setCompanyName(event.target.value)}
-            placeholder="z.B. Kramfahrt GmbH"
+            placeholder="z.B. Krampfert Wohnbau GmbH"
             className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800"
           />
         </div>

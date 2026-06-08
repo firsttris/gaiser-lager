@@ -62,7 +62,7 @@ function App() {
             </p>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-semibold">Demo-Hinweis</p>
-              <p>Beispiel: KR fuer Kramfahrt, PIN 1234.</p>
+              <p>Beispiel: KR fuer Krampfert Wohnbau GmbH, PIN 1234.</p>
             </div>
           </div>
 
@@ -75,7 +75,7 @@ function App() {
                   setQuery(event.target.value)
                   setSelectedCompanyId(null)
                 }}
-                placeholder="z.B. KR oder Kramfahrt"
+                placeholder="z.B. KR oder Krampfert Wohnbau GmbH"
                 className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-amber-500"
               />
 
