@@ -24,9 +24,9 @@ const config = defineConfig({
       injectRegister: null,
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'Gaiser Dashboard',
-        short_name: 'Gaiser',
-        description: 'Gaiser Baustoffe Dashboard für Login, Historie und Wizard.',
+        name: 'Gaiser Lager',
+        short_name: 'Gaiser Lager',
+        description: 'Gaiser Lager',
         start_url: '/',
         scope: '/',
         display: 'standalone',
