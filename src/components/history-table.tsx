@@ -24,7 +24,7 @@ export function HistoryTable({
     <>
       <div className="mt-4 space-y-3 md:hidden">
         {records.map((record) => (
-          <article key={record.id} className="rounded-xl border border-slate-200 p-4">
+          <article key={record.id} className="rounded-xl border border-slate-200 p-4 odd:bg-white even:bg-slate-50">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-slate-500">{record.createdAt}</p>
