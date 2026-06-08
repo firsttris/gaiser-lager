@@ -86,7 +86,22 @@ function AdminCompaniesPage() {
         <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{companySuccess}</p>
       )}
 
-      <div className="mt-5 overflow-x-auto">
+      <div className="mt-5 space-y-3 md:hidden">
+        {companies.map((company) => (
+          <article key={company.id} className="rounded-xl border border-slate-200 p-4">
+            <p className="text-xs text-slate-500">Kuerzel</p>
+            <p className="text-sm font-semibold text-slate-900">{company.shortCode}</p>
+
+            <p className="mt-3 text-xs text-slate-500">Firma</p>
+            <p className="text-sm text-slate-800">{company.name}</p>
+
+            <p className="mt-3 text-xs text-slate-500">PIN</p>
+            <p className="text-sm font-semibold text-slate-800">{company.pin}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-5 hidden overflow-x-auto md:block">
         <table className="w-full min-w-2xl border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">

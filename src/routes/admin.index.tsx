@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
-import { useAppState } from '../state/app-state'
+import { type RecordStatus, useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
@@ -15,6 +15,18 @@ function money(value: number) {
 
 function flowLabel(type: 'pickup' | 'dropoff') {
   return type === 'pickup' ? 'Verkauf' : 'Annahme'
+}
+
+const statusStages: Array<{ value: RecordStatus; label: string }> = [
+  { value: 'offen', label: 'Offen' },
+  { value: 'in_bearbeitung', label: 'In Bearbeitung' },
+  { value: 'abgerechnet', label: 'Abgerechnet' },
+  { value: 'bezahlt', label: 'Bezahlt' },
+  { value: 'storniert', label: 'Storniert' },
+]
+
+function statusLabel(status: string) {
+  return statusStages.find((stage) => stage.value === status)?.label ?? status
 }
 
 function csvCell(value: string | number) {
@@ -39,10 +51,10 @@ function toSafeFileDate(value: string) {
 }
 
 function AdminIndexPage() {
-  const { companies, records } = useAppState()
+  const { companies, records, updateRecordStatus } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
   const [searchText, setSearchText] = useState('')
   const [selectedRecordIds, setSelectedRecordIds] = useState<number[]>([])
 
@@ -129,7 +141,7 @@ function AdminIndexPage() {
       record.unit,
       record.unitPrice,
       record.total,
-      record.status,
+      statusLabel(record.status),
       record.note || '-',
     ])
 
@@ -312,13 +324,13 @@ function AdminIndexPage() {
             Status
             <select
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) => setStatusFilter(event.target.value as 'all' | RecordStatus)}
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Status</option>
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {statusLabel(status)}
                 </option>
               ))}
             </select>
@@ -400,11 +412,26 @@ function AdminIndexPage() {
                     </div>
                     <div>
                       <dt className="text-slate-500">Status</dt>
-                      <dd className="font-semibold text-slate-800">{record.status}</dd>
+                      <dd className="font-semibold text-slate-800">{statusLabel(record.status)}</dd>
                     </div>
                   </dl>
 
                   <p className="mt-3 text-xs text-slate-600">Notiz: {record.note || '-'}</p>
+
+                  <label className="mt-3 block text-xs font-semibold text-slate-700">
+                    Status
+                    <select
+                      value={record.status}
+                      onChange={(event) => updateRecordStatus(record.id, event.target.value as RecordStatus)}
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs font-normal outline-none focus:border-slate-800"
+                    >
+                      {statusStages.map((stage) => (
+                        <option key={stage.value} value={stage.value}>
+                          {stage.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </article>
               ))}
             </div>
@@ -460,7 +487,19 @@ function AdminIndexPage() {
                       </td>
                       <td className="px-3 py-2">{money(record.unitPrice)}</td>
                       <td className="px-3 py-2 font-semibold text-slate-900">{money(record.total)}</td>
-                      <td className="px-3 py-2">{record.status}</td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={record.status}
+                          onChange={(event) => updateRecordStatus(record.id, event.target.value as RecordStatus)}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-normal outline-none focus:border-slate-800"
+                        >
+                          {statusStages.map((stage) => (
+                            <option key={stage.value} value={stage.value}>
+                              {stage.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td className="px-3 py-2 text-slate-600">{record.note || '-'}</td>
                     </tr>
                   ))}

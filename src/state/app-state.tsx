@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type FlowType = 'pickup' | 'dropoff'
+export type RecordStatus = 'offen' | 'in_bearbeitung' | 'abgerechnet' | 'bezahlt' | 'storniert'
 
 export type Company = {
   id: string
@@ -28,7 +29,7 @@ export type RecordItem = {
   unitPrice: number
   total: number
   note: string
-  status: string
+  status: RecordStatus
   createdAt: string
 }
 
@@ -62,6 +63,7 @@ type AppState = {
   createRecord: (input: CreateRecordInput) => void
   createCompany: (input: CreateCompanyInput) => CreateCompanyResult
   updateProduct: (productId: number, field: keyof Product, value: string) => void
+  updateRecordStatus: (recordId: number, status: RecordStatus) => void
 }
 
 const companiesSeed: Company[] = [
@@ -314,6 +316,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               ...item,
               [field]: value,
             }
+          }),
+        )
+      },
+      updateRecordStatus: (recordId: number, status: RecordStatus) => {
+        setRecords((prev) =>
+          prev.map((record) => {
+            if (record.id !== recordId) return record
+            return { ...record, status }
           }),
         )
       },

@@ -20,7 +20,40 @@ function AdminProductsPage() {
           <h3 className="font-title text-3xl text-slate-900">Annahme (Material bringen)</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Kundenanlieferungen.</p>
 
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 space-y-3 md:hidden">
+            {dropoffProducts.map((product) => (
+              <article key={product.id} className="rounded-xl border border-slate-200 p-4">
+                <label className="text-xs font-semibold text-slate-600">Material</label>
+                <input
+                  value={product.name}
+                  onChange={(event) => updateProduct(product.id, 'name', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Einheit</label>
+                    <input
+                      value={product.unit}
+                      onChange={(event) => updateProduct(product.id, 'unit', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Preis bringen</label>
+                    <input
+                      value={product.dropoffPrice}
+                      onChange={(event) => updateProduct(product.id, 'dropoffPrice', event.target.value)}
+                      inputMode="decimal"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-3 hidden overflow-x-auto md:block">
             <table className="w-full min-w-3xl border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
@@ -65,7 +98,40 @@ function AdminProductsPage() {
           <h3 className="font-title text-3xl text-slate-900">Verkauf (Material holen)</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Materialabholung durch den Kunden.</p>
 
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 space-y-3 md:hidden">
+            {pickupProducts.map((product) => (
+              <article key={product.id} className="rounded-xl border border-slate-200 p-4">
+                <label className="text-xs font-semibold text-slate-600">Material</label>
+                <input
+                  value={product.name}
+                  onChange={(event) => updateProduct(product.id, 'name', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Einheit</label>
+                    <input
+                      value={product.unit}
+                      onChange={(event) => updateProduct(product.id, 'unit', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-600">Preis holen</label>
+                    <input
+                      value={product.pickupPrice}
+                      onChange={(event) => updateProduct(product.id, 'pickupPrice', event.target.value)}
+                      inputMode="decimal"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-3 hidden overflow-x-auto md:block">
             <table className="w-full min-w-3xl border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-slate-500">
