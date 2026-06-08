@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { HistoryTable } from '../components/history-table'
 import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
-import { createHistoryCsv, downloadCsvFile, flowLabel, money } from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
@@ -174,117 +175,13 @@ function HistoryPage() {
             Keine Eintraege fuer die aktuellen Filter vorhanden.
           </p>
         ) : (
-          <>
-            <div className="mt-4 space-y-3 md:hidden">
-              {filteredRecords.map((record) => (
-                <article key={record.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-slate-500">{record.createdAt}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{record.productName}</p>
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                      {flowLabel(record.type)}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(record.id)}
-                      onChange={() => toggleRecordSelection(record.id)}
-                      className="h-4 w-4 rounded border-slate-300"
-                      aria-label={`Eintrag ${record.id} markieren`}
-                    />
-                  </div>
-
-                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <dt className="text-slate-500">Menge</dt>
-                      <dd className="font-semibold text-slate-800">
-                        {record.amount} {record.unit}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Einzelpreis</dt>
-                      <dd className="font-semibold text-slate-800">{money(record.unitPrice)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Gesamt</dt>
-                      <dd className="font-semibold text-slate-900">{money(record.total)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-slate-500">Status</dt>
-                      <dd className="font-semibold text-slate-800">{record.status}</dd>
-                    </div>
-                  </dl>
-
-                  <p className="mt-3 max-w-full whitespace-pre-wrap wrap-break-word text-xs text-slate-600">
-                    Notiz: {record.note || '-'}
-                  </p>
-
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-4 hidden md:block">
-              <table className="w-full table-fixed border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-500">
-                    <th className="w-8 px-2 py-2">
-                      <input
-                        type="checkbox"
-                        checked={areAllVisibleSelected}
-                        onChange={(event) => {
-                          if (event.target.checked) {
-                            selectAllVisible()
-                          } else {
-                            deselectVisible()
-                          }
-                        }}
-                        className="h-4 w-4 rounded border-slate-300"
-                        aria-label="Alle sichtbaren Eintraege markieren"
-                      />
-                    </th>
-                    <th className="w-28 px-2 py-2">Zeit</th>
-                    <th className="w-20 px-2 py-2">Typ</th>
-                    <th className="px-2 py-2">Produkt</th>
-                    <th className="w-16 px-2 py-2">Menge</th>
-                    <th className="hidden w-24 px-2 py-2 lg:table-cell">Preis</th>
-                    <th className="w-24 px-2 py-2">Gesamt</th>
-                    <th className="w-24 px-2 py-2">Status</th>
-                    <th className="hidden w-44 px-2 py-2 xl:table-cell">Notiz</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRecords.map((record) => (
-                    <tr key={record.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
-                    <td className="px-2 pb-2 pt-2.5">
-                      <input
-                        type="checkbox"
-                        checked={selectedSet.has(record.id)}
-                        onChange={() => toggleRecordSelection(record.id)}
-                        className="h-4 w-4 rounded border-slate-300"
-                        aria-label={`Eintrag ${record.id} markieren`}
-                      />
-                    </td>
-                    <td className="px-2 py-2 text-xs text-slate-600">{record.createdAt}</td>
-                    <td className="px-2 py-2">{flowLabel(record.type)}</td>
-                    <td className="px-2 py-2">
-                      <p className="truncate" title={record.productName}>{record.productName}</p>
-                    </td>
-                    <td className="px-2 py-2 text-xs">
-                      {record.amount} {record.unit}
-                    </td>
-                    <td className="hidden px-2 py-2 lg:table-cell">{money(record.unitPrice)}</td>
-                    <td className="px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
-                    <td className="px-2 py-2 text-xs">{record.status}</td>
-                    <td className="hidden px-2 py-2 text-slate-600 xl:table-cell">
-                      <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.note || '-'}</p>
-                    </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+          <HistoryTable
+            records={filteredRecords}
+            selectedSet={selectedSet}
+            areAllVisibleSelected={areAllVisibleSelected}
+            onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
+            onToggle={toggleRecordSelection}
+          />
         )}
       </section>
     </PageShell>
