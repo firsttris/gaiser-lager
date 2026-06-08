@@ -11,13 +11,10 @@ function AdminProductsPage() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-5xl text-slate-900">Produkte</h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Reiner Prototyp ohne API. Werte werden nur lokal im Browser gespeichert.
-      </p>
 
       <div className="mt-6 space-y-8">
         <div>
-          <h3 className="font-title text-3xl text-slate-900">Annahme (Material bringen)</h3>
+          <h3 className="font-title text-3xl text-slate-900">Annahme</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Kundenanlieferungen.</p>
 
           <div className="mt-3 space-y-3 md:hidden">
@@ -40,7 +37,7 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis bringen</label>
+                    <label className="text-xs font-semibold text-slate-600">Preis</label>
                     <input
                       value={product.dropoffPrice}
                       onChange={(event) => updateProduct(product.id, 'dropoffPrice', event.target.value)}
@@ -59,7 +56,7 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis bringen</th>
+                  <th className="px-3 py-2">Preis</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,7 +92,7 @@ function AdminProductsPage() {
         </div>
 
         <div>
-          <h3 className="font-title text-3xl text-slate-900">Verkauf (Material holen)</h3>
+          <h3 className="font-title text-3xl text-slate-900">Verkauf</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Materialabholung durch den Kunden.</p>
 
           <div className="mt-3 space-y-3 md:hidden">
@@ -118,7 +115,7 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis holen</label>
+                    <label className="text-xs font-semibold text-slate-600">Preis</label>
                     <input
                       value={product.pickupPrice}
                       onChange={(event) => updateProduct(product.id, 'pickupPrice', event.target.value)}
@@ -137,7 +134,7 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis holen</th>
+                  <th className="px-3 py-2">Preis</th>
                 </tr>
               </thead>
               <tbody>
