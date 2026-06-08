@@ -37,7 +37,12 @@ jobs:
           npm run build -- --base "/${REPO_NAME}/"
 
       - name: Add SPA fallback for client-side routes
-        run: cp dist/client/index.html dist/client/404.html
+        run: |
+          if [ -f dist/client/index.html ]; then
+            cp dist/client/index.html dist/client/404.html
+          else
+            echo "No dist/client/index.html found; skipping 404 fallback copy."
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
