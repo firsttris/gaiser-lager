@@ -54,6 +54,39 @@ type CreateCompanyInput = {
   priceCategory: PriceCategory
 }
 
+type CreateProductInput = {
+  name: string
+  unit: string
+  flow: FlowType
+  privatePrice: string
+  businessPrice: string
+}
+
+type UpdateCompanyInput = {
+  id: string
+  shortCode: string
+  name: string
+  pin: string
+  priceCategory: PriceCategory
+}
+
+type UpdateProductInput = {
+  id: number
+  name: string
+  unit: string
+  flow: FlowType
+  privatePrice: string
+  businessPrice: string
+}
+
+type DeleteCompanyInput = {
+  id: string
+}
+
+type DeleteProductInput = {
+  id: number
+}
+
 type AppState = {
   companies: Company[]
   selectedCompany: Company | null
@@ -67,7 +100,11 @@ type AppState = {
   adminLogout: () => void
   createRecord: (input: CreateRecordInput) => void
   createCompany: (input: CreateCompanyInput) => CreateCompanyResult
-  updateProduct: (productId: number, field: keyof Product, value: string) => void
+  updateCompany: (input: UpdateCompanyInput) => CreateCompanyResult
+  deleteCompany: (input: DeleteCompanyInput) => CreateCompanyResult
+  createProduct: (input: CreateProductInput) => CreateCompanyResult
+  updateProduct: (input: UpdateProductInput) => CreateCompanyResult
+  deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
 }
 
@@ -388,29 +425,188 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setCompanies((prev) => [...prev, company])
         return { ok: true }
       },
-      updateProduct: (productId: number, field: keyof Product, value: string) => {
-        setProducts((prev) =>
-          prev.map((item) => {
-            if (item.id !== productId) return item
+      updateCompany: ({ id, shortCode, name, pin, priceCategory }: UpdateCompanyInput) => {
+        const company = companies.find((item) => item.id === id)
+        if (!company) {
+          return { ok: false, message: 'Die Firma wurde nicht gefunden.' }
+        }
 
-            if (
-              field === 'pickupPrivatePrice' ||
-              field === 'pickupBusinessPrice' ||
-              field === 'dropoffPrivatePrice' ||
-              field === 'dropoffBusinessPrice'
-            ) {
-              return {
-                ...item,
-                [field]: Number(value) || 0,
-              }
-            }
+        const cleanedShortCode = shortCode.trim().toUpperCase()
+        const cleanedName = name.trim()
+        const cleanedPin = pin.replace(/[^0-9]/g, '').slice(0, 4)
 
-            return {
-              ...item,
-              [field]: value,
-            }
-          }),
+        if (!cleanedShortCode || !cleanedName) {
+          return { ok: false, message: 'Bitte Firmenname und Kuerzel ausfuellen.' }
+        }
+
+        if (cleanedPin.length !== 4) {
+          return { ok: false, message: 'Die PIN muss 4-stellig sein.' }
+        }
+
+        const hasShortCode = companies.some(
+          (item) => item.id !== id && item.shortCode.toUpperCase() === cleanedShortCode,
         )
+        if (hasShortCode) {
+          return { ok: false, message: 'Das Firmenkuerzel ist bereits vergeben.' }
+        }
+
+        const updatedCompany: Company = {
+          id,
+          shortCode: cleanedShortCode,
+          name: cleanedName,
+          pin: cleanedPin,
+          priceCategory,
+        }
+
+        setCompanies((prev) => prev.map((item) => (item.id === id ? updatedCompany : item)))
+
+        if (selectedCompany?.id === id) {
+          setSelectedCompany(updatedCompany)
+        }
+
+        if (company.name !== cleanedName) {
+          setRecords((prev) =>
+            prev.map((record) => {
+              if (record.company !== company.name) return record
+              return { ...record, company: cleanedName }
+            }),
+          )
+        }
+
+        return { ok: true }
+      },
+      deleteCompany: ({ id }: DeleteCompanyInput) => {
+        const company = companies.find((item) => item.id === id)
+        if (!company) {
+          return { ok: false, message: 'Die Firma wurde nicht gefunden.' }
+        }
+
+        if (companies.length <= 1) {
+          return { ok: false, message: 'Mindestens eine Firma muss vorhanden sein.' }
+        }
+
+        const hasHistory = records.some((record) => record.company === company.name)
+        if (hasHistory) {
+          return {
+            ok: false,
+            message: 'Firma kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+          }
+        }
+
+        setCompanies((prev) => prev.filter((item) => item.id !== id))
+
+        if (selectedCompany?.id === id) {
+          setSelectedCompany(null)
+        }
+
+        return { ok: true }
+      },
+      createProduct: ({ name, unit, flow, privatePrice, businessPrice }: CreateProductInput) => {
+        const cleanedName = name.trim()
+        const cleanedUnit = unit.trim()
+        const parsedPrivatePrice = Number(privatePrice)
+        const parsedBusinessPrice = Number(businessPrice)
+
+        if (!cleanedName || !cleanedUnit) {
+          return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' }
+        }
+
+        if (
+          Number.isNaN(parsedPrivatePrice) ||
+          Number.isNaN(parsedBusinessPrice) ||
+          parsedPrivatePrice < 0 ||
+          parsedBusinessPrice < 0
+        ) {
+          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+        }
+
+        const nextId = products.reduce((maxValue, product) => Math.max(maxValue, product.id), 0) + 1
+        const product: Product = {
+          id: nextId,
+          name: cleanedName,
+          unit: cleanedUnit,
+          flow,
+          pickupPrivatePrice: flow === 'pickup' ? parsedPrivatePrice : 0,
+          pickupBusinessPrice: flow === 'pickup' ? parsedBusinessPrice : 0,
+          dropoffPrivatePrice: flow === 'dropoff' ? parsedPrivatePrice : 0,
+          dropoffBusinessPrice: flow === 'dropoff' ? parsedBusinessPrice : 0,
+        }
+
+        setProducts((prev) => [...prev, product])
+        return { ok: true }
+      },
+      updateProduct: ({ id, name, unit, flow, privatePrice, businessPrice }: UpdateProductInput) => {
+        const currentProduct = products.find((item) => item.id === id)
+        if (!currentProduct) {
+          return { ok: false, message: 'Das Produkt wurde nicht gefunden.' }
+        }
+
+        const cleanedName = name.trim()
+        const cleanedUnit = unit.trim()
+        const parsedPrivatePrice = Number(privatePrice)
+        const parsedBusinessPrice = Number(businessPrice)
+
+        if (!cleanedName || !cleanedUnit) {
+          return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' }
+        }
+
+        if (
+          Number.isNaN(parsedPrivatePrice) ||
+          Number.isNaN(parsedBusinessPrice) ||
+          parsedPrivatePrice < 0 ||
+          parsedBusinessPrice < 0
+        ) {
+          return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' }
+        }
+
+        const updatedProduct: Product = {
+          id,
+          name: cleanedName,
+          unit: cleanedUnit,
+          flow,
+          pickupPrivatePrice: flow === 'pickup' ? parsedPrivatePrice : 0,
+          pickupBusinessPrice: flow === 'pickup' ? parsedBusinessPrice : 0,
+          dropoffPrivatePrice: flow === 'dropoff' ? parsedPrivatePrice : 0,
+          dropoffBusinessPrice: flow === 'dropoff' ? parsedBusinessPrice : 0,
+        }
+
+        setProducts((prev) => prev.map((item) => (item.id === id ? updatedProduct : item)))
+
+        if (currentProduct.name !== cleanedName) {
+          setRecords((prev) =>
+            prev.map((record) => {
+              if (record.productName !== currentProduct.name) return record
+              return { ...record, productName: cleanedName }
+            }),
+          )
+        }
+
+        return { ok: true }
+      },
+      deleteProduct: ({ id }: DeleteProductInput) => {
+        const currentProduct = products.find((item) => item.id === id)
+        if (!currentProduct) {
+          return { ok: false, message: 'Das Produkt wurde nicht gefunden.' }
+        }
+
+        const hasHistory = records.some((record) => record.productName === currentProduct.name)
+        if (hasHistory) {
+          return {
+            ok: false,
+            message: 'Produkt kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+          }
+        }
+
+        const flowCount = products.filter((item) => item.flow === currentProduct.flow).length
+        if (flowCount <= 1) {
+          return {
+            ok: false,
+            message: 'Mindestens ein Produkt pro Typ muss vorhanden sein.',
+          }
+        }
+
+        setProducts((prev) => prev.filter((item) => item.id !== id))
+        return { ok: true }
       },
       updateRecordStatus: (recordId: number, status: RecordStatus) => {
         setRecords((prev) =>
