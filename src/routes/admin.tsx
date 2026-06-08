@@ -75,15 +75,18 @@ function AdminPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
-      <header className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:flex sm:items-center sm:justify-between">
+      <header className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Admin Bereich</p>
-          <h1 className="font-title text-5xl text-slate-900">Gaiser Verwaltung</h1>
+          <div>
+            <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Admin Bereich</p>
+            <h1 className="font-title text-5xl text-slate-900">Gaiser Verwaltung</h1>
+          </div>
         </div>
-        <div className="mt-3 flex gap-2 sm:mt-0">
+
+        <div className="mt-4 flex flex-col gap-2 sm:mt-3 sm:flex-row">
           <Link
             to="/admin"
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-4 py-2 text-center text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
             activeOptions={{ exact: true }}
             activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline' }}
           >
@@ -91,14 +94,14 @@ function AdminPage() {
           </Link>
           <Link
             to="/admin/products"
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-4 py-2 text-center text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
             activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline' }}
           >
             Produkte
           </Link>
           <Link
             to="/admin/companies"
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-4 py-2 text-center text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
             activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline' }}
           >
             Firmen
@@ -106,7 +109,7 @@ function AdminPage() {
           <button
             type="button"
             onClick={adminLogout}
-            className="rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-200"
+            className="rounded-xl bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-900 hover:bg-amber-200"
           >
             Abmelden
           </button>
