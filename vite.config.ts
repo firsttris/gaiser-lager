@@ -12,6 +12,13 @@ const config = defineConfig({
   plugins: [
     devtools(),
     tailwindcss(),
+    tanstackStart({
+      prerender: {
+        enabled: true,
+        crawlLinks: true,
+      },
+    }),
+    viteReact(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -51,13 +58,6 @@ const config = defineConfig({
         enabled: true,
       },
     }),
-    tanstackStart({
-      prerender: {
-        enabled: true,
-        crawlLinks: true,
-      },
-    }),
-    viteReact(),
   ],
 })
 
