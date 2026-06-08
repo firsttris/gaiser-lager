@@ -203,12 +203,7 @@ function HistoryPage() {
 
   const pickupCount = filteredRecords.filter((record) => record.type === 'pickup').length
   const dropoffCount = filteredRecords.filter((record) => record.type === 'dropoff').length
-  const totalRevenue = filteredRecords
-    .filter((record) => record.type === 'pickup')
-    .reduce((sum, record) => sum + record.total, 0)
-  const totalCosts = filteredRecords
-    .filter((record) => record.type === 'dropoff')
-    .reduce((sum, record) => sum + record.total, 0)
+  const totalAmount = filteredRecords.reduce((sum, record) => sum + record.total, 0)
 
   const {
     selectedSet,
@@ -313,8 +308,8 @@ function HistoryPage() {
         <HistorySummaryCards
           pickupCount={pickupCount}
           dropoffCount={dropoffCount}
-          totalRevenue={totalRevenue}
-          totalCosts={totalCosts}
+          totalAmount={totalAmount}
+          totalTone="red"
         />
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
