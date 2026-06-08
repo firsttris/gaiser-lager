@@ -157,18 +157,6 @@ function WizardPage() {
       <TopNav />
 
       <section className="space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <p className="text-sm font-semibold text-slate-500">
-            {step <= 3 ? `Schritt ${step} von 3` : 'Vorgang angelegt'}
-          </p>
-          <div className="mt-3 h-2 rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-amber-500 transition-all"
-              style={{ width: `${(Math.min(step, 3) / 3) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
         {step === 1 && (
           <div className="grid gap-4 md:grid-cols-2">
             <FlowChoiceCard
