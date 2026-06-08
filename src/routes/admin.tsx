@@ -69,7 +69,7 @@ function AdminPage() {
                 to="/"
                 className="mt-3 inline-flex w-full justify-center rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
               >
-                Zurueck zur Startseite
+                Zum Kundenportal
               </Link>
             </form>
           </div>

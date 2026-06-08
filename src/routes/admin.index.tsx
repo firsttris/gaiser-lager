@@ -463,7 +463,7 @@ function AdminIndexPage() {
                 <tbody>
                   {filteredRecords.map((record) => (
                     <tr key={record.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
-                      <td className="px-2 py-2">
+                      <td className="px-2 pb-2 pt-2.5">
                         <input
                           type="checkbox"
                           checked={selectedSet.has(record.id)}
