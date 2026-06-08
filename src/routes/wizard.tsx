@@ -163,7 +163,7 @@ function WizardPage() {
             <FlowChoiceCard
               type="pickup"
               title="Material holen"
-              subtitle="Material abholen."
+              subtitle="z.B. Betonrecycling abholen."
               onClick={() => {
                 setFlowType('pickup')
                 setSelectedProductId(products.find((p) => p.flow === 'pickup')?.id ?? 0)
@@ -173,8 +173,8 @@ function WizardPage() {
 
             <FlowChoiceCard
               type="dropoff"
-              title="Bauschutt bringen"
-              subtitle="Material anliefern."
+              title="Material bringen"
+              subtitle="z.B. Aushub oder Bauschutt anliefern."
               onClick={() => {
                 setFlowType('dropoff')
                 setSelectedProductId(products.find((p) => p.flow === 'dropoff')?.id ?? 0)
