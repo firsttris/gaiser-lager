@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 export type FlowType = 'pickup' | 'dropoff'
-export type RecordStatus = 'offen' | 'in_bearbeitung' | 'abgerechnet' | 'bezahlt' | 'storniert'
+export type RecordStatus = 'offen' | 'lieferschein' | 'rechnung' | 'bezahlt' | 'storniert'
 export type PriceCategory = 'private' | 'business'
 
 export type Company = {
@@ -208,6 +208,30 @@ function getUnitPrice(product: Product, type: FlowType, priceCategory: PriceCate
   return priceCategory === 'private' ? product.dropoffPrivatePrice : product.dropoffBusinessPrice
 }
 
+function normalizeRecordStatus(status: string): RecordStatus {
+  if (status === 'in_bearbeitung') return 'lieferschein'
+  if (status === 'abgerechnet') return 'rechnung'
+
+  if (
+    status === 'offen' ||
+    status === 'lieferschein' ||
+    status === 'rechnung' ||
+    status === 'bezahlt' ||
+    status === 'storniert'
+  ) {
+    return status
+  }
+
+  return 'offen'
+}
+
+function normalizeRecords(raw: RecordItem[]): RecordItem[] {
+  return raw.map((record) => ({
+    ...record,
+    status: normalizeRecordStatus(record.status),
+  }))
+}
+
 const AppStateContext = createContext<AppState | null>(null)
 const ADMIN_PASSWORD = 'admin'
 const STORAGE_KEYS = {
@@ -249,7 +273,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(() =>
     normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
   )
-  const [records, setRecords] = useState<RecordItem[]>(() => readStorage(STORAGE_KEYS.records, []))
+  const [records, setRecords] = useState<RecordItem[]>(() =>
+    normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
+  )
   const [storageReady, setStorageReady] = useState(false)
 
   useEffect(() => {
@@ -259,7 +285,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const storedProducts = normalizeProducts(
       readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed),
     )
-    const storedRecords = readStorage(STORAGE_KEYS.records, [])
+    const storedRecords = normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, []))
     const storedSelectedCompanyId = readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null)
     const storedAdminLoggedIn = readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false)
 
@@ -320,7 +346,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       }
 
       if (event.key === STORAGE_KEYS.records) {
-        setRecords(readStorage(STORAGE_KEYS.records, []))
+        setRecords(normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])))
       }
 
       if (event.key === STORAGE_KEYS.selectedCompanyId) {

@@ -11,7 +11,7 @@ import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 export const Route = createFileRoute('/history')({ component: HistoryPage })
 
 function HistoryPage() {
-  const { isLoggedIn, records, selectedCompany } = useAppState()
+  const { isLoggedIn, records, selectedCompany, updateRecordStatus } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
@@ -55,6 +55,7 @@ function HistoryPage() {
     if (selectedRecords.length === 0) return
 
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '')
+    selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
   }
 
   function exportSelectedAsCsv() {

@@ -83,6 +83,7 @@ function AdminIndexPage() {
     if (selectedCompanies.length !== 1) return
 
     downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0])
+    selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
   }
 
   function exportSelectedAsInvoicePdf() {
@@ -230,6 +231,7 @@ function AdminIndexPage() {
 
     const stamp = toSafeFileDate(new Date().toLocaleString('de-DE'))
     pdf.save(`rechnung-${customer?.shortCode ?? 'kunde'}-${stamp}.pdf`)
+    selectedRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
   }
 
   return (

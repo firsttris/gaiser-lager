@@ -14,8 +14,8 @@ export function flowLabel(type: FlowType) {
 
 export const statusStages: Array<{ value: RecordStatus; label: string }> = [
   { value: 'offen', label: 'Offen' },
-  { value: 'in_bearbeitung', label: 'In Bearbeitung' },
-  { value: 'abgerechnet', label: 'Abgerechnet' },
+  { value: 'lieferschein', label: 'Lieferschein' },
+  { value: 'rechnung', label: 'Rechnung' },
   { value: 'bezahlt', label: 'Bezahlt' },
   { value: 'storniert', label: 'Storniert' },
 ]
