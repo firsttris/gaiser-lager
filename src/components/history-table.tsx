@@ -162,7 +162,7 @@ export function HistoryTable({
                     </select>
                   </td>
                 ) : (
-                  <td className="px-2 py-2 text-xs">{record.status}</td>
+                  <td className="px-2 py-2 text-xs">{statusLabel(record.status)}</td>
                 )}
                 <td className={`hidden px-2 py-2 text-slate-600 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
                   <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.note || '-'}</p>
