@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowDownToLine, ArrowUpFromLine, Truck } from 'lucide-react'
+import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState, type FlowType } from '../state/app-state'
 
@@ -86,7 +87,7 @@ function WizardPage() {
 
   if (!isLoggedIn) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+      <PageShell>
         <TopNav />
         <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
           <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
@@ -98,7 +99,7 @@ function WizardPage() {
             Zum Login
           </Link>
         </section>
-      </main>
+      </PageShell>
     )
   }
 
@@ -153,7 +154,7 @@ function WizardPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+    <PageShell>
       <TopNav />
 
       <section className="space-y-4">
@@ -370,6 +371,6 @@ function WizardPage() {
           </div>
         )}
       </section>
-    </main>
+    </PageShell>
   )
 }

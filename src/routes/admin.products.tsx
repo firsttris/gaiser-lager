@@ -3,6 +3,30 @@ import { useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/products')({ component: AdminProductsPage })
 
+function PriceField({
+  value,
+  onChange,
+  className = '',
+}: {
+  value: number
+  onChange: (value: string) => void
+  className?: string
+}) {
+  return (
+    <div className={`relative ${className}`}>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        inputMode="decimal"
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-8"
+      />
+      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">
+        €
+      </span>
+    </div>
+  )
+}
+
 function AdminProductsPage() {
   const { products, updateProduct } = useAppState()
   const dropoffProducts = products.filter((product) => product.flow === 'dropoff')
@@ -37,21 +61,19 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis Privat</label>
-                    <input
+                    <label className="text-xs font-semibold text-slate-600">Preis Privat (€)</label>
+                    <PriceField
                       value={product.dropoffPrivatePrice}
-                      onChange={(event) => updateProduct(product.id, 'dropoffPrivatePrice', event.target.value)}
-                      inputMode="decimal"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                      onChange={(value) => updateProduct(product.id, 'dropoffPrivatePrice', value)}
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen</label>
-                    <input
+                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen (€)</label>
+                    <PriceField
                       value={product.dropoffBusinessPrice}
-                      onChange={(event) => updateProduct(product.id, 'dropoffBusinessPrice', event.target.value)}
-                      inputMode="decimal"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                      onChange={(value) => updateProduct(product.id, 'dropoffBusinessPrice', value)}
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -65,8 +87,8 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis Privat</th>
-                  <th className="px-3 py-2">Preis Unternehmen</th>
+                  <th className="px-3 py-2">Preis Privat (€)</th>
+                  <th className="px-3 py-2">Preis Unternehmen (€)</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,19 +109,17 @@ function AdminProductsPage() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <input
+                      <PriceField
                         value={product.dropoffPrivatePrice}
-                        onChange={(event) => updateProduct(product.id, 'dropoffPrivatePrice', event.target.value)}
-                        inputMode="decimal"
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                        onChange={(value) => updateProduct(product.id, 'dropoffPrivatePrice', value)}
+                        className="w-28"
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <input
+                      <PriceField
                         value={product.dropoffBusinessPrice}
-                        onChange={(event) => updateProduct(product.id, 'dropoffBusinessPrice', event.target.value)}
-                        inputMode="decimal"
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                        onChange={(value) => updateProduct(product.id, 'dropoffBusinessPrice', value)}
+                        className="w-28"
                       />
                     </td>
                   </tr>
@@ -133,21 +153,19 @@ function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis Privat</label>
-                    <input
+                    <label className="text-xs font-semibold text-slate-600">Preis Privat (€)</label>
+                    <PriceField
                       value={product.pickupPrivatePrice}
-                      onChange={(event) => updateProduct(product.id, 'pickupPrivatePrice', event.target.value)}
-                      inputMode="decimal"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                      onChange={(value) => updateProduct(product.id, 'pickupPrivatePrice', value)}
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen</label>
-                    <input
+                    <label className="text-xs font-semibold text-slate-600">Preis Unternehmen (€)</label>
+                    <PriceField
                       value={product.pickupBusinessPrice}
-                      onChange={(event) => updateProduct(product.id, 'pickupBusinessPrice', event.target.value)}
-                      inputMode="decimal"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                      onChange={(value) => updateProduct(product.id, 'pickupBusinessPrice', value)}
+                      className="mt-1"
                     />
                   </div>
                 </div>
@@ -161,8 +179,8 @@ function AdminProductsPage() {
                 <tr className="border-b border-slate-200 text-left text-slate-500">
                   <th className="px-3 py-2">Material</th>
                   <th className="px-3 py-2">Einheit</th>
-                  <th className="px-3 py-2">Preis Privat</th>
-                  <th className="px-3 py-2">Preis Unternehmen</th>
+                  <th className="px-3 py-2">Preis Privat (€)</th>
+                  <th className="px-3 py-2">Preis Unternehmen (€)</th>
                 </tr>
               </thead>
               <tbody>
@@ -183,19 +201,17 @@ function AdminProductsPage() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <input
+                      <PriceField
                         value={product.pickupPrivatePrice}
-                        onChange={(event) => updateProduct(product.id, 'pickupPrivatePrice', event.target.value)}
-                        inputMode="decimal"
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                        onChange={(value) => updateProduct(product.id, 'pickupPrivatePrice', value)}
+                        className="w-28"
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <input
+                      <PriceField
                         value={product.pickupBusinessPrice}
-                        onChange={(event) => updateProduct(product.id, 'pickupBusinessPrice', event.target.value)}
-                        inputMode="decimal"
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-2"
+                        onChange={(value) => updateProduct(product.id, 'pickupBusinessPrice', value)}
+                        className="w-28"
                       />
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
@@ -24,7 +25,7 @@ function AdminPage() {
 
   if (!isAdminLoggedIn) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-8">
+      <PageShell width="compact" className="py-8">
         <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <div className="absolute -right-28 -top-24 h-56 w-56 rounded-full bg-rose-100 blur-3xl"></div>
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-cyan-100 blur-3xl"></div>
@@ -69,12 +70,12 @@ function AdminPage() {
             </form>
           </div>
         </section>
-      </main>
+      </PageShell>
     )
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+    <PageShell>
       <header className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div>
           <div>
@@ -117,6 +118,6 @@ function AdminPage() {
       </header>
 
       <Outlet />
-    </main>
+    </PageShell>
   )
 }

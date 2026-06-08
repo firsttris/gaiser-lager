@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 
@@ -39,7 +40,7 @@ function App() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+    <PageShell>
       <TopNav />
 
       <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
@@ -132,6 +133,6 @@ function App() {
           </form>
         </div>
       </section>
-    </main>
+    </PageShell>
   )
 }

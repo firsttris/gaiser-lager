@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { jsPDF } from 'jspdf'
 import { useMemo, useState } from 'react'
 import { HistorySummaryCards } from '../components/history-summary-cards'
+import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
@@ -237,7 +238,7 @@ function HistoryPage() {
 
   if (!isLoggedIn) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+      <PageShell>
         <TopNav />
         <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
           <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
@@ -249,12 +250,12 @@ function HistoryPage() {
             Zum Login
           </Link>
         </section>
-      </main>
+      </PageShell>
     )
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-8">
+    <PageShell>
       <TopNav />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
@@ -467,6 +468,6 @@ function HistoryPage() {
           </>
         )}
       </section>
-    </main>
+    </PageShell>
   )
 }
