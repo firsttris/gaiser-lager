@@ -22,6 +22,11 @@ function toFileSafeDate(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, '-')
 }
 
+function truncatePdfText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 3)}...`
+}
+
 function appendDeliveryNotePage(pdf: jsPDF, record: RecordItem, companyName: string, newPage: boolean) {
   if (newPage) {
     pdf.addPage()
@@ -71,7 +76,8 @@ function appendDeliveryNotePage(pdf: jsPDF, record: RecordItem, companyName: str
   pdf.setFont('helvetica', 'normal')
   pdf.text(`Status: ${record.status}`, left, y)
   y += 6
-  pdf.text(`Notiz: ${record.note || '-'}`, left, y)
+  const noteText = truncatePdfText(record.note || '-', 90)
+  pdf.text(`Notiz: ${noteText}`, left, y)
 
   y += 14
   pdf.setDrawColor(180)
@@ -143,7 +149,8 @@ function downloadCombinedDeliveryNote(records: RecordItem[], companyName: string
     y += 5
     pdf.text(`Menge: ${record.amount} ${record.unit} | Einzelpreis: ${money(record.unitPrice)} | Gesamt: ${money(record.total)}`, left, y)
     y += 5
-    pdf.text(`Status: ${record.status} | Notiz: ${record.note || '-'}`, left, y)
+    const noteText = truncatePdfText(record.note || '-', 70)
+    pdf.text(`Status: ${record.status} | Notiz: ${noteText}`, left, y)
     y += 6
 
     pdf.setDrawColor(220)

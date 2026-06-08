@@ -28,6 +28,7 @@ function WizardPage() {
     amount: number
     unit: string
     total: number
+    note: string
   } | null>(null)
 
   if (!isLoggedIn) {
@@ -84,6 +85,7 @@ function WizardPage() {
       amount: parsedAmount,
       unit: selectedProduct.unit,
       total,
+      note,
     })
     setStep(4)
     setFlowType('pickup')
@@ -237,6 +239,10 @@ function WizardPage() {
                 <dt className="text-amber-700">Gesamtsumme</dt>
                 <dd className="text-lg font-bold text-amber-800">{money(total)}</dd>
               </div>
+              <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+                <dt className="text-slate-500">Notiz</dt>
+                <dd className="font-semibold">{note || '-'}</dd>
+              </div>
             </dl>
 
             <div className="flex gap-2">
@@ -295,6 +301,10 @@ function WizardPage() {
               <div className="rounded-xl bg-emerald-50 p-4">
                 <dt className="text-emerald-700">Gesamtsumme</dt>
                 <dd className="text-lg font-bold text-emerald-800">{money(successRecord.total)}</dd>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+                <dt className="text-slate-500">Notiz</dt>
+                <dd className="font-semibold">{successRecord.note || '-'}</dd>
               </div>
             </dl>
 

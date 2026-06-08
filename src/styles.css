@@ -170,6 +170,21 @@ a {
     transform 180ms ease;
 }
 
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+select {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+select:disabled {
+  cursor: not-allowed;
+}
+
 .island-kicker {
   letter-spacing: 0.16em;
   text-transform: uppercase;
