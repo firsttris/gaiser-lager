@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Menu, X } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 
@@ -9,6 +10,7 @@ function AdminPage() {
   const { isAdminLoggedIn, adminLogin, adminLogout } = useAppState()
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   function submitAdminLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -77,14 +79,24 @@ function AdminPage() {
   return (
     <PageShell>
       <header className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-        <div>
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Admin Bereich</p>
             <h1 className="font-title text-5xl text-slate-900">Gaiser Verwaltung</h1>
           </div>
+
+          <button
+            type="button"
+            aria-expanded={isMenuOpen}
+            aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-700 transition hover:bg-slate-100 sm:hidden"
+          >
+            {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
+          </button>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2 sm:mt-3 sm:flex-row">
+        <div className="mt-4 hidden flex-col gap-2 sm:mt-3 sm:flex sm:flex-row">
           <Link
             to="/admin"
             className="rounded-xl bg-slate-100 px-4 py-2 text-center text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
@@ -115,6 +127,46 @@ function AdminPage() {
             Abmelden
           </button>
         </div>
+
+        {isMenuOpen && (
+          <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
+            <Link
+              to="/admin"
+              onClick={() => setIsMenuOpen(false)}
+              className="block rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+              activeOptions={{ exact: true }}
+              activeProps={{ className: 'block rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white no-underline' }}
+            >
+              History
+            </Link>
+            <Link
+              to="/admin/products"
+              onClick={() => setIsMenuOpen(false)}
+              className="block rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+              activeProps={{ className: 'block rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white no-underline' }}
+            >
+              Produkte
+            </Link>
+            <Link
+              to="/admin/companies"
+              onClick={() => setIsMenuOpen(false)}
+              className="block rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+              activeProps={{ className: 'block rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white no-underline' }}
+            >
+              Firmen
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMenuOpen(false)
+                adminLogout()
+              }}
+              className="block w-full rounded-xl bg-amber-100 px-4 py-3 text-left text-sm font-semibold text-amber-900 hover:bg-amber-200"
+            >
+              Abmelden
+            </button>
+          </div>
+        )}
       </header>
 
       <Outlet />
