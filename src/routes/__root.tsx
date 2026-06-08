@@ -64,9 +64,9 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    import('virtual:pwa-register').then(({ registerSW }) => {
-      registerSW({ immediate: true })
-    })
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+    }
   }, [])
 
   return (
