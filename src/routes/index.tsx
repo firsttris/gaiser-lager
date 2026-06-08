@@ -119,7 +119,7 @@ function App() {
               type="submit"
               className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black"
             >
-              In den Wizard starten
+              Anmelden
             </button>
 
             <div className="border-t border-slate-200 pt-3 text-center">
