@@ -283,14 +283,22 @@ function loadPersistedState(): PersistedState {
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const initialState = useMemo(() => loadPersistedState(), [])
-  const [companies, setCompanies] = useState<Company[]>(initialState.companies)
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(
-    initialState.companies.find((company) => company.id === initialState.selectedCompanyId) ?? null,
-  )
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(initialState.adminLoggedIn)
-  const [products, setProducts] = useState<Product[]>(initialState.products)
-  const [records, setRecords] = useState<RecordItem[]>(initialState.records)
+  const [companies, setCompanies] = useState<Company[]>(companiesSeed)
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+  const [products, setProducts] = useState<Product[]>(productsSeed)
+  const [records, setRecords] = useState<RecordItem[]>([])
+
+  useEffect(() => {
+    const persisted = loadPersistedState()
+    setCompanies(persisted.companies)
+    setProducts(persisted.products)
+    setRecords(persisted.records)
+    setIsAdminLoggedIn(persisted.adminLoggedIn)
+    setSelectedCompany(
+      persisted.companies.find((company) => company.id === persisted.selectedCompanyId) ?? null,
+    )
+  }, [])
 
   useEffect(() => {
     writeStorage(STORAGE_KEYS.companies, companies)
