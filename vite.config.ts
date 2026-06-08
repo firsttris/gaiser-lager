@@ -55,7 +55,7 @@ const config = defineConfig({
         cleanupOutdatedCaches: true,
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],

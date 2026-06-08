@@ -13,7 +13,10 @@ import { Route as WizardRouteImport } from './routes/wizard'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WizardIndexRouteImport } from './routes/wizard.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as WizardPickupRouteImport } from './routes/wizard.pickup'
+import { Route as WizardDropoffRouteImport } from './routes/wizard.dropoff'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminCompaniesRouteImport } from './routes/admin.companies'
 
@@ -37,10 +40,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WizardIndexRoute = WizardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WizardRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const WizardPickupRoute = WizardPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
+  getParentRoute: () => WizardRoute,
+} as any)
+const WizardDropoffRoute = WizardDropoffRouteImport.update({
+  id: '/dropoff',
+  path: '/dropoff',
+  getParentRoute: () => WizardRoute,
 } as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
@@ -57,28 +75,36 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/history': typeof HistoryRoute
-  '/wizard': typeof WizardRoute
+  '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/wizard/dropoff': typeof WizardDropoffRoute
+  '/wizard/pickup': typeof WizardPickupRoute
   '/admin/': typeof AdminIndexRoute
+  '/wizard/': typeof WizardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/history': typeof HistoryRoute
-  '/wizard': typeof WizardRoute
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/wizard/dropoff': typeof WizardDropoffRoute
+  '/wizard/pickup': typeof WizardPickupRoute
   '/admin': typeof AdminIndexRoute
+  '/wizard': typeof WizardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/history': typeof HistoryRoute
-  '/wizard': typeof WizardRoute
+  '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/wizard/dropoff': typeof WizardDropoffRoute
+  '/wizard/pickup': typeof WizardPickupRoute
   '/admin/': typeof AdminIndexRoute
+  '/wizard/': typeof WizardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,15 +115,20 @@ export interface FileRouteTypes {
     | '/wizard'
     | '/admin/companies'
     | '/admin/products'
+    | '/wizard/dropoff'
+    | '/wizard/pickup'
     | '/admin/'
+    | '/wizard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/history'
-    | '/wizard'
     | '/admin/companies'
     | '/admin/products'
+    | '/wizard/dropoff'
+    | '/wizard/pickup'
     | '/admin'
+    | '/wizard'
   id:
     | '__root__'
     | '/'
@@ -106,14 +137,17 @@ export interface FileRouteTypes {
     | '/wizard'
     | '/admin/companies'
     | '/admin/products'
+    | '/wizard/dropoff'
+    | '/wizard/pickup'
     | '/admin/'
+    | '/wizard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   HistoryRoute: typeof HistoryRoute
-  WizardRoute: typeof WizardRoute
+  WizardRoute: typeof WizardRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -146,12 +180,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/wizard/': {
+      id: '/wizard/'
+      path: '/'
+      fullPath: '/wizard/'
+      preLoaderRoute: typeof WizardIndexRouteImport
+      parentRoute: typeof WizardRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/wizard/pickup': {
+      id: '/wizard/pickup'
+      path: '/pickup'
+      fullPath: '/wizard/pickup'
+      preLoaderRoute: typeof WizardPickupRouteImport
+      parentRoute: typeof WizardRoute
+    }
+    '/wizard/dropoff': {
+      id: '/wizard/dropoff'
+      path: '/dropoff'
+      fullPath: '/wizard/dropoff'
+      preLoaderRoute: typeof WizardDropoffRouteImport
+      parentRoute: typeof WizardRoute
     }
     '/admin/products': {
       id: '/admin/products'
@@ -184,11 +239,26 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface WizardRouteChildren {
+  WizardDropoffRoute: typeof WizardDropoffRoute
+  WizardPickupRoute: typeof WizardPickupRoute
+  WizardIndexRoute: typeof WizardIndexRoute
+}
+
+const WizardRouteChildren: WizardRouteChildren = {
+  WizardDropoffRoute: WizardDropoffRoute,
+  WizardPickupRoute: WizardPickupRoute,
+  WizardIndexRoute: WizardIndexRoute,
+}
+
+const WizardRouteWithChildren =
+  WizardRoute._addFileChildren(WizardRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   HistoryRoute: HistoryRoute,
-  WizardRoute: WizardRoute,
+  WizardRoute: WizardRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

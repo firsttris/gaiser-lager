@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AppStateProvider } from '../state/app-state'
@@ -52,6 +52,14 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  notFoundComponent: () => (
+    <div className="flex flex-col items-center justify-center h-screen gap-4">
+      <p className="text-lg font-medium">Seite nicht gefunden</p>
+      <Link to="/" className="text-sm underline text-muted-foreground">
+        Zurück zur Startseite
+      </Link>
+    </div>
+  ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
