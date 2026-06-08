@@ -12,6 +12,7 @@ import {
   statusLabel,
   statusStages,
 } from '../utils/history-utils'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
@@ -75,6 +76,24 @@ function AdminIndexPage() {
 
     const stamp = new Date().toISOString().slice(0, 10)
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
+  }
+
+  function createDeliveryNotes() {
+    if (selectedRecords.length === 0) return
+
+    // Group records by company
+    const recordsByCompany: Record<string, typeof selectedRecords> = {}
+    for (const record of selectedRecords) {
+      if (!recordsByCompany[record.company]) {
+        recordsByCompany[record.company] = []
+      }
+      recordsByCompany[record.company].push(record)
+    }
+
+    // Create a delivery note for each company
+    for (const [company, records] of Object.entries(recordsByCompany)) {
+      downloadCombinedDeliveryNote(records, company)
+    }
   }
 
   function exportSelectedAsInvoicePdf() {
@@ -259,6 +278,14 @@ function AdminIndexPage() {
             className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             CSV Export ({selectedCount})
+          </button>
+          <button
+            type="button"
+            onClick={createDeliveryNotes}
+            disabled={selectedCount === 0}
+            className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Lieferschein ({selectedCount})
           </button>
           <button
             type="button"
