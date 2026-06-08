@@ -254,7 +254,7 @@ function AdminCompaniesPage() {
           </thead>
           <tbody>
             {companies.map((company) => (
-              <tr key={company.id} className="border-b border-slate-100">
+              <tr key={company.id} className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
                 <td className="px-3 py-2">
                   {editingCompanyId === company.id ? (
                     <input
