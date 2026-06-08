@@ -82,6 +82,14 @@ function AdminPage() {
         </div>
         <div className="mt-3 flex gap-2 sm:mt-0">
           <Link
+            to="/admin"
+            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            activeOptions={{ exact: true }}
+            activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline' }}
+          >
+            History
+          </Link>
+          <Link
             to="/admin/products"
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
             activeProps={{ className: 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline' }}
