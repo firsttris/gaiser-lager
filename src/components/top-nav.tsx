@@ -118,35 +118,6 @@ export function TopNav() {
           </div>
         </div>
       </div>
-
-      <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-[0_18px_35px_rgba(15,23,42,0.14)] backdrop-blur sm:hidden">
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            to="/wizard"
-            className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-            activeProps={{
-              className:
-                'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white',
-            }}
-          >
-            <ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />
-            Vorgang
-          </Link>
-          <Link
-            to="/history"
-            className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-            activeProps={{
-              className:
-                'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white',
-            }}
-          >
-            <History className="h-4 w-4" strokeWidth={2.3} />
-            Historie
-          </Link>
-        </div>
-      </nav>
-
-      <div className="sm:hidden"></div>
     </header>
   )
 }

@@ -205,48 +205,6 @@ function AdminPage() {
             </div>
           </div>
         </div>
-
-        <nav className="fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-slate-200/90 bg-white/95 p-2 shadow-[0_18px_35px_rgba(15,23,42,0.14)] backdrop-blur sm:hidden">
-          <div className="grid grid-cols-3 gap-2">
-            <Link
-              to="/admin"
-              onClick={() => setIsMenuOpen(false)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-100"
-              activeOptions={{ exact: true }}
-              activeProps={{
-                className:
-                  'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white no-underline',
-              }}
-            >
-              <ReceiptText className="h-4 w-4" strokeWidth={2.25} />
-              History
-            </Link>
-            <Link
-              to="/admin/products"
-              onClick={() => setIsMenuOpen(false)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-100"
-              activeProps={{
-                className:
-                  'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white no-underline',
-              }}
-            >
-              <Blocks className="h-4 w-4" strokeWidth={2.25} />
-              Produkte
-            </Link>
-            <Link
-              to="/admin/companies"
-              onClick={() => setIsMenuOpen(false)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 no-underline transition hover:bg-slate-100"
-              activeProps={{
-                className:
-                  'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-semibold text-white no-underline',
-              }}
-            >
-              <Building2 className="h-4 w-4" strokeWidth={2.25} />
-              Firmen
-            </Link>
-          </div>
-        </nav>
       </header>
 
       <Outlet />
