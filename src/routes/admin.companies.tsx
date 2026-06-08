@@ -36,7 +36,7 @@ function AdminCompaniesPage() {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-      <h2 className="font-title text-4xl text-slate-900">Firmen pflegen</h2>
+      <h2 className="font-title text-4xl text-slate-900">Firmen</h2>
       <p className="mt-2 text-sm text-slate-600">Neue Firmen koennen hier direkt fuer den Login angelegt werden.</p>
 
       <form onSubmit={submitCompany} className="mt-4 grid gap-4 md:grid-cols-4">
