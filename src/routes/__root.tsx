@@ -1,7 +1,7 @@
 import { HeadContent, Scripts, createRootRoute, Link } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { AppStateProvider } from '../state/app-state'
+import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
 
 import appCss from '../styles.css?url'
@@ -62,6 +62,12 @@ export const Route = createRootRoute({
   ),
 })
 
+function HydrationGate({ children }: { children: React.ReactNode }) {
+  const { hydrated } = useAppState()
+  if (!hydrated) return null
+  return <>{children}</>
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -76,7 +82,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        <AppStateProvider>{children}</AppStateProvider>
+        <AppStateProvider>
+          <HydrationGate>{children}</HydrationGate>
+        </AppStateProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

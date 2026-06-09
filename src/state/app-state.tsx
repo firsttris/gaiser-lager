@@ -91,6 +91,7 @@ type DeleteProductInput = {
 }
 
 type AppState = {
+  hydrated: boolean
   companies: Company[]
   selectedCompany: Company | null
   isLoggedIn: boolean
@@ -371,6 +372,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppState>(
     () => ({
+      hydrated,
       companies,
       selectedCompany,
       isLoggedIn: selectedCompany !== null,
@@ -670,7 +672,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         )
       },
     }),
-    [companies, isAdminLoggedIn, products, records, selectedCompany],
+    [hydrated, companies, isAdminLoggedIn, products, records, selectedCompany],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
