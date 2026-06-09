@@ -248,14 +248,6 @@ const STORAGE_KEYS = {
   adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
 }
 
-type PersistedState = {
-  companies: Company[]
-  products: Product[]
-  records: RecordItem[]
-  selectedCompanyId: string | null
-  adminLoggedIn: boolean
-}
-
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
 
@@ -278,7 +270,7 @@ function writeStorage<T>(key: string, value: T) {
   }
 }
 
-function loadPersistedState(): PersistedState {
+function loadPersistedState() {
   return {
     companies: normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
     products: normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
@@ -289,6 +281,7 @@ function loadPersistedState(): PersistedState {
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
+  const [hydrated, setHydrated] = useState(false)
   const [companies, setCompanies] = useState<Company[]>(companiesSeed)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
@@ -304,27 +297,33 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setSelectedCompany(
       persisted.companies.find((company) => company.id === persisted.selectedCompanyId) ?? null,
     )
+    setHydrated(true)
   }, [])
 
   useEffect(() => {
+    if (!hydrated) return
     writeStorage(STORAGE_KEYS.companies, companies)
-  }, [companies])
+  }, [hydrated, companies])
 
   useEffect(() => {
+    if (!hydrated) return
     writeStorage(STORAGE_KEYS.products, products)
-  }, [products])
+  }, [hydrated, products])
 
   useEffect(() => {
+    if (!hydrated) return
     writeStorage(STORAGE_KEYS.records, records)
-  }, [records])
+  }, [hydrated, records])
 
   useEffect(() => {
+    if (!hydrated) return
     writeStorage(STORAGE_KEYS.selectedCompanyId, selectedCompany?.id ?? null)
-  }, [selectedCompany])
+  }, [hydrated, selectedCompany])
 
   useEffect(() => {
+    if (!hydrated) return
     writeStorage(STORAGE_KEYS.adminLoggedIn, isAdminLoggedIn)
-  }, [isAdminLoggedIn])
+  }, [hydrated, isAdminLoggedIn])
 
   useEffect(() => {
     if (!selectedCompany) return
