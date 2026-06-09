@@ -91,10 +91,10 @@ function AdminIndexPage() {
   const pendingInvoices = useMemo(() => {
     const byId = new Map<string, typeof records>()
     for (const record of records) {
-      if (record.status === 'rechnung' && record.deliveryNoteId) {
-        const group = byId.get(record.deliveryNoteId) ?? []
+      if (record.status === 'rechnung' && record.invoiceId) {
+        const group = byId.get(record.invoiceId) ?? []
         group.push(record)
-        byId.set(record.deliveryNoteId, group)
+        byId.set(record.invoiceId, group)
       }
     }
     return Array.from(byId.entries())
@@ -277,6 +277,10 @@ function AdminIndexPage() {
     assignInvoice(invoiceRecords.map((r) => r.id), invoiceNo)
   }
 
+  function cancelDeliveryNoteGroup(items: typeof records) {
+    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
+  }
+
   function cancelGroup(items: typeof records) {
     const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
     const originalDocId = items[0].invoiceId ?? items[0].deliveryNoteId
@@ -323,7 +327,7 @@ function AdminIndexPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => cancelGroup(items)}
+                      onClick={() => cancelDeliveryNoteGroup(items)}
                       className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
                     >
                       Stornieren
