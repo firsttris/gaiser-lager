@@ -141,7 +141,7 @@ function AdminIndexPage() {
           groups={pendingInvoices}
           variant="blue"
           showCompany
-          renderActions={(_id, items) => (
+          renderActions={(id, items) => (
             <>
               <button
                 type="button"
@@ -153,6 +153,16 @@ function AdminIndexPage() {
                 className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
               >
                 Stornieren
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const shortCode = companies.find((c) => c.name === items[0].company)?.shortCode
+                  downloadInvoicePdf(items, shortCode, items[0].deliveryNoteId, id)
+                }}
+                className="rounded-xl bg-blue-500 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600"
+              >
+                Rechnung herunterladen
               </button>
               <button
                 type="button"
