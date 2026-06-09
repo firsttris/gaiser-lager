@@ -12,6 +12,7 @@ import {
 } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { PendingDocumentSection } from '../components/pending-document-section'
+import { RecordActionsBar } from '../components/record-actions-bar'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
@@ -220,46 +221,16 @@ function AdminIndexPage() {
           </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={selectAllVisible}
-            className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-          >
-            Alle sichtbaren markieren
-          </button>
-          <button
-            type="button"
-            onClick={clearSelection}
-            className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-          >
-            Auswahl leeren
-          </button>
-          <button
-            type="button"
-            onClick={createDeliveryNotes}
-            disabled={!canCreateCompanyDocuments}
-            className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            Lieferschein erstellen ({selectedCount})
-          </button>
-          <button
-            type="button"
-            onClick={exportSelectedAsCsv}
-            disabled={selectedCount === 0}
-            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            CSV Export ({selectedCount})
-          </button>
-        </div>
-
-        {selectedCount > 0 && !canCreateCompanyDocuments && (
-          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-            {selectedHaveDeliveryNote
-              ? 'Einige markierte Eintraege gehoeren bereits zu einem Lieferschein. Neue Dokumente koennen nur fuer Eintraege ohne bestehenden Lieferschein erstellt werden.'
-              : 'Lieferschein ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'}
-          </p>
-        )}
+        <RecordActionsBar
+          selectedCount={selectedCount}
+          canCreateDeliveryNote={canCreateCompanyDocuments}
+          selectedHaveDeliveryNote={selectedHaveDeliveryNote}
+          multipleCompaniesSelected={selectedCompanies.length > 1}
+          onSelectAll={selectAllVisible}
+          onClearSelection={clearSelection}
+          onCreateDeliveryNote={createDeliveryNotes}
+          onExportCsv={exportSelectedAsCsv}
+        />
 
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
