@@ -80,20 +80,8 @@ function AdminIndexPage() {
 
     const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
-    selectedRecords
-      .filter((r) => r.status === 'offen' || r.status === 'lieferschein')
-      .forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
+    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
-  }
-
-  function exportSelectedAsInvoicePdf() {
-    if (selectedRecords.length === 0) return
-    if (selectedCompanies.length !== 1) return
-
-    const shortCode = companies.find((c) => c.name === selectedCompanies[0])?.shortCode
-    const invoiceNo = downloadInvoicePdf(selectedRecords, shortCode)
-    selectedRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
-    assignInvoice(selectedRecords.map((r) => r.id), invoiceNo)
   }
 
   function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records) {
@@ -249,14 +237,6 @@ function AdminIndexPage() {
           </button>
           <button
             type="button"
-            onClick={exportSelectedAsCsv}
-            disabled={selectedCount === 0}
-            className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            CSV Export ({selectedCount})
-          </button>
-          <button
-            type="button"
             onClick={createDeliveryNotes}
             disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
@@ -265,11 +245,11 @@ function AdminIndexPage() {
           </button>
           <button
             type="button"
-            onClick={exportSelectedAsInvoicePdf}
-            disabled={!canCreateCompanyDocuments}
+            onClick={exportSelectedAsCsv}
+            disabled={selectedCount === 0}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Rechnung erstellen ({selectedCount})
+            CSV Export ({selectedCount})
           </button>
         </div>
 
@@ -277,7 +257,7 @@ function AdminIndexPage() {
           <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
             {selectedHaveDeliveryNote
               ? 'Einige markierte Eintraege gehoeren bereits zu einem Lieferschein. Neue Dokumente koennen nur fuer Eintraege ohne bestehenden Lieferschein erstellt werden.'
-              : 'Lieferschein und Rechnung sind nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'}
+              : 'Lieferschein ist nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'}
           </p>
         )}
 

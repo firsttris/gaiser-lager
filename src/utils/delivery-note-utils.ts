@@ -147,8 +147,7 @@ export function downloadInvoicePdf(
   y += 5
   pdf.text('Vielen Dank fuer Ihren Auftrag.', left, y)
 
-  const stamp = toSafeFileDate(new Date().toLocaleString('de-DE'))
-  pdf.save(`rechnung-${companyShortCode ?? 'kunde'}-${stamp}.pdf`)
+  pdf.save(`rechnung-${toSafeFileDate(invoiceNo)}.pdf`)
 
   return invoiceNo
 }
@@ -468,6 +467,8 @@ export function downloadCombinedDeliveryNote(records: RecordItem[], companyName:
   pdf.text('Ort, Datum', 55, sigLabelY, { align: 'center' })
   pdf.text('Ware geprüft und erhalten', 155, sigLabelY, { align: 'center' })
 
-  const fileName = `lieferschein-sammel-${toSafeFileDate(new Date().toLocaleString('de-DE'))}.pdf`
+  const fileName = deliveryNoteId
+    ? `lieferschein-${toSafeFileDate(deliveryNoteId)}.pdf`
+    : `lieferschein-sammel-${toSafeFileDate(new Date().toLocaleString('de-DE'))}.pdf`
   pdf.save(fileName)
 }

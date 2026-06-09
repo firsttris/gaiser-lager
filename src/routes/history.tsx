@@ -59,9 +59,7 @@ function HistoryPage() {
 
     const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
-    selectedRecords
-      .filter((r) => r.status === 'offen' || r.status === 'lieferschein')
-      .forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
+    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId)
   }
 
@@ -222,7 +220,7 @@ function HistoryPage() {
             type="button"
             onClick={createCombinedDeliveryNote}
             disabled={!canCreateDeliveryNote}
-            className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Lieferschein erstellen ({selectedCount})
           </button>
