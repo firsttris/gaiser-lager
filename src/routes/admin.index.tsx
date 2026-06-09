@@ -428,7 +428,7 @@ function AdminIndexPage() {
             disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Lieferschein ({selectedCount})
+            Lieferschein erstellen ({selectedCount})
           </button>
           <button
             type="button"
@@ -436,7 +436,7 @@ function AdminIndexPage() {
             disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            PDF Rechnung ({selectedCount})
+            PDF Rechnung erstellen ({selectedCount})
           </button>
         </div>
 
