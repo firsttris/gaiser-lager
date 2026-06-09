@@ -26,7 +26,7 @@ const PALETTE = [
   { color: '#6366f1', bg: '#e0e7ff' },
 ]
 
-function shortDocId(id: string) {
+export function shortDocId(id: string) {
   const parts = id.split('-')
   if (parts.length >= 3) return `${parts[0]}-${parts[1].slice(4)}-${parts[2].slice(-4)}`
   return id
