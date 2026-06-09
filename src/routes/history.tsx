@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { HistoryTable } from '../components/history-table'
+import { HistoryTable, shortDocId } from '../components/history-table'
 import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
@@ -32,7 +32,7 @@ function HistoryPage() {
 
       if (!query) return true
 
-      const haystack = `${record.productName} ${record.note} ${record.status}`.toLocaleLowerCase('de-DE')
+      const haystack = `${record.note} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
       return haystack.includes(query)
     })
   }, [companyRecords, searchText, statusFilter, typeFilter])
@@ -177,7 +177,7 @@ function HistoryPage() {
             <input
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Produkt, Notiz"
+              placeholder="Notiz, LS-/RG-/ST-Nummer"
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
