@@ -59,7 +59,9 @@ function HistoryPage() {
 
     const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
-    selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
+    selectedRecords
+      .filter((r) => r.status === 'offen' || r.status === 'lieferschein')
+      .forEach((r) => updateRecordStatus(r.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId)
   }
 
