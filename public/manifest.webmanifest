@@ -2,8 +2,7 @@
   "name": "Gaiser Lager",
   "short_name": "Gaiser Lager",
   "description": "Gaiser Lager",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#0f172a",
@@ -22,7 +21,7 @@
       "src": "./logo512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
