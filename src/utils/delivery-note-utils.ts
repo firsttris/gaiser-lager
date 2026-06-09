@@ -68,14 +68,17 @@ export function appendDeliveryNotePage(
   const noteText = truncatePdfText(record.note || '-', 90)
   pdf.text(`Notiz: ${noteText}`, left, y)
 
-  y += 14
+  const pageHeight = 297
+  const sigLineY = pageHeight - 22
+  const sigLabelY = pageHeight - 17
+
   pdf.setDrawColor(180)
-  pdf.line(left, y, 95, y)
-  pdf.line(115, y, 195, y)
-  y += 5
+  pdf.line(left, sigLineY, 95, sigLineY)
+  pdf.line(115, sigLineY, 195, sigLineY)
   pdf.setFontSize(9)
-  pdf.text('Unterschrift Kunde', left, y)
-  pdf.text('Unterschrift Gaiser', 115, y)
+  pdf.setFont('helvetica', 'normal')
+  pdf.text('Ort, Datum', 55, sigLabelY, { align: 'center' })
+  pdf.text('Ware geprüft und erhalten', 155, sigLabelY, { align: 'center' })
 }
 
 export function downloadDeliveryNote(record: RecordItem, companyName: string) {
@@ -155,19 +158,23 @@ export function downloadCombinedDeliveryNote(records: RecordItem[], companyName:
     y += 5
   }
 
-  y += 7
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text(`Gesamtsumme: ${money(total)}`, left, y)
+  const pageHeight = 297
+  const sigLineY = pageHeight - 22
+  const sigLabelY = pageHeight - 17
 
-  y += 16
+  const totalY = sigLineY - 18
+
+  pdf.setFontSize(10)
+  pdf.setFont('helvetica', 'bold')
+  pdf.text(`Gesamtsumme: ${money(total)}`, left, totalY)
+
   pdf.setDrawColor(180)
-  pdf.line(left, y, 95, y)
-  pdf.line(115, y, 195, y)
-  y += 5
+  pdf.line(left, sigLineY, 95, sigLineY)
+  pdf.line(115, sigLineY, 195, sigLineY)
   pdf.setFontSize(9)
-  pdf.text('Unterschrift Kunde', left, y)
-  pdf.text('Unterschrift Gaiser', 115, y)
+  pdf.setFont('helvetica', 'normal')
+  pdf.text('Ort, Datum', 55, sigLabelY, { align: 'center' })
+  pdf.text('Ware geprüft und erhalten', 155, sigLabelY, { align: 'center' })
 
   const fileName = `lieferschein-sammel-${toSafeFileDate(new Date().toLocaleString('de-DE'))}.pdf`
   pdf.save(fileName)
