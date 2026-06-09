@@ -202,7 +202,7 @@ function AdminIndexPage() {
                 onClick={() => createInvoiceForDeliveryNote(id, items)}
                 className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
               >
-                PDF Rechnung erstellen
+                Rechnung erstellen
               </button>
             </>
           )}
@@ -257,7 +257,7 @@ function AdminIndexPage() {
             disabled={!canCreateCompanyDocuments}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            PDF Rechnung erstellen ({selectedCount})
+            Rechnung erstellen ({selectedCount})
           </button>
         </div>
 

@@ -102,6 +102,7 @@ type AppState = {
   logout: () => void
   adminLogin: (password: string) => LoginResult
   adminLogout: () => void
+  clearCache: () => void
   createRecord: (input: CreateRecordInput) => void
   createCompany: (input: CreateCompanyInput) => CreateCompanyResult
   updateCompany: (input: UpdateCompanyInput) => CreateCompanyResult
@@ -405,6 +406,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       adminLogout: () => {
         setIsAdminLoggedIn(false)
+      },
+      clearCache: () => {
+        if (typeof window !== 'undefined') {
+          const preserved = [STORAGE_KEYS.selectedCompanyId, STORAGE_KEYS.adminLoggedIn]
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith('gaiser.') && !preserved.includes(k))
+            .forEach((k) => localStorage.removeItem(k))
+        }
+        setCompanies(companiesSeed)
+        setProducts(productsSeed)
+        setRecords([])
       },
       createRecord: ({ type, product, amount, note }: CreateRecordInput) => {
         if (!selectedCompany) return

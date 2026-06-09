@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { ClearDbButton } from './clear-db-button'
 import { InstallAppButton } from './install-app-button'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
@@ -36,17 +37,17 @@ export function TopNav() {
 
         {isMenuOpen && (
           <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
-            <NavLink 
-              to="/wizard" 
-              compact 
+            <NavLink
+              to="/wizard"
+              compact
               onClick={() => setIsMenuOpen(false)}
               icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
             >
               Neuer Vorgang
             </NavLink>
 
-            <NavLink 
-              to="/history" 
+            <NavLink
+              to="/history"
               compact
               onClick={() => setIsMenuOpen(false)}
               icon={<History className="h-4 w-4" strokeWidth={2.3} />}
@@ -55,6 +56,7 @@ export function TopNav() {
             </NavLink>
 
             <InstallAppButton compact className="w-full justify-center" />
+            <ClearDbButton compact />
             <button
               type="button"
               onClick={() => {
@@ -71,13 +73,13 @@ export function TopNav() {
         )}
 
         <div className="mt-4 hidden items-center gap-2 sm:flex sm:flex-row sm:flex-wrap">
-          <NavLink 
+          <NavLink
             to="/wizard"
             icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
           >
             Neuer Vorgang
           </NavLink>
-          <NavLink 
+          <NavLink
             to="/history"
             icon={<History className="h-4 w-4" strokeWidth={2.3} />}
           >
@@ -86,7 +88,7 @@ export function TopNav() {
 
           <div className="ml-auto flex items-center gap-2">
             <InstallAppButton />
-
+            <ClearDbButton />
             <button
               type="button"
               onClick={() => {
