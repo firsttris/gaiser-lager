@@ -1,7 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { ClearDbButton } from './clear-db-button'
 import { InstallAppButton } from './install-app-button'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
@@ -56,7 +55,6 @@ export function TopNav() {
             </NavLink>
 
             <InstallAppButton compact className="w-full justify-center" />
-            <ClearDbButton compact />
             <button
               type="button"
               onClick={() => {
@@ -88,7 +86,6 @@ export function TopNav() {
 
           <div className="ml-auto flex items-center gap-2">
             <InstallAppButton />
-            <ClearDbButton />
             <button
               type="button"
               onClick={() => {
