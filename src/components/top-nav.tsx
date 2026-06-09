@@ -21,7 +21,7 @@ export function TopNav() {
             <h2 className="font-title text-4xl leading-none text-slate-900">{selectedCompany?.name}</h2>
           </div>
 
-          <div className="flex items-center gap-2 sm:hidden">
+          <div className="flex shrink-0 items-center gap-2 sm:hidden">
             <button
               type="button"
               onClick={() => setIsMenuOpen((open) => !open)}
@@ -84,6 +84,7 @@ export function TopNav() {
           </NavLink>
 
           <div className="ml-auto flex items-center gap-2">
+            <InstallAppButton />
             <button
               type="button"
               onClick={() => {

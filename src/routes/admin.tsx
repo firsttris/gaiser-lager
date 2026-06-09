@@ -88,15 +88,17 @@ function AdminPage() {
               <h1 className="font-title text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
             </div>
 
-            <button
-              type="button"
-              aria-expanded={isMenuOpen}
-              aria-label={isMenuOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
-              onClick={() => setIsMenuOpen((open) => !open)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100 sm:hidden"
-            >
-              {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
-            </button>
+            <div className="flex shrink-0 items-center gap-2 sm:hidden">
+              <button
+                type="button"
+                aria-expanded={isMenuOpen}
+                aria-label={isMenuOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
+                onClick={() => setIsMenuOpen((open) => !open)}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
+              >
+                {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
+              </button>
+            </div>
           </div>
 
           {isMenuOpen && (
@@ -137,7 +139,7 @@ function AdminPage() {
                   setIsMenuOpen(false)
                   adminLogout()
                 }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.2} />
                 Abmelden
