@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 type Props = {
   open: boolean
   title: string
@@ -10,7 +12,7 @@ type Props = {
 export function ConfirmDialog({ open, title, message, confirmLabel = 'Ja', onConfirm, onCancel }: Props) {
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onCancel}
@@ -38,6 +40,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Ja', onCon
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
