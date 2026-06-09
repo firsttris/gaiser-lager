@@ -1,7 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { InstallAppButton } from './install-app-button'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
 
@@ -84,7 +83,6 @@ export function TopNav() {
           </NavLink>
 
           <div className="ml-auto flex items-center gap-2">
-            <InstallAppButton />
             <button
               type="button"
               onClick={() => {
