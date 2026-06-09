@@ -3,8 +3,225 @@ import { useState } from 'react'
 import { useAppState } from '../state/app-state'
 import { useProductForm } from '../hooks/use-product-form'
 import { ProductNameInput, ProductUnitInput, ProductFlowSelect, PriceField } from '../components/product-form-inputs'
+import type { Product } from '../state/app-state'
 
 export const Route = createFileRoute('/admin/products')({ component: AdminProductsPage })
+
+type EditFormState = {
+  name: string
+  unit: string
+  privatePrice: string
+  businessPrice: string
+}
+
+type ProductListProps = {
+  type: 'dropoff' | 'pickup'
+  items: Product[]
+  editingProductId: number | null
+  editFormState: EditFormState
+  onEditFormUpdate: (update: Partial<EditFormState>) => void
+  onSave: (productId: number) => void
+  onCancel: () => void
+  onStartEdit: (productId: number) => void
+  onRemove: (productId: number) => void
+}
+
+function ProductCards({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: ProductListProps) {
+  return (
+    <div className="mt-3 space-y-3 md:hidden">
+      {items.map((product) => (
+        <article key={product.id} className="rounded-xl border border-slate-200 p-4">
+          <p className="text-xs text-slate-500">Material</p>
+          {editingProductId === product.id ? (
+            <input
+              value={editFormState.name}
+              onChange={(event) => onEditFormUpdate({ name: event.target.value })}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+            />
+          ) : (
+            <p className="text-sm font-semibold text-slate-900">{product.name}</p>
+          )}
+
+          <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <p className="text-slate-500">Einheit</p>
+              {editingProductId === product.id ? (
+                <input
+                  value={editFormState.unit}
+                  onChange={(event) => onEditFormUpdate({ unit: event.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              ) : (
+                <p className="font-semibold text-slate-800">{product.unit}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-slate-500">Preis Privat</p>
+              {editingProductId === product.id ? (
+                <PriceField value={editFormState.privatePrice} onChange={(val) => onEditFormUpdate({ privatePrice: val })} variant="compact" className="mt-1" />
+              ) : (
+                <p className="font-semibold text-slate-800">
+                  {type === 'dropoff' ? product.dropoffPrivatePrice : product.pickupPrivatePrice} €
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-slate-500">Preis Unternehmen</p>
+              {editingProductId === product.id ? (
+                <PriceField value={editFormState.businessPrice} onChange={(val) => onEditFormUpdate({ businessPrice: val })} variant="compact" className="mt-1" />
+              ) : (
+                <p className="font-semibold text-slate-800">
+                  {type === 'dropoff' ? product.dropoffBusinessPrice : product.pickupBusinessPrice} €
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {editingProductId === product.id ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSave(product.id)}
+                  className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="min-w-24 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                >
+                  Abbrechen
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onStartEdit(product.id)}
+                  className="min-w-24 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemove(product.id)}
+                  className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                >
+                  Loeschen
+                </button>
+              </>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function ProductTable({ type, items, editingProductId, editFormState, onEditFormUpdate, onSave, onCancel, onStartEdit, onRemove }: ProductListProps) {
+  return (
+    <div className="mt-3 hidden overflow-x-auto md:block">
+      <table className="w-full min-w-3xl table-fixed border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 text-left text-slate-500">
+            <th className="w-[38%] px-3 py-2">Material</th>
+            <th className="w-24 px-3 py-2">Einheit</th>
+            <th className="w-40 px-3 py-2">Preis Privat (€)</th>
+            <th className="w-44 px-3 py-2">Preis Unternehmen (€)</th>
+            <th className="w-56 px-3 py-2 text-right">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((product) => (
+            <tr key={product.id} className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
+              <td className="px-3 py-2">
+                {editingProductId === product.id ? (
+                  <input
+                    value={editFormState.name}
+                    onChange={(event) => onEditFormUpdate({ name: event.target.value })}
+                    className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
+                  />
+                ) : (
+                  <p className="flex h-10 items-center truncate">{product.name}</p>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {editingProductId === product.id ? (
+                  <input
+                    value={editFormState.unit}
+                    onChange={(event) => onEditFormUpdate({ unit: event.target.value })}
+                    className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
+                  />
+                ) : (
+                  <p className="flex h-10 items-center">{product.unit}</p>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {editingProductId === product.id ? (
+                  <PriceField value={editFormState.privatePrice} onChange={(val) => onEditFormUpdate({ privatePrice: val })} variant="compact" className="w-full" />
+                ) : (
+                  <p className="flex h-10 items-center">
+                    {type === 'dropoff' ? product.dropoffPrivatePrice : product.pickupPrivatePrice}
+                  </p>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                {editingProductId === product.id ? (
+                  <PriceField value={editFormState.businessPrice} onChange={(val) => onEditFormUpdate({ businessPrice: val })} variant="compact" className="w-full" />
+                ) : (
+                  <p className="flex h-10 items-center">
+                    {type === 'dropoff' ? product.dropoffBusinessPrice : product.pickupBusinessPrice}
+                  </p>
+                )}
+              </td>
+              <td className="px-3 py-2">
+                <div className="flex w-56 justify-end gap-2">
+                  {editingProductId === product.id ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onSave(product.id)}
+                        className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
+                      >
+                        Speichern
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onCancel}
+                        className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                      >
+                        Abbrechen
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onStartEdit(product.id)}
+                        className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemove(product.id)}
+                        className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                      >
+                        Loeschen
+                      </button>
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 function AdminProductsPage() {
   const { products, createProduct, updateProduct, deleteProduct } = useAppState()
@@ -95,205 +312,19 @@ function AdminProductsPage() {
     editForm.setMessage(`Produkt ${product.name} wurde geloescht.`, 'success')
   }
 
-  function ProductCards({ type }: { type: 'dropoff' | 'pickup' }) {
-    const items = type === 'dropoff' ? dropoffProducts : pickupProducts
-
-    return (
-      <div className="mt-3 space-y-3 md:hidden">
-        {items.map((product) => (
-          <article key={product.id} className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500">Material</p>
-            {editingProductId === product.id ? (
-              <input
-                value={editForm.formState.name}
-                onChange={(event) => editForm.update({ name: event.target.value })}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-            ) : (
-              <p className="text-sm font-semibold text-slate-900">{product.name}</p>
-            )}
-
-            <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <p className="text-slate-500">Einheit</p>
-                {editingProductId === product.id ? (
-                  <input
-                    value={editForm.formState.unit}
-                    onChange={(event) => editForm.update({ unit: event.target.value })}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  />
-                ) : (
-                  <p className="font-semibold text-slate-800">{product.unit}</p>
-                )}
-              </div>
-              <div>
-                <p className="text-slate-500">Preis Privat</p>
-                {editingProductId === product.id ? (
-                  <PriceField value={editForm.formState.privatePrice} onChange={(val) => editForm.update({ privatePrice: val })} variant="compact" className="mt-1" />
-                ) : (
-                  <p className="font-semibold text-slate-800">
-                    {type === 'dropoff' ? product.dropoffPrivatePrice : product.pickupPrivatePrice} €
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-slate-500">Preis Unternehmen</p>
-                {editingProductId === product.id ? (
-                  <PriceField value={editForm.formState.businessPrice} onChange={(val) => editForm.update({ businessPrice: val })} variant="compact" className="mt-1" />
-                ) : (
-                  <p className="font-semibold text-slate-800">
-                    {type === 'dropoff' ? product.dropoffBusinessPrice : product.pickupBusinessPrice} €
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {editingProductId === product.id ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => saveEditedProduct(product.id)}
-                    className="min-w-24 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-black"
-                  >
-                    Speichern
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="min-w-24 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                  >
-                    Abbrechen
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => startEditProduct(product.id)}
-                    className="min-w-24 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeProduct(product.id)}
-                    className="min-w-24 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                  >
-                    Loeschen
-                  </button>
-                </>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    )
-  }
-
-  function ProductTable({ type }: { type: 'dropoff' | 'pickup' }) {
-    const items = type === 'dropoff' ? dropoffProducts : pickupProducts
-
-    return (
-      <div className="mt-3 hidden overflow-x-auto md:block">
-        <table className="w-full min-w-3xl table-fixed border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-500">
-              <th className="w-[38%] px-3 py-2">Material</th>
-              <th className="w-24 px-3 py-2">Einheit</th>
-              <th className="w-40 px-3 py-2">Preis Privat (€)</th>
-              <th className="w-44 px-3 py-2">Preis Unternehmen (€)</th>
-              <th className="w-56 px-3 py-2 text-right">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((product) => (
-              <tr key={product.id} className="border-b border-slate-100 odd:bg-white even:bg-slate-50">
-                <td className="px-3 py-2">
-                  {editingProductId === product.id ? (
-                    <input
-                      value={editForm.formState.name}
-                      onChange={(event) => editForm.update({ name: event.target.value })}
-                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
-                    />
-                  ) : (
-                    <p className="flex h-10 items-center truncate">{product.name}</p>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {editingProductId === product.id ? (
-                    <input
-                      value={editForm.formState.unit}
-                      onChange={(event) => editForm.update({ unit: event.target.value })}
-                      className="h-10 w-full rounded-lg border border-slate-300 px-3 py-2"
-                    />
-                  ) : (
-                    <p className="flex h-10 items-center">{product.unit}</p>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {editingProductId === product.id ? (
-                    <PriceField value={editForm.formState.privatePrice} onChange={(val) => editForm.update({ privatePrice: val })} variant="compact" className="w-full" />
-                  ) : (
-                    <p className="flex h-10 items-center">
-                      {type === 'dropoff' ? product.dropoffPrivatePrice : product.pickupPrivatePrice}
-                    </p>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {editingProductId === product.id ? (
-                    <PriceField value={editForm.formState.businessPrice} onChange={(val) => editForm.update({ businessPrice: val })} variant="compact" className="w-full" />
-                  ) : (
-                    <p className="flex h-10 items-center">
-                      {type === 'dropoff' ? product.dropoffBusinessPrice : product.pickupBusinessPrice}
-                    </p>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex w-56 justify-end gap-2">
-                    {editingProductId === product.id ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => saveEditedProduct(product.id)}
-                          className="min-w-24 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-black"
-                        >
-                          Speichern
-                        </button>
-                        <button
-                          type="button"
-                          onClick={cancelEdit}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                        >
-                          Abbrechen
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => startEditProduct(product.id)}
-                          className="min-w-24 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                        >
-                          Bearbeiten
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeProduct(product.id)}
-                          className="min-w-24 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
-                        >
-                          Loeschen
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
+  const listProps = {
+    editingProductId,
+    editFormState: {
+      name: editForm.formState.name,
+      unit: editForm.formState.unit,
+      privatePrice: editForm.formState.privatePrice,
+      businessPrice: editForm.formState.businessPrice,
+    },
+    onEditFormUpdate: editForm.update,
+    onSave: saveEditedProduct,
+    onCancel: cancelEdit,
+    onStartEdit: startEditProduct,
+    onRemove: removeProduct,
   }
 
   return (
@@ -358,16 +389,16 @@ function AdminProductsPage() {
           <h3 className="font-title text-3xl text-slate-900">Annahme</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Kundenanlieferungen.</p>
 
-          <ProductCards type="dropoff" />
-          <ProductTable type="dropoff" />
+          <ProductCards type="dropoff" items={dropoffProducts} {...listProps} />
+          <ProductTable type="dropoff" items={dropoffProducts} {...listProps} />
         </div>
 
         <div>
           <h3 className="font-title text-3xl text-slate-900">Verkauf</h3>
           <p className="mt-1 text-sm text-slate-600">Produkte fuer Materialabholung durch den Kunden.</p>
 
-          <ProductCards type="pickup" />
-          <ProductTable type="pickup" />
+          <ProductCards type="pickup" items={pickupProducts} {...listProps} />
+          <ProductTable type="pickup" items={pickupProducts} {...listProps} />
         </div>
       </div>
     </section>
