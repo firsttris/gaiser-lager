@@ -36,6 +36,8 @@ export type RecordItem = {
   status: RecordStatus
   createdAt: string
   deliveryNoteId?: string
+  invoiceId?: string
+  cancelId?: string
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }
@@ -108,6 +110,8 @@ type AppState = {
   deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
   assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
+  assignInvoice: (recordIds: number[], invoiceId: string) => void
+  assignCancel: (recordIds: number[], cancelId: string) => void
 }
 
 const companiesSeed: Company[] = [
@@ -647,6 +651,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           prev.map((record) => {
             if (!recordIds.includes(record.id)) return record
             return { ...record, deliveryNoteId }
+          }),
+        )
+      },
+      assignInvoice: (recordIds: number[], invoiceId: string) => {
+        setRecords((prev) =>
+          prev.map((record) => {
+            if (!recordIds.includes(record.id)) return record
+            return { ...record, invoiceId }
+          }),
+        )
+      },
+      assignCancel: (recordIds: number[], cancelId: string) => {
+        setRecords((prev) =>
+          prev.map((record) => {
+            if (!recordIds.includes(record.id)) return record
+            return { ...record, cancelId }
           }),
         )
       },

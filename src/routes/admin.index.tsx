@@ -11,7 +11,7 @@ import {
   money,
   statusLabel,
 } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
@@ -20,7 +20,7 @@ function toSafeFileDate(value: string) {
 }
 
 function AdminIndexPage() {
-  const { companies, records, updateRecordStatus, assignDeliveryNote } = useAppState()
+  const { companies, records, updateRecordStatus, assignDeliveryNote, assignInvoice, assignCancel } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -112,7 +112,7 @@ function AdminIndexPage() {
     downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
   }
 
-  function buildInvoicePdf(invoiceRecords: typeof records, deliveryNoteId?: string) {
+  function buildInvoicePdf(invoiceRecords: typeof records, deliveryNoteId?: string, existingInvoiceNo?: string): string {
     const customerName = invoiceRecords[0].company
     const customer = companies.find((company) => company.name === customerName)
 
@@ -121,7 +121,7 @@ function AdminIndexPage() {
     const right = 198
     let y = 16
 
-    const invoiceNo = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
+    const invoiceNo = existingInvoiceNo ?? `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
 
     pdf.setDrawColor(220)
     pdf.setFillColor(248, 250, 252)
@@ -258,19 +258,49 @@ function AdminIndexPage() {
 
     const stamp = toSafeFileDate(new Date().toLocaleString('de-DE'))
     pdf.save(`rechnung-${customer?.shortCode ?? 'kunde'}-${stamp}.pdf`)
+
+    return invoiceNo
   }
 
   function exportSelectedAsInvoicePdf() {
     if (selectedRecords.length === 0) return
     if (selectedCompanies.length !== 1) return
 
-    buildInvoicePdf(selectedRecords)
+    const invoiceNo = buildInvoicePdf(selectedRecords)
     selectedRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
+    assignInvoice(selectedRecords.map((r) => r.id), invoiceNo)
   }
 
   function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records) {
-    buildInvoicePdf(invoiceRecords, deliveryNoteId)
+    const invoiceNo = buildInvoicePdf(invoiceRecords, deliveryNoteId)
     invoiceRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
+    assignInvoice(invoiceRecords.map((r) => r.id), invoiceNo)
+  }
+
+  function cancelGroup(items: typeof records) {
+    const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
+    const originalDocId = items[0].invoiceId ?? items[0].deliveryNoteId
+    downloadStornoDoc(items, items[0].company, cancelId, originalDocId)
+    assignCancel(items.map((r) => r.id), cancelId)
+    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
+  }
+
+  function handleDeliveryNoteClick(deliveryNoteId: string) {
+    const group = records.filter((r) => r.deliveryNoteId === deliveryNoteId)
+    if (group.length === 0) return
+    downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId)
+  }
+
+  function handleInvoiceClick(invoiceId: string) {
+    const group = records.filter((r) => r.invoiceId === invoiceId)
+    if (group.length === 0) return
+    buildInvoicePdf(group, group[0].deliveryNoteId, invoiceId)
+  }
+
+  function handleCancelClick(cancelId: string) {
+    const group = records.filter((r) => r.cancelId === cancelId)
+    if (group.length === 0) return
+    downloadStornoDoc(group, group[0].company, cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
   }
 
   return (
@@ -293,7 +323,7 @@ function AdminIndexPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'storniert'))}
+                      onClick={() => cancelGroup(items)}
                       className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
                     >
                       Stornieren
@@ -338,7 +368,7 @@ function AdminIndexPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'storniert'))}
+                      onClick={() => cancelGroup(items)}
                       className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
                     >
                       Stornieren
@@ -487,6 +517,9 @@ function AdminIndexPage() {
             onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
             onToggle={toggleRecordSelection}
             showCompanyColumn
+            onDeliveryNoteClick={handleDeliveryNoteClick}
+            onInvoiceClick={handleInvoiceClick}
+            onCancelClick={handleCancelClick}
           />
         )}
       </article>

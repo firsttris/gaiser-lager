@@ -10,6 +10,9 @@ interface Props {
   onToggle: (id: number) => void
   showCompanyColumn?: boolean
   onStatusChange?: (id: number, status: RecordStatus) => void
+  onDeliveryNoteClick?: (deliveryNoteId: string) => void
+  onInvoiceClick?: (invoiceId: string) => void
+  onCancelClick?: (cancelId: string) => void
 }
 
 const PALETTE = [
@@ -23,7 +26,7 @@ const PALETTE = [
   { color: '#6366f1', bg: '#e0e7ff' },
 ]
 
-function shortDeliveryNoteId(id: string) {
+function shortDocId(id: string) {
   const parts = id.split('-')
   if (parts.length >= 3) return `${parts[0]}-${parts[1].slice(4)}-${parts[2].slice(-4)}`
   return id
@@ -37,6 +40,9 @@ export function HistoryTable({
   onToggle,
   showCompanyColumn = false,
   onStatusChange,
+  onDeliveryNoteClick,
+  onInvoiceClick,
+  onCancelClick,
 }: Props) {
   const deliveryNoteColorMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -68,14 +74,36 @@ export function HistoryTable({
                     <p className="mt-1 text-sm font-semibold text-slate-900">{record.company}</p>
                   )}
                   <p className="mt-1 text-sm text-slate-700">{record.productName}</p>
-                  {palette && (
-                    <span
-                      style={{ color: palette.color, backgroundColor: palette.bg }}
-                      className="mt-0.5 inline-block rounded px-1 py-0.5 font-mono text-xs"
-                    >
-                      {shortDeliveryNoteId(record.deliveryNoteId!)}
-                    </span>
-                  )}
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {palette && (
+                      <button
+                        type="button"
+                        onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
+                        style={{ color: palette.color, backgroundColor: palette.bg }}
+                        className="cursor-pointer rounded px-1 py-0.5 font-mono text-xs hover:opacity-75"
+                      >
+                        {shortDocId(record.deliveryNoteId!)}
+                      </button>
+                    )}
+                    {record.invoiceId && (
+                      <button
+                        type="button"
+                        onClick={() => onInvoiceClick?.(record.invoiceId!)}
+                        className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
+                      >
+                        {shortDocId(record.invoiceId)}
+                      </button>
+                    )}
+                    {record.cancelId && (
+                      <button
+                        type="button"
+                        onClick={() => onCancelClick?.(record.cancelId!)}
+                        className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
+                      >
+                        {shortDocId(record.cancelId)}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
@@ -190,14 +218,36 @@ export function HistoryTable({
                   <td className="px-2 py-2">{flowLabel(record.type)}</td>
                   <td className="px-2 py-2">
                     <p className="truncate" title={record.productName}>{record.productName}</p>
-                    {palette && (
-                      <span
-                        style={{ color: palette.color, backgroundColor: palette.bg }}
-                        className="mt-0.5 inline-block rounded px-1 py-0.5 font-mono text-xs"
-                      >
-                        {shortDeliveryNoteId(record.deliveryNoteId!)}
-                      </span>
-                    )}
+                    <div className="mt-0.5 flex flex-wrap gap-1">
+                      {palette && (
+                        <button
+                          type="button"
+                          onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
+                          style={{ color: palette.color, backgroundColor: palette.bg }}
+                          className="cursor-pointer rounded px-1 py-0.5 font-mono text-xs hover:opacity-75"
+                        >
+                          {shortDocId(record.deliveryNoteId!)}
+                        </button>
+                      )}
+                      {record.invoiceId && (
+                        <button
+                          type="button"
+                          onClick={() => onInvoiceClick?.(record.invoiceId!)}
+                          className="cursor-pointer rounded bg-blue-100 px-1 py-0.5 font-mono text-xs text-blue-700 hover:opacity-75"
+                        >
+                          {shortDocId(record.invoiceId)}
+                        </button>
+                      )}
+                      {record.cancelId && (
+                        <button
+                          type="button"
+                          onClick={() => onCancelClick?.(record.cancelId!)}
+                          className="cursor-pointer rounded bg-red-100 px-1 py-0.5 font-mono text-xs text-red-700 hover:opacity-75"
+                        >
+                          {shortDocId(record.cancelId)}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-2 py-2 text-xs">
                     {record.amount} {record.unit}
