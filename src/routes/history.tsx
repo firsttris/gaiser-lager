@@ -6,7 +6,7 @@ import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { createHistoryCsv, downloadCsvFile, groupByDocId } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { PendingDocumentSection } from '../components/pending-document-section'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
@@ -61,6 +61,24 @@ function HistoryPage() {
     assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
     downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId)
+  }
+
+  function handleDeliveryNoteClick(deliveryNoteId: string) {
+    const group = companyRecords.filter((r) => r.deliveryNoteId === deliveryNoteId)
+    if (group.length === 0) return
+    downloadCombinedDeliveryNote(group, selectedCompany?.name ?? '', deliveryNoteId)
+  }
+
+  function handleInvoiceClick(invoiceId: string) {
+    const group = companyRecords.filter((r) => r.invoiceId === invoiceId)
+    if (group.length === 0) return
+    downloadInvoicePdf(group, selectedCompany?.shortCode, group[0].deliveryNoteId, invoiceId)
+  }
+
+  function handleCancelClick(cancelId: string) {
+    const group = companyRecords.filter((r) => r.cancelId === cancelId)
+    if (group.length === 0) return
+    downloadStornoDoc(group, selectedCompany?.name ?? '', cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
   }
 
   function exportSelectedAsCsv() {
@@ -233,6 +251,9 @@ function HistoryPage() {
             areAllVisibleSelected={areAllVisibleSelected}
             onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
             onToggle={toggleRecordSelection}
+            onDeliveryNoteClick={handleDeliveryNoteClick}
+            onInvoiceClick={handleInvoiceClick}
+            onCancelClick={handleCancelClick}
           />
         )}
       </section>
