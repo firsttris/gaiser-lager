@@ -24,7 +24,7 @@ export function HistoryTable({
     <>
       <div className="mt-4 space-y-3 md:hidden">
         {records.map((record) => (
-          <article key={record.id} className="rounded-xl border border-slate-200 p-4 odd:bg-white even:bg-slate-50">
+          <article key={record.id} className={`rounded-xl border border-slate-200 p-4 ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs text-slate-500">{record.createdAt}</p>
@@ -122,7 +122,7 @@ export function HistoryTable({
           </thead>
           <tbody>
             {records.map((record) => (
-              <tr key={record.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
+              <tr key={record.id} className={`border-b border-slate-100 align-top ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}>
                 <td className="px-2 pb-2 pt-2.5">
                   <input
                     type="checkbox"
