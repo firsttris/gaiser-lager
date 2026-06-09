@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
@@ -7,13 +7,19 @@ import { useAppState } from '../state/app-state'
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
-  const { companies, login } = useAppState()
+  const { companies, login, isLoggedIn } = useAppState()
   const [query, setQuery] = useState('')
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
 
   const navigate = Route.useNavigate()
+
+  useEffect(() => {
+    if (isLoggedIn) void navigate({ to: '/wizard' })
+  }, [isLoggedIn, navigate])
+
+  
 
   const results = useMemo(() => {
     const value = query.trim().toLowerCase()
@@ -38,6 +44,8 @@ function App() {
     setError('')
     void navigate({ to: '/wizard' })
   }
+
+  if (isLoggedIn) return null
 
   return (
     <PageShell>
