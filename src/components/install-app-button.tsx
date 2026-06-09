@@ -19,7 +19,7 @@ export function InstallAppButton({ className = '', compact = false }: InstallApp
     const mediaQuery = window.matchMedia('(display-mode: standalone)')
 
     const updateStandaloneState = () => {
-      setIsStandalone(mediaQuery.matches || window.navigator.standalone === true)
+      setIsStandalone(mediaQuery.matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true)
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
@@ -44,7 +44,7 @@ export function InstallAppButton({ className = '', compact = false }: InstallApp
     }
   }, [])
 
-  if (isStandalone || !deferredPrompt) return null
+  if (isStandalone) return null
 
   const baseClasses = compact
     ? 'inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-900 transition hover:bg-amber-100'
@@ -54,12 +54,14 @@ export function InstallAppButton({ className = '', compact = false }: InstallApp
     <button
       type="button"
       onClick={async () => {
-        if (!deferredPrompt) return
-
-        const promptEvent = deferredPrompt
-        setDeferredPrompt(null)
-        await promptEvent.prompt()
-        await promptEvent.userChoice
+        if (deferredPrompt) {
+          const promptEvent = deferredPrompt
+          setDeferredPrompt(null)
+          await promptEvent.prompt()
+          await promptEvent.userChoice
+        } else {
+          alert('Zum Installieren: Browsermenü öffnen → "Zum Startbildschirm hinzufügen"')
+        }
       }}
       className={`${baseClasses} ${className}`.trim()}
     >
