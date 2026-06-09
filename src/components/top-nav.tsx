@@ -54,7 +54,6 @@ export function TopNav() {
               Historie
             </NavLink>
 
-            <InstallAppButton compact className="w-full justify-center" />
             <button
               type="button"
               onClick={() => {
@@ -62,7 +61,7 @@ export function TopNav() {
                 logout()
                 void navigate({ to: '/' })
               }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
             >
               <LogOut className="h-4 w-4" strokeWidth={2.2} />
               Abmelden
@@ -85,7 +84,6 @@ export function TopNav() {
           </NavLink>
 
           <div className="ml-auto flex items-center gap-2">
-            <InstallAppButton />
             <button
               type="button"
               onClick={() => {

@@ -2,7 +2,6 @@ import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Blocks, Building2, LogOut, Menu, ReceiptText, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
-import { InstallAppButton } from '../components/install-app-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
@@ -130,8 +129,7 @@ function AdminPage() {
                 Firmen
               </NavLink>
 
-              <InstallAppButton compact className="w-full justify-center" />
-              <ClearDbButton compact />
+              <ClearDbButton className="mt-5" compact />
 
               <button
                 type="button"
@@ -169,7 +167,6 @@ function AdminPage() {
             </NavLink>
 
             <div className="ml-auto flex items-center gap-2">
-              <InstallAppButton />
               <ClearDbButton />
               <button
                 type="button"
