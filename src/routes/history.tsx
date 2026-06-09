@@ -5,13 +5,13 @@ import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
-import { createHistoryCsv, downloadCsvFile } from '../utils/history-utils'
+import { createHistoryCsv, downloadCsvFile, money } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
 
 function HistoryPage() {
-  const { isLoggedIn, records, selectedCompany, updateRecordStatus } = useAppState()
+  const { isLoggedIn, records, selectedCompany, updateRecordStatus, assignDeliveryNote } = useAppState()
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchText, setSearchText] = useState('')
@@ -36,6 +36,20 @@ function HistoryPage() {
     })
   }, [companyRecords, searchText, statusFilter, typeFilter])
 
+  const pendingDeliveryNotes = useMemo(() => {
+    const byId = new Map<string, typeof companyRecords>()
+    for (const record of companyRecords) {
+      if (record.status === 'lieferschein' && record.deliveryNoteId) {
+        const group = byId.get(record.deliveryNoteId) ?? []
+        group.push(record)
+        byId.set(record.deliveryNoteId, group)
+      }
+    }
+    return Array.from(byId.entries())
+      .map(([id, items]) => ({ id, items }))
+      .sort((a, b) => b.id.localeCompare(a.id))
+  }, [companyRecords])
+
   const {
     selectedSet,
     selectedRecords,
@@ -47,11 +61,16 @@ function HistoryPage() {
     clearSelection,
   } = useRecordSelection(filteredRecords)
 
-  function createCombinedDeliveryNote() {
-    if (selectedRecords.length === 0) return
+  const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
+  const canCreateDeliveryNote = selectedCount > 0 && !selectedHaveDeliveryNote
 
-    downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '')
+  function createCombinedDeliveryNote() {
+    if (!canCreateDeliveryNote) return
+
+    const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
+    assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
+    downloadCombinedDeliveryNote(selectedRecords, selectedCompany?.name ?? '', deliveryNoteId)
   }
 
   function exportSelectedAsCsv() {
@@ -84,6 +103,35 @@ function HistoryPage() {
   return (
     <PageShell>
       <TopNav />
+
+      {pendingDeliveryNotes.length > 0 && (
+        <article className="rounded-2xl border border-amber-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <h2 className="font-title text-2xl text-slate-900">Offene Lieferscheine</h2>
+          <p className="mt-1 text-sm text-slate-600">Lieferscheine, fuer die noch keine Rechnung erstellt wurde.</p>
+          <div className="mt-4 space-y-2">
+            {pendingDeliveryNotes.map(({ id, items }) => {
+              const total = items.reduce((sum, r) => sum + r.total, 0)
+              return (
+                <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{id}</p>
+                    <p className="text-xs text-slate-600">
+                      {items.length} Position{items.length !== 1 ? 'en' : ''} &middot; {money(total)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
+                    className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
+                  >
+                    Lieferschein herunterladen
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </article>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -155,7 +203,7 @@ function HistoryPage() {
           <button
             type="button"
             onClick={createCombinedDeliveryNote}
-            disabled={selectedCount === 0}
+            disabled={!canCreateDeliveryNote}
             className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Lieferschein erstellen ({selectedCount})
@@ -169,6 +217,12 @@ function HistoryPage() {
             CSV Export ({selectedCount})
           </button>
         </div>
+
+        {selectedCount > 0 && selectedHaveDeliveryNote && (
+          <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+            Einige markierte Eintraege gehoeren bereits zu einem Lieferschein und koennen nicht erneut verwendet werden.
+          </p>
+        )}
 
         {filteredRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">

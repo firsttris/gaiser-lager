@@ -35,6 +35,7 @@ export type RecordItem = {
   note: string
   status: RecordStatus
   createdAt: string
+  deliveryNoteId?: string
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }
@@ -106,6 +107,7 @@ type AppState = {
   updateProduct: (input: UpdateProductInput) => CreateCompanyResult
   deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
+  assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
 }
 
 const companiesSeed: Company[] = [
@@ -637,6 +639,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           prev.map((record) => {
             if (record.id !== recordId) return record
             return { ...record, status }
+          }),
+        )
+      },
+      assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => {
+        setRecords((prev) =>
+          prev.map((record) => {
+            if (!recordIds.includes(record.id)) return record
+            return { ...record, deliveryNoteId }
           }),
         )
       },

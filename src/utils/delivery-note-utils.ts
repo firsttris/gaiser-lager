@@ -90,7 +90,7 @@ export function downloadDeliveryNote(record: RecordItem, companyName: string) {
   pdf.save(fileName)
 }
 
-export function downloadCombinedDeliveryNote(records: RecordItem[], companyName: string) {
+export function downloadCombinedDeliveryNote(records: RecordItem[], companyName: string, deliveryNoteId?: string) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 15
   let y = 20
@@ -106,6 +106,12 @@ export function downloadCombinedDeliveryNote(records: RecordItem[], companyName:
 
   y += 6
   pdf.setFontSize(10)
+  if (deliveryNoteId) {
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(`Lieferschein-Nr.: ${deliveryNoteId}`, left, y)
+    pdf.setFont('helvetica', 'normal')
+    y += 5
+  }
   pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, left, y)
   y += 5
   pdf.text(`Firma: ${companyName}`, left, y)

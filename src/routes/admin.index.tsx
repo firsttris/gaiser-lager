@@ -20,7 +20,7 @@ function toSafeFileDate(value: string) {
 }
 
 function AdminIndexPage() {
-  const { companies, records, updateRecordStatus } = useAppState()
+  const { companies, records, updateRecordStatus, assignDeliveryNote } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -61,7 +61,8 @@ function AdminIndexPage() {
   } = useRecordSelection(filteredRecords)
 
   const selectedCompanies = Array.from(new Set(selectedRecords.map((record) => record.company)))
-  const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1
+  const selectedHaveDeliveryNote = selectedRecords.some((r) => r.deliveryNoteId)
+  const canCreateCompanyDocuments = selectedRecords.length > 0 && selectedCompanies.length === 1 && !selectedHaveDeliveryNote
 
   function exportSelectedAsCsv() {
     const selectedRecords = filteredRecords.filter((record) => selectedSet.has(record.id))
@@ -73,19 +74,46 @@ function AdminIndexPage() {
     downloadCsvFile(`admin-history-${stamp}.csv`, csv)
   }
 
+  const pendingDeliveryNotes = useMemo(() => {
+    const byId = new Map<string, typeof records>()
+    for (const record of records) {
+      if (record.status === 'lieferschein' && record.deliveryNoteId) {
+        const group = byId.get(record.deliveryNoteId) ?? []
+        group.push(record)
+        byId.set(record.deliveryNoteId, group)
+      }
+    }
+    return Array.from(byId.entries())
+      .map(([id, items]) => ({ id, items }))
+      .sort((a, b) => b.id.localeCompare(a.id))
+  }, [records])
+
+  const pendingInvoices = useMemo(() => {
+    const byId = new Map<string, typeof records>()
+    for (const record of records) {
+      if (record.status === 'rechnung' && record.deliveryNoteId) {
+        const group = byId.get(record.deliveryNoteId) ?? []
+        group.push(record)
+        byId.set(record.deliveryNoteId, group)
+      }
+    }
+    return Array.from(byId.entries())
+      .map(([id, items]) => ({ id, items }))
+      .sort((a, b) => b.id.localeCompare(a.id))
+  }, [records])
+
   function createDeliveryNotes() {
     if (selectedRecords.length === 0) return
     if (selectedCompanies.length !== 1) return
 
-    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0])
+    const deliveryNoteId = `LS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
+    assignDeliveryNote(selectedRecords.map((r) => r.id), deliveryNoteId)
     selectedRecords.forEach((record) => updateRecordStatus(record.id, 'lieferschein'))
+    downloadCombinedDeliveryNote(selectedRecords, selectedCompanies[0], deliveryNoteId)
   }
 
-  function exportSelectedAsInvoicePdf() {
-    if (selectedRecords.length === 0) return
-    if (selectedCompanies.length !== 1) return
-
-    const customerName = selectedCompanies[0]
+  function buildInvoicePdf(invoiceRecords: typeof records, deliveryNoteId?: string) {
+    const customerName = invoiceRecords[0].company
     const customer = companies.find((company) => company.name === customerName)
 
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
@@ -93,7 +121,7 @@ function AdminIndexPage() {
     const right = 198
     let y = 16
 
-    const invoiceNo = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${selectedRecords[0].id}`
+    const invoiceNo = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${invoiceRecords[0].id}`
 
     pdf.setDrawColor(220)
     pdf.setFillColor(248, 250, 252)
@@ -113,7 +141,7 @@ function AdminIndexPage() {
     pdf.text(`Nr.: ${invoiceNo}`, right - 4, y + 10, { align: 'right' })
     pdf.setFont('helvetica', 'normal')
     pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, right - 4, y + 16, { align: 'right' })
-    pdf.text(`Positionen: ${selectedRecords.length}`, right - 4, y + 21, { align: 'right' })
+    pdf.text(`Positionen: ${invoiceRecords.length}`, right - 4, y + 21, { align: 'right' })
 
     y += 36
 
@@ -136,8 +164,12 @@ function AdminIndexPage() {
 
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(9)
+    if (deliveryNoteId) {
+      pdf.text(`Bezug: Lieferschein-Nr. ${deliveryNoteId}`, left, y)
+      y += 5
+    }
     pdf.text(
-      `Leistungszeitraum: ${selectedRecords[0].createdAt} bis ${selectedRecords[selectedRecords.length - 1].createdAt}`,
+      `Leistungszeitraum: ${invoiceRecords[0].createdAt} bis ${invoiceRecords[invoiceRecords.length - 1].createdAt}`,
       left,
       y,
     )
@@ -160,7 +192,7 @@ function AdminIndexPage() {
 
     let subtotal = 0
 
-    for (const [index, record] of selectedRecords.entries()) {
+    for (const [index, record] of invoiceRecords.entries()) {
       subtotal += record.total
 
       if (y > 270) {
@@ -226,11 +258,106 @@ function AdminIndexPage() {
 
     const stamp = toSafeFileDate(new Date().toLocaleString('de-DE'))
     pdf.save(`rechnung-${customer?.shortCode ?? 'kunde'}-${stamp}.pdf`)
+  }
+
+  function exportSelectedAsInvoicePdf() {
+    if (selectedRecords.length === 0) return
+    if (selectedCompanies.length !== 1) return
+
+    buildInvoicePdf(selectedRecords)
     selectedRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
+  }
+
+  function createInvoiceForDeliveryNote(deliveryNoteId: string, invoiceRecords: typeof records) {
+    buildInvoicePdf(invoiceRecords, deliveryNoteId)
+    invoiceRecords.forEach((record) => updateRecordStatus(record.id, 'rechnung'))
   }
 
   return (
     <section className="space-y-5">
+      {pendingDeliveryNotes.length > 0 && (
+        <article className="rounded-2xl border border-amber-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <h2 className="font-title text-2xl text-slate-900">Offene Lieferscheine</h2>
+          <p className="mt-1 text-sm text-slate-600">Lieferscheine, fuer die noch keine Rechnung erstellt wurde.</p>
+          <div className="mt-4 space-y-2">
+            {pendingDeliveryNotes.map(({ id, items }) => {
+              const total = items.reduce((sum, r) => sum + r.total, 0)
+              return (
+                <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{id}</p>
+                    <p className="text-xs text-slate-600">
+                      {items[0].company} &middot; {items.length} Position{items.length !== 1 ? 'en' : ''} &middot; {money(total)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'storniert'))}
+                      className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                    >
+                      Stornieren
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadCombinedDeliveryNote(items, items[0].company, id)}
+                      className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
+                    >
+                      Lieferschein herunterladen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => createInvoiceForDeliveryNote(id, items)}
+                      className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                    >
+                      PDF Rechnung erstellen
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </article>
+      )}
+
+      {pendingInvoices.length > 0 && (
+        <article className="rounded-2xl border border-blue-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <h2 className="font-title text-2xl text-slate-900">Offene Rechnungen</h2>
+          <p className="mt-1 text-sm text-slate-600">Rechnungen, die noch nicht als bezahlt markiert wurden.</p>
+          <div className="mt-4 space-y-2">
+            {pendingInvoices.map(({ id, items }) => {
+              const total = items.reduce((sum, r) => sum + r.total, 0)
+              return (
+                <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{id}</p>
+                    <p className="text-xs text-slate-600">
+                      {items[0].company} &middot; {items.length} Position{items.length !== 1 ? 'en' : ''} &middot; {money(total)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'storniert'))}
+                      className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                    >
+                      Stornieren
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'bezahlt'))}
+                      className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      Als bezahlt markieren
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </article>
+      )}
+
       <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -285,7 +412,9 @@ function AdminIndexPage() {
 
         {selectedCount > 0 && !canCreateCompanyDocuments && (
           <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-            Lieferschein und Rechnung sind nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.
+            {selectedHaveDeliveryNote
+              ? 'Einige markierte Eintraege gehoeren bereits zu einem Lieferschein. Neue Dokumente koennen nur fuer Eintraege ohne bestehenden Lieferschein erstellt werden.'
+              : 'Lieferschein und Rechnung sind nur moeglich, wenn alle markierten Eintraege zur gleichen Firma gehoeren.'}
           </p>
         )}
 
@@ -358,7 +487,6 @@ function AdminIndexPage() {
             onSelectAll={(checked) => (checked ? selectAllVisible() : deselectVisible())}
             onToggle={toggleRecordSelection}
             showCompanyColumn
-            onStatusChange={updateRecordStatus}
           />
         )}
       </article>
