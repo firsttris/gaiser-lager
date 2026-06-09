@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable } from '../components/history-table'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
@@ -16,6 +17,7 @@ export const Route = createFileRoute('/admin/')({ component: AdminIndexPage })
 
 function AdminIndexPage() {
   const { companies, records, updateRecordStatus, assignDeliveryNote, assignInvoice, assignCancel } = useAppState()
+  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -143,14 +145,22 @@ function AdminIndexPage() {
             <>
               <button
                 type="button"
-                onClick={() => cancelGroup(items)}
+                onClick={() => setPendingAction({
+                  action: () => cancelGroup(items),
+                  title: 'Rechnung stornieren',
+                  message: `Sind Sie sicher, dass Sie diese Rechnung (${items.length} Eintrag/Einträge) stornieren möchten?`,
+                })}
                 className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
               >
                 Stornieren
               </button>
               <button
                 type="button"
-                onClick={() => items.forEach((r) => updateRecordStatus(r.id, 'bezahlt'))}
+                onClick={() => setPendingAction({
+                  action: () => items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')),
+                  title: 'Als bezahlt markieren',
+                  message: `Sind Sie sicher, dass Sie diese Rechnung (${items.length} Eintrag/Einträge) als bezahlt markieren möchten?`,
+                })}
                 className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
                 Als bezahlt markieren
@@ -171,7 +181,11 @@ function AdminIndexPage() {
             <>
               <button
                 type="button"
-                onClick={() => cancelDeliveryNoteGroup(items)}
+                onClick={() => setPendingAction({
+                  action: () => cancelDeliveryNoteGroup(items),
+                  title: 'Lieferschein stornieren',
+                  message: `Sind Sie sicher, dass Sie diesen Lieferschein (${items.length} Eintrag/Einträge) stornieren möchten?`,
+                })}
                 className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
               >
                 Stornieren
@@ -330,6 +344,14 @@ function AdminIndexPage() {
           />
         )}
       </article>
+      <ConfirmDialog
+        open={pendingAction !== null}
+        title={pendingAction?.title ?? ''}
+        message={pendingAction?.message ?? ''}
+        confirmLabel="Ja"
+        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onCancel={() => setPendingAction(null)}
+      />
     </section>
   )
 }
