@@ -104,6 +104,7 @@ function HistoryPage() {
     <PageShell>
       <TopNav />
 
+      <div className="space-y-5">
       {pendingDeliveryNotes.length > 0 && (
         <article className="rounded-2xl border border-amber-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
           <h2 className="font-title text-2xl text-slate-900">Offene Lieferscheine</h2>
@@ -238,6 +239,7 @@ function HistoryPage() {
           />
         )}
       </section>
+      </div>
     </PageShell>
   )
 }
