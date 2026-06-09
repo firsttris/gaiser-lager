@@ -5,8 +5,9 @@ import { PageShell } from '../components/page-shell'
 import { useRecordSelection } from '../hooks/use-record-selection'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
-import { createHistoryCsv, downloadCsvFile, money } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { createHistoryCsv, downloadCsvFile, groupByDocId } from '../utils/history-utils'
+import { downloadCombinedDeliveryNote, downloadInvoicePdf } from '../utils/delivery-note-utils'
+import { PendingDocumentSection } from '../components/pending-document-section'
 
 export const Route = createFileRoute('/history')({ component: HistoryPage })
 
@@ -36,19 +37,8 @@ function HistoryPage() {
     })
   }, [companyRecords, searchText, statusFilter, typeFilter])
 
-  const pendingDeliveryNotes = useMemo(() => {
-    const byId = new Map<string, typeof companyRecords>()
-    for (const record of companyRecords) {
-      if (record.status === 'lieferschein' && record.deliveryNoteId) {
-        const group = byId.get(record.deliveryNoteId) ?? []
-        group.push(record)
-        byId.set(record.deliveryNoteId, group)
-      }
-    }
-    return Array.from(byId.entries())
-      .map(([id, items]) => ({ id, items }))
-      .sort((a, b) => b.id.localeCompare(a.id))
-  }, [companyRecords])
+  const pendingInvoices = useMemo(() => groupByDocId(companyRecords, 'rechnung', 'invoiceId'), [companyRecords])
+  const pendingDeliveryNotes = useMemo(() => groupByDocId(companyRecords, 'lieferschein', 'deliveryNoteId'), [companyRecords])
 
   const {
     selectedSet,
@@ -105,33 +95,40 @@ function HistoryPage() {
       <TopNav />
 
       <div className="space-y-5">
+      {pendingInvoices.length > 0 && (
+        <PendingDocumentSection
+          title="Offene Rechnungen"
+          subtitle="Rechnungen, die noch nicht als bezahlt markiert wurden."
+          groups={pendingInvoices}
+          variant="blue"
+          renderActions={(id, items) => (
+            <button
+              type="button"
+              onClick={() => downloadInvoicePdf(items, selectedCompany?.shortCode, items[0].deliveryNoteId, id)}
+              className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+            >
+              Rechnung herunterladen
+            </button>
+          )}
+        />
+      )}
+
       {pendingDeliveryNotes.length > 0 && (
-        <article className="rounded-2xl border border-amber-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <h2 className="font-title text-2xl text-slate-900">Offene Lieferscheine</h2>
-          <p className="mt-1 text-sm text-slate-600">Lieferscheine, fuer die noch keine Rechnung erstellt wurde.</p>
-          <div className="mt-4 space-y-2">
-            {pendingDeliveryNotes.map(({ id, items }) => {
-              const total = items.reduce((sum, r) => sum + r.total, 0)
-              return (
-                <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{id}</p>
-                    <p className="text-xs text-slate-600">
-                      {items.length} Position{items.length !== 1 ? 'en' : ''} &middot; {money(total)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
-                    className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
-                  >
-                    Lieferschein herunterladen
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </article>
+        <PendingDocumentSection
+          title="Offene Lieferscheine"
+          subtitle="Lieferscheine, fuer die noch keine Rechnung erstellt wurde."
+          groups={pendingDeliveryNotes}
+          variant="amber"
+          renderActions={(id, items) => (
+            <button
+              type="button"
+              onClick={() => downloadCombinedDeliveryNote(items, selectedCompany?.name ?? '', id)}
+              className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
+            >
+              Lieferschein herunterladen
+            </button>
+          )}
+        />
       )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
