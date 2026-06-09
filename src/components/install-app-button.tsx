@@ -60,7 +60,12 @@ export function InstallAppButton({ className = '', compact = false }: InstallApp
           await promptEvent.prompt()
           await promptEvent.userChoice
         } else {
-          alert('Zum Installieren: Browsermenü öffnen → "Zum Startbildschirm hinzufügen"')
+          const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
+          if (isIos) {
+            alert('Tippe auf Teilen ↑ → "Zum Home-Bildschirm hinzufügen"')
+          } else {
+            alert('Tippe auf das Browsermenü (⋮) → "App installieren" oder "Zum Startbildschirm hinzufügen"')
+          }
         }
       }}
       className={`${baseClasses} ${className}`.trim()}
