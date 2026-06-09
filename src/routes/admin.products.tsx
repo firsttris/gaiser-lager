@@ -56,7 +56,7 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
               )}
             </div>
             <div>
-              <p className="text-slate-500">Preis Privat</p>
+              <p className="text-slate-500">Privat</p>
               {editingProductId === product.id ? (
                 <PriceField value={editFormState.privatePrice} onChange={(val) => onEditFormUpdate({ privatePrice: val })} variant="compact" className="mt-1" />
               ) : (
@@ -66,7 +66,7 @@ function ProductCards({ type, items, editingProductId, editFormState, onEditForm
               )}
             </div>
             <div>
-              <p className="text-slate-500">Preis Unternehmen</p>
+              <p className="text-slate-500">Unternehmen</p>
               {editingProductId === product.id ? (
                 <PriceField value={editFormState.businessPrice} onChange={(val) => onEditFormUpdate({ businessPrice: val })} variant="compact" className="mt-1" />
               ) : (
@@ -128,8 +128,8 @@ function ProductTable({ type, items, editingProductId, editFormState, onEditForm
           <tr className="border-b border-slate-200 text-left text-slate-500">
             <th className="w-[38%] px-3 py-2">Material</th>
             <th className="w-24 px-3 py-2">Einheit</th>
-            <th className="w-40 px-3 py-2">Preis Privat (€)</th>
-            <th className="w-44 px-3 py-2">Preis Unternehmen (€)</th>
+            <th className="w-40 px-3 py-2">Privat (€)</th>
+            <th className="w-44 px-3 py-2">Unternehmen (€)</th>
             <th className="w-56 px-3 py-2 text-right">Aktionen</th>
           </tr>
         </thead>
@@ -362,12 +362,12 @@ function AdminProductsPage() {
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-700">Preis Privat (€)</label>
+          <label className="text-sm font-semibold text-slate-700">Privat (€)</label>
           <PriceField value={createForm.formState.privatePrice} onChange={(val) => createForm.update({ privatePrice: val })} placeholder="0" className="mt-2" />
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-slate-700">Preis Unternehmen (€)</label>
+          <label className="text-sm font-semibold text-slate-700">Unternehmen (€)</label>
           <PriceField value={createForm.formState.businessPrice} onChange={(val) => createForm.update({ businessPrice: val })} placeholder="0" className="mt-2" />
         </div>
 
