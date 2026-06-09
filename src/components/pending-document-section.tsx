@@ -29,15 +29,16 @@ export function PendingDocumentSection({ title, subtitle, groups, variant, showC
         {groups.map(({ id, items }) => {
           const total = items.reduce((sum, r) => sum + r.total, 0)
           return (
-            <div key={id} className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border ${styles.row} px-4 py-3`}>
+            <div key={id} className={`flex flex-col gap-3 rounded-xl border ${styles.row} px-4 py-3 sm:flex-row sm:items-center sm:justify-between`}>
               <div>
                 <p className="text-sm font-semibold text-slate-900">{id}</p>
                 <p className="text-xs text-slate-600">
-                  {showCompany && <>{items[0].company} &middot; </>}
+                  {showCompany && <>{items[0].createdAt.split(',')[0]} &middot; {items[0].company} &middot; </>}
+                  {!showCompany && <>{items[0].createdAt.split(',')[0]} &middot; </>}
                   {items.length} Position{items.length !== 1 ? 'en' : ''} &middot; {money(total)}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {renderActions(id, items)}
               </div>
             </div>
