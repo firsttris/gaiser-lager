@@ -30,12 +30,12 @@ function AdminPage() {
 
   if (!isAdminLoggedIn) {
     return (
-      <PageShell width="compact" className="py-8">
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+      <PageShell>
+        <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
           <div className="absolute -right-28 -top-24 h-56 w-56 rounded-full bg-rose-100 blur-3xl"></div>
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-cyan-100 blur-3xl"></div>
 
-          <div className="relative grid gap-8 sm:grid-cols-2">
+          <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
             <div>
               <Logo className="mb-4 h-16" />
               <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white uppercase">
