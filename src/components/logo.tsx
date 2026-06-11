@@ -9,7 +9,7 @@ export function Logo({ className }: LogoProps) {
     <img
       src={resolvePublicAssetUrl('/assets/Logo.jpeg')}
       alt="Gaiser Logo"
-      className={`w-auto rounded-lg border border-slate-200 ${className ?? ''}`}
+      className={`w-auto ${className ?? ''}`}
     />
   )
 }

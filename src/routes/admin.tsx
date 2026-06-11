@@ -157,37 +157,38 @@ function AdminPage() {
                 Baustellen
               </NavLink>
 
-              <ClearDbButton className="mt-5" compact />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false)
-                  adminLogout()
-                }}
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
-              >
-                <LogOut className="h-4 w-4" strokeWidth={2.2} />
-                Abmelden
-              </button>
+              <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
+                <ClearDbButton compact />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    adminLogout()
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+                >
+                  <LogOut className="h-4 w-4" strokeWidth={2.2} />
+                  Abmelden
+                </button>
+              </div>
             </div>
           )}
 
-          <div className="mt-4 hidden items-center gap-2 sm:flex sm:flex-row sm:flex-wrap">
-            <NavLink 
+          <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
+            <NavLink
               to="/admin"
               activeOptions={{ exact: true }}
               icon={<ReceiptText className="h-4 w-4" strokeWidth={2.25} />}
             >
               Historie
             </NavLink>
-            <NavLink 
+            <NavLink
               to="/admin/products"
               icon={<Blocks className="h-4 w-4" strokeWidth={2.25} />}
             >
               Produkte
             </NavLink>
-            <NavLink 
+            <NavLink
               to="/admin/companies"
               icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
             >
@@ -200,12 +201,12 @@ function AdminPage() {
               Baustellen
             </NavLink>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-4">
               <ClearDbButton />
               <button
                 type="button"
                 onClick={adminLogout}
-                className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+                className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.2} />
                 Abmelden

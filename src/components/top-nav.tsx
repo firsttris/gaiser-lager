@@ -76,7 +76,7 @@ export function TopNav() {
                 logout()
                 void navigate({ to: '/' })
               }}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-4 text-sm font-medium text-slate-400 transition hover:text-slate-700"
             >
               <LogOut className="h-4 w-4" strokeWidth={2.2} />
               Abmelden
@@ -84,7 +84,7 @@ export function TopNav() {
           </div>
         )}
 
-        <div className="mt-4 hidden items-center gap-2 sm:flex sm:flex-row sm:flex-wrap">
+        <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
           <NavLink
             to="/wizard"
             icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}
@@ -98,14 +98,14 @@ export function TopNav() {
             Historie
           </NavLink>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center">
             <button
               type="button"
               onClick={() => {
                 logout()
                 void navigate({ to: '/' })
               }}
-              className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
             >
               <LogOut className="h-4 w-4" strokeWidth={2.2} />
               Abmelden
