@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Blocks, Building2, LogOut, Menu, ReceiptText, X } from 'lucide-react'
+import { Blocks, Building2, LogOut, MapPinned, Menu, ReceiptText, X } from 'lucide-react'
 import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
@@ -131,6 +131,15 @@ function AdminPage() {
                 Firmen
               </NavLink>
 
+              <NavLink
+                to="/admin/sites"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Baustellen
+              </NavLink>
+
               <ClearDbButton className="mt-5" compact />
 
               <button
@@ -166,6 +175,12 @@ function AdminPage() {
               icon={<Building2 className="h-4 w-4" strokeWidth={2.25} />}
             >
               Firmen
+            </NavLink>
+            <NavLink
+              to="/admin/sites"
+              icon={<MapPinned className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Baustellen
             </NavLink>
 
             <div className="ml-auto flex items-center gap-2">

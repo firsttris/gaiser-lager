@@ -33,7 +33,7 @@ function HistoryPage() {
 
       if (!query) return true
 
-      const haystack = `${record.note} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
+      const haystack = `${record.constructionSiteName} ${shortDocId(record.deliveryNoteId ?? '')} ${shortDocId(record.invoiceId ?? '')} ${shortDocId(record.cancelId ?? '')}`.toLocaleLowerCase('de-DE')
       return haystack.includes(query)
     })
   }, [companyRecords, searchText, statusFilter, typeFilter])
@@ -196,7 +196,7 @@ function HistoryPage() {
             <input
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Notiz, LS-/RG-/ST-Nummer"
+              placeholder="Baustelle, LS-/RG-/ST-Nummer"
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>

@@ -17,6 +17,7 @@ import { Route as WizardIndexRouteImport } from './routes/wizard.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WizardPickupRouteImport } from './routes/wizard.pickup'
 import { Route as WizardDropoffRouteImport } from './routes/wizard.dropoff'
+import { Route as AdminSitesRouteImport } from './routes/admin.sites'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminCompaniesRouteImport } from './routes/admin.companies'
 
@@ -60,6 +61,11 @@ const WizardDropoffRoute = WizardDropoffRouteImport.update({
   path: '/dropoff',
   getParentRoute: () => WizardRoute,
 } as any)
+const AdminSitesRoute = AdminSitesRouteImport.update({
+  id: '/sites',
+  path: '/sites',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
   '/admin/': typeof AdminIndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
   '/admin': typeof AdminIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/wizard': typeof WizardRouteWithChildren
   '/admin/companies': typeof AdminCompaniesRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/sites': typeof AdminSitesRoute
   '/wizard/dropoff': typeof WizardDropoffRoute
   '/wizard/pickup': typeof WizardPickupRoute
   '/admin/': typeof AdminIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/wizard'
     | '/admin/companies'
     | '/admin/products'
+    | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
     | '/admin/'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/admin/companies'
     | '/admin/products'
+    | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
     | '/admin'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/wizard'
     | '/admin/companies'
     | '/admin/products'
+    | '/admin/sites'
     | '/wizard/dropoff'
     | '/wizard/pickup'
     | '/admin/'
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WizardDropoffRouteImport
       parentRoute: typeof WizardRoute
     }
+    '/admin/sites': {
+      id: '/admin/sites'
+      path: '/sites'
+      fullPath: '/admin/sites'
+      preLoaderRoute: typeof AdminSitesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
@@ -228,12 +247,14 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminCompaniesRoute: typeof AdminCompaniesRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminSitesRoute: typeof AdminSitesRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCompaniesRoute: AdminCompaniesRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminSitesRoute: AdminSitesRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

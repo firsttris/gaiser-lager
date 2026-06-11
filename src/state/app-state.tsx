@@ -23,16 +23,22 @@ export type Product = {
   dropoffBusinessPrice: number
 }
 
+export type ConstructionSite = {
+  id: string
+  name: string
+}
+
 export type RecordItem = {
   id: number
   company: string
+  constructionSiteId: string
+  constructionSiteName: string
   type: FlowType
   productName: string
   amount: number
   unit: string
   unitPrice: number
   total: number
-  note: string
   status: RecordStatus
   createdAt: string
   deliveryNoteId?: string
@@ -47,7 +53,7 @@ type CreateRecordInput = {
   type: FlowType
   product: Product
   amount: number
-  note: string
+  constructionSiteName: string
 }
 
 type CreateCompanyInput = {
@@ -90,6 +96,19 @@ type DeleteProductInput = {
   id: number
 }
 
+type CreateConstructionSiteInput = {
+  name: string
+}
+
+type UpdateConstructionSiteInput = {
+  id: string
+  name: string
+}
+
+type DeleteConstructionSiteInput = {
+  id: string
+}
+
 type AppState = {
   hydrated: boolean
   companies: Company[]
@@ -97,6 +116,7 @@ type AppState = {
   isLoggedIn: boolean
   isAdminLoggedIn: boolean
   products: Product[]
+  constructionSites: ConstructionSite[]
   records: RecordItem[]
   login: (companyId: string, pin: string) => LoginResult
   logout: () => void
@@ -110,6 +130,9 @@ type AppState = {
   createProduct: (input: CreateProductInput) => CreateCompanyResult
   updateProduct: (input: UpdateProductInput) => CreateCompanyResult
   deleteProduct: (input: DeleteProductInput) => CreateCompanyResult
+  createConstructionSite: (input: CreateConstructionSiteInput) => CreateCompanyResult
+  updateConstructionSite: (input: UpdateConstructionSiteInput) => CreateCompanyResult
+  deleteConstructionSite: (input: DeleteConstructionSiteInput) => CreateCompanyResult
   updateRecordStatus: (recordId: number, status: RecordStatus) => void
   assignDeliveryNote: (recordIds: number[], deliveryNoteId: string) => void
   assignInvoice: (recordIds: number[], invoiceId: string) => void
@@ -142,6 +165,11 @@ const productsSeed: Product[] = [
   { id: 15, name: 'Mineralgemisch 0/16',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 24,   pickupBusinessPrice: 16.7, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
   { id: 16, name: 'Mineralgemisch 0/32',                      unit: 't',  flow: 'pickup', pickupPrivatePrice: 22,   pickupBusinessPrice: 15.1, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
   { id: 17, name: 'Splitt 2/5',                               unit: 't',  flow: 'pickup', pickupPrivatePrice: 27,   pickupBusinessPrice: 20.4, dropoffPrivatePrice: 0,  dropoffBusinessPrice: 0 },
+]
+
+const constructionSitesSeed: ConstructionSite[] = [
+  { id: 'baustelle-nordring', name: 'Nordring 12, Berlin' },
+  { id: 'baustelle-hafenallee', name: 'Hafenallee 8, Potsdam' },
 ]
 
 type LegacyCompany = Omit<Company, 'priceCategory'> & { priceCategory?: PriceCategory }
@@ -236,8 +264,25 @@ function normalizeRecordStatus(status: string): RecordStatus {
 function normalizeRecords(raw: RecordItem[]): RecordItem[] {
   return raw.map((record) => ({
     ...record,
+    constructionSiteId: (record as Partial<RecordItem>).constructionSiteId ?? '',
+    constructionSiteName: (record as Partial<RecordItem>).constructionSiteName ?? '',
     status: normalizeRecordStatus(record.status),
   }))
+}
+
+function normalizeConstructionSiteName(name: string) {
+  return name
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+function createConstructionSiteId(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+  return `site-${slug || 'neu'}-${Date.now()}`
 }
 
 const AppStateContext = createContext<AppState | null>(null)
@@ -245,6 +290,7 @@ const ADMIN_PASSWORD = 'admin'
 const STORAGE_KEYS = {
   companies: 'gaiser.mock.companies.v1',
   products: 'gaiser.mock.products.v1',
+  constructionSites: 'gaiser.mock.constructionSites.v1',
   records: 'gaiser.mock.records.v1',
   selectedCompanyId: 'gaiser.mock.selectedCompanyId.v1',
   adminLoggedIn: 'gaiser.mock.adminLoggedIn.v1',
@@ -276,6 +322,7 @@ function loadPersistedState() {
   return {
     companies: normalizeCompanies(readStorage<LegacyCompany[]>(STORAGE_KEYS.companies, companiesSeed)),
     products: normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)),
+    constructionSites: readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed),
     records: normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])),
     selectedCompanyId: readStorage<string | null>(STORAGE_KEYS.selectedCompanyId, null),
     adminLoggedIn: readStorage<boolean>(STORAGE_KEYS.adminLoggedIn, false),
@@ -288,12 +335,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [products, setProducts] = useState<Product[]>(productsSeed)
+  const [constructionSites, setConstructionSites] = useState<ConstructionSite[]>(constructionSitesSeed)
   const [records, setRecords] = useState<RecordItem[]>([])
 
   useEffect(() => {
     const persisted = loadPersistedState()
     setCompanies(persisted.companies)
     setProducts(persisted.products)
+    setConstructionSites(persisted.constructionSites)
     setRecords(persisted.records)
     setIsAdminLoggedIn(persisted.adminLoggedIn)
     setSelectedCompany(
@@ -311,6 +360,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return
     writeStorage(STORAGE_KEYS.products, products)
   }, [hydrated, products])
+
+  useEffect(() => {
+    if (!hydrated) return
+    writeStorage(STORAGE_KEYS.constructionSites, constructionSites)
+  }, [hydrated, constructionSites])
 
   useEffect(() => {
     if (!hydrated) return
@@ -350,6 +404,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProducts(normalizeProducts(readStorage<LegacyProduct[]>(STORAGE_KEYS.products, productsSeed)))
       }
 
+      if (event.key === STORAGE_KEYS.constructionSites) {
+        setConstructionSites(readStorage<ConstructionSite[]>(STORAGE_KEYS.constructionSites, constructionSitesSeed))
+      }
+
       if (event.key === STORAGE_KEYS.records) {
         setRecords(normalizeRecords(readStorage<RecordItem[]>(STORAGE_KEYS.records, [])))
       }
@@ -379,6 +437,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isLoggedIn: selectedCompany !== null,
       isAdminLoggedIn,
       products,
+      constructionSites,
       records,
       login: (companyId: string, pin: string) => {
         const company = companies.find((item) => item.id === companyId)
@@ -416,23 +475,43 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
         setCompanies(companiesSeed)
         setProducts(productsSeed)
+        setConstructionSites(constructionSitesSeed)
         setRecords([])
       },
-      createRecord: ({ type, product, amount, note }: CreateRecordInput) => {
+      createRecord: ({ type, product, amount, constructionSiteName }: CreateRecordInput) => {
         if (!selectedCompany) return
+
+        const cleanedConstructionSiteName = normalizeConstructionSiteName(constructionSiteName)
+        if (!cleanedConstructionSiteName) return
+
+        const existingConstructionSite = constructionSites.find(
+          (item) => item.name.toLocaleLowerCase('de-DE') === cleanedConstructionSiteName.toLocaleLowerCase('de-DE'),
+        )
+
+        const resolvedConstructionSite =
+          existingConstructionSite ??
+          ({
+            id: createConstructionSiteId(cleanedConstructionSiteName),
+            name: cleanedConstructionSiteName,
+          } satisfies ConstructionSite)
+
+        if (!existingConstructionSite) {
+          setConstructionSites((prev) => [...prev, resolvedConstructionSite])
+        }
 
         const unitPrice = getUnitPrice(product, type, selectedCompany.priceCategory)
         const total = unitPrice * amount
         const nextRecord: RecordItem = {
           id: Date.now(),
           company: selectedCompany.name,
+          constructionSiteId: resolvedConstructionSite.id,
+          constructionSiteName: resolvedConstructionSite.name,
           type,
           productName: product.name,
           amount,
           unit: product.unit,
           unitPrice,
           total,
-          note,
           status: 'offen',
           createdAt: new Date().toLocaleString('de-DE'),
         }
@@ -651,6 +730,82 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setProducts((prev) => prev.filter((item) => item.id !== id))
         return { ok: true }
       },
+      createConstructionSite: ({ name }: CreateConstructionSiteInput) => {
+        const cleanedName = normalizeConstructionSiteName(name)
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte Baustellenname ausfuellen.' }
+        }
+
+        const exists = constructionSites.some(
+          (item) => item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
+        )
+        if (exists) {
+          return { ok: false, message: 'Diese Baustelle existiert bereits.' }
+        }
+
+        const nextSite: ConstructionSite = {
+          id: createConstructionSiteId(cleanedName),
+          name: cleanedName,
+        }
+
+        setConstructionSites((prev) => [...prev, nextSite])
+        return { ok: true }
+      },
+      updateConstructionSite: ({ id, name }: UpdateConstructionSiteInput) => {
+        const currentSite = constructionSites.find((item) => item.id === id)
+        if (!currentSite) {
+          return { ok: false, message: 'Die Baustelle wurde nicht gefunden.' }
+        }
+
+        const cleanedName = normalizeConstructionSiteName(name)
+        if (!cleanedName) {
+          return { ok: false, message: 'Bitte Baustellenname ausfuellen.' }
+        }
+
+        const alreadyExists = constructionSites.some(
+          (item) =>
+            item.id !== id &&
+            item.name.toLocaleLowerCase('de-DE') === cleanedName.toLocaleLowerCase('de-DE'),
+        )
+        if (alreadyExists) {
+          return { ok: false, message: 'Diese Baustelle existiert bereits.' }
+        }
+
+        setConstructionSites((prev) =>
+          prev.map((item) => {
+            if (item.id !== id) return item
+            return { ...item, name: cleanedName }
+          }),
+        )
+
+        if (currentSite.name !== cleanedName) {
+          setRecords((prev) =>
+            prev.map((record) => {
+              if (record.constructionSiteId !== id) return record
+              return { ...record, constructionSiteName: cleanedName }
+            }),
+          )
+        }
+
+        return { ok: true }
+      },
+      deleteConstructionSite: ({ id }: DeleteConstructionSiteInput) => {
+        const currentSite = constructionSites.find((item) => item.id === id)
+        if (!currentSite) {
+          return { ok: false, message: 'Die Baustelle wurde nicht gefunden.' }
+        }
+
+        const hasHistory = records.some((record) => record.constructionSiteId === id)
+        if (hasHistory) {
+          return {
+            ok: false,
+            message: 'Baustelle kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+          }
+        }
+
+        setConstructionSites((prev) => prev.filter((item) => item.id !== id))
+        return { ok: true }
+      },
       updateRecordStatus: (recordId: number, status: RecordStatus) => {
         setRecords((prev) =>
           prev.map((record) => {
@@ -684,7 +839,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         )
       },
     }),
-    [hydrated, companies, isAdminLoggedIn, products, records, selectedCompany],
+    [hydrated, companies, isAdminLoggedIn, products, constructionSites, records, selectedCompany],
   )
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>

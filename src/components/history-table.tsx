@@ -78,6 +78,7 @@ export function HistoryTable({
                     <p className="mt-1 text-sm font-semibold text-slate-900">{record.company}</p>
                   )}
                   <p className="mt-1 text-sm text-slate-700">{record.productName}</p>
+                  <p className="mt-1 text-xs text-slate-600">Baustelle: {record.constructionSiteName || '-'}</p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {palette && (
                       <button
@@ -143,11 +144,6 @@ export function HistoryTable({
                   <dd className="font-semibold text-slate-800">{statusLabel(record.status)}</dd>
                 </div>
               </dl>
-
-              <p className="mt-3 max-w-full whitespace-pre-wrap wrap-break-word text-xs text-slate-600">
-                Notiz: {record.note || '-'}
-              </p>
-
               {onStatusChange && (
                 <label className="mt-3 block text-xs font-semibold text-slate-700">
                   Status
@@ -187,14 +183,14 @@ export function HistoryTable({
               <th className="w-20 px-2 py-2">Typ</th>
               <th className="px-2 py-2">Produkt</th>
               <th className="w-16 px-2 py-2">Menge</th>
-              <th className={`hidden w-28 px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>Preis</th>
+              <th className={`hidden w-28 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Preis</th>
               <th className="w-28 px-2 py-2">Gesamt</th>
               {onStatusChange ? (
                 <th className="w-32 px-2 py-2">Status</th>
               ) : (
                 <th className="w-24 px-2 py-2">Status</th>
               )}
-              <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Notiz</th>
+              <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>Baustelle</th>
             </tr>
           </thead>
           <tbody>
@@ -256,7 +252,7 @@ export function HistoryTable({
                   <td className="px-2 py-2 text-xs">
                     {record.amount} {record.unit}
                   </td>
-                  <td className={`hidden whitespace-nowrap px-2 py-2 ${showCompanyColumn ? 'xl:table-cell' : 'lg:table-cell'}`}>
+                  <td className={`hidden whitespace-nowrap px-2 py-2 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
                     {money(record.unitPrice)}
                   </td>
                   <td className="whitespace-nowrap px-2 py-2 font-semibold text-slate-900">{money(record.total)}</td>
@@ -278,7 +274,7 @@ export function HistoryTable({
                     <td className="px-2 py-2 text-xs">{statusLabel(record.status)}</td>
                   )}
                   <td className={`hidden px-2 py-2 text-slate-600 ${showCompanyColumn ? '2xl:table-cell' : 'xl:table-cell'}`}>
-                    <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.note || '-'}</p>
+                    <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.constructionSiteName || '-'}</p>
                   </td>
                 </tr>
               )

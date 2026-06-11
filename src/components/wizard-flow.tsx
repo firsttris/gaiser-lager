@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type FlowType } from '../state/app-state'
 
 type ProductVisual = {
@@ -52,7 +53,7 @@ function resolvePublicAssetUrl(path: string) {
 }
 
 export function WizardFlow({ flowType }: { flowType: FlowType }) {
-  const { products, selectedCompany, createRecord } = useAppState()
+  const { products, selectedCompany, constructionSites, createRecord } = useAppState()
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)
@@ -60,20 +61,21 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
     () => products.find((p) => p.flow === flowType)?.id ?? 0,
   )
   const [amount, setAmount] = useState('')
-  const [note, setNote] = useState('')
+  const [constructionSiteName, setConstructionSiteName] = useState('')
   const [successRecord, setSuccessRecord] = useState<{
     type: FlowType
+    constructionSiteName: string
     productName: string
     amount: number
     unit: string
     total: number
-    note: string
   } | null>(null)
 
   const availableProducts = products.filter((p) => p.flow === flowType)
   const selectedProduct = availableProducts.find((p) => p.id === Number(selectedProductId))
   const parsedAmount = Number(amount)
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0
+  const validConstructionSiteName = constructionSiteName.trim().length > 0
   const currentUnitPrice = selectedProduct
     ? flowType === 'pickup'
       ? selectedCompany?.priceCategory === 'private'
@@ -87,22 +89,27 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
   const total = validAmount ? parsedAmount * currentUnitPrice : 0
 
   function submitRecord() {
-    if (!selectedProduct || !validAmount) return
+    if (!selectedProduct || !validAmount || !validConstructionSiteName) return
 
-    createRecord({ type: flowType, product: selectedProduct, amount: parsedAmount, note })
+    createRecord({
+      type: flowType,
+      product: selectedProduct,
+      amount: parsedAmount,
+      constructionSiteName,
+    })
 
     setSuccessRecord({
       type: flowType,
+      constructionSiteName: constructionSiteName.trim(),
       productName: selectedProduct.name,
       amount: parsedAmount,
       unit: selectedProduct.unit,
       total,
-      note,
     })
     setStep(3)
     setSelectedProductId(products.find((p) => p.flow === flowType)?.id ?? 0)
     setAmount('')
-    setNote('')
+    setConstructionSiteName('')
   }
 
   if (step === 1) {
@@ -167,16 +174,16 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
               className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-500"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="text-sm font-semibold text-slate-700">Notiz (optional)</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            placeholder="Baustelle, Fahrzeug, Hinweis"
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-500"
+          <AutocompleteInput
+            label="Baustelle"
+            value={constructionSiteName}
+            onChange={setConstructionSiteName}
+            options={constructionSites.map((site) => ({ id: site.id, label: site.name, badge: 'bekannt' }))}
+            placeholder="z.B. Nordring 12, Berlin"
+            required
+            helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
+            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 pr-11 outline-none focus:border-amber-500"
           />
         </div>
 
@@ -197,7 +204,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
           <button
             type="button"
             onClick={() => setStep(2)}
-            disabled={!validAmount}
+            disabled={!validAmount || !validConstructionSiteName}
             className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Weiter zu Pruefung
@@ -227,6 +234,10 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             </dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
+            <dt className="text-slate-500">Baustelle</dt>
+            <dd className="font-semibold">{constructionSiteName.trim()}</dd>
+          </div>
+          <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Einzelpreis</dt>
             <dd className="font-semibold">
               {money(currentUnitPrice)} ({priceCategoryLabel})
@@ -235,10 +246,6 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
           <div className="rounded-xl bg-amber-50 p-4">
             <dt className="text-amber-700">Gesamtsumme</dt>
             <dd className="text-lg font-bold text-amber-800">{money(total)}</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
-            <dt className="text-slate-500">Notiz</dt>
-            <dd className="font-semibold">{note || '-'}</dd>
           </div>
         </dl>
 
@@ -253,6 +260,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
           <button
             type="button"
             onClick={submitRecord}
+            disabled={!validAmount || !validConstructionSiteName}
             className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
           >
             Vorgang anlegen
@@ -290,6 +298,10 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             <dd className="font-semibold">{successRecord.productName}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
+            <dt className="text-slate-500">Baustelle</dt>
+            <dd className="font-semibold">{successRecord.constructionSiteName}</dd>
+          </div>
+          <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Menge</dt>
             <dd className="font-semibold">
               {successRecord.amount} {successRecord.unit}
@@ -298,10 +310,6 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
           <div className="rounded-xl bg-emerald-50 p-4">
             <dt className="text-emerald-700">Gesamtsumme</dt>
             <dd className="text-lg font-bold text-emerald-800">{money(successRecord.total)}</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
-            <dt className="text-slate-500">Notiz</dt>
-            <dd className="font-semibold">{successRecord.note || '-'}</dd>
           </div>
         </dl>
 

@@ -64,13 +64,13 @@ export function createHistoryCsv(records: RecordItem[], includeCompany: boolean)
   const baseHeader = [
     'Zeit',
     'Typ',
+    'Baustelle',
     'Produkt',
     'Menge',
     'Einheit',
     'Einzelpreis EUR',
     'Gesamt EUR',
     'Status',
-    'Notiz',
   ]
 
   const header = includeCompany
@@ -81,13 +81,13 @@ export function createHistoryCsv(records: RecordItem[], includeCompany: boolean)
     const baseRow: Array<string | number> = [
       record.createdAt,
       flowLabel(record.type),
+      record.constructionSiteName || '-',
       record.productName,
       record.amount,
       record.unit,
       record.unitPrice,
       record.total,
       statusLabel(record.status),
-      record.note || '-',
     ]
 
     return includeCompany

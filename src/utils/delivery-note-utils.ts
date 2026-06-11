@@ -97,7 +97,7 @@ export function downloadInvoicePdf(
     pdf.setFontSize(9)
 
     const createdAt = record.createdAt.slice(0, 10)
-    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const service = `${flowLabel(record.type)}: ${record.productName} (${record.constructionSiteName || '-'})`
     const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
 
     pdf.text(String(index + 1), left, y)
@@ -240,7 +240,7 @@ export function downloadStornoDoc(
     pdf.setFontSize(9)
 
     const createdAt = record.createdAt.slice(0, 10)
-    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const service = `${flowLabel(record.type)}: ${record.productName} (${record.constructionSiteName || '-'})`
     const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
 
     pdf.text(String(index + 1), left, y)
@@ -291,11 +291,6 @@ export function toSafeFileDate(value: string) {
   return value.replace(/[^0-9A-Za-z]/g, '-')
 }
 
-function truncatePdfText(value: string, maxLength: number) {
-  if (value.length <= maxLength) return value
-  return `${value.slice(0, maxLength - 3)}...`
-}
-
 export function appendDeliveryNotePage(
   pdf: jsPDF,
   record: RecordItem,
@@ -339,6 +334,8 @@ export function appendDeliveryNotePage(
   pdf.setFont('helvetica', 'normal')
   pdf.text(`Material: ${record.productName}`, left, y)
   y += 6
+  pdf.text(`Baustelle: ${record.constructionSiteName || '-'}`, left, y)
+  y += 6
   pdf.text(`Menge: ${record.amount} ${record.unit}`, left, y)
   y += 6
   pdf.text(`Einzelpreis: ${money(record.unitPrice)}`, left, y)
@@ -349,9 +346,6 @@ export function appendDeliveryNotePage(
   y += 8
   pdf.setFont('helvetica', 'normal')
   pdf.text(`Status: ${record.status}`, left, y)
-  y += 6
-  const noteText = truncatePdfText(record.note || '-', 90)
-  pdf.text(`Notiz: ${noteText}`, left, y)
 
   const pageHeight = 297
   const sigLineY = pageHeight - 22
@@ -434,14 +428,15 @@ export function downloadCombinedDeliveryNote(records: RecordItem[], companyName:
       y,
     )
     y += 5
+    pdf.text(`Baustelle: ${record.constructionSiteName || '-'}`, left, y)
+    y += 5
     pdf.text(
       `Menge: ${record.amount} ${record.unit} | Einzelpreis: ${money(record.unitPrice)} | Gesamt: ${money(record.total)}`,
       left,
       y,
     )
     y += 5
-    const noteText = truncatePdfText(record.note || '-', 70)
-    pdf.text(`Status: ${record.status} | Notiz: ${noteText}`, left, y)
+    pdf.text(`Status: ${record.status}`, left, y)
     y += 6
 
     pdf.setDrawColor(220)
