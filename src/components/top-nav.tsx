@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
+import { Building2, ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
@@ -12,12 +12,20 @@ export function TopNav() {
   if (!isLoggedIn) return null
 
   return (
-    <header className="mb-6 space-y-4">
-      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Gaiser Lager</p>
-            <h2 className="font-title text-4xl leading-none text-slate-900">{selectedCompany?.name}</h2>
+    <header className="mb-8">
+      <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-8">
+        <div className="flex items-center justify-between gap-4 sm:gap-8">
+          <div className="flex min-w-0 items-center gap-4">
+            <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="h-16 w-auto shrink-0" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Building2 className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
+                <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Kunde</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-title text-3xl leading-none text-slate-900 sm:text-4xl">{selectedCompany?.name}</h2>
+              </div>
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:hidden">

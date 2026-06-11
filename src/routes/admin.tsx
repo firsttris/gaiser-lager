@@ -36,6 +36,7 @@ function AdminPage() {
 
           <div className="relative grid gap-8 sm:grid-cols-2">
             <div>
+              <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="mb-4 h-16 w-auto" />
               <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white uppercase">
                 Admin
               </p>
@@ -80,12 +81,15 @@ function AdminPage() {
 
   return (
     <PageShell>
-      <header className="mb-6 space-y-4">
-        <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Admin Bereich</p>
-              <h1 className="font-title text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
+      <header className="mb-8">
+        <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-8">
+          <div className="flex items-center justify-between gap-4 sm:gap-8">
+            <div className="flex min-w-0 items-center gap-4">
+              <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="h-16 w-auto shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">Admin</p>
+                <h1 className="font-title text-3xl leading-none text-slate-900 sm:text-4xl">Verwaltung</h1>
+              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:hidden">

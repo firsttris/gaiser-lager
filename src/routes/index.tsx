@@ -57,9 +57,7 @@ function App() {
 
         <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
-            <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-amber-800 uppercase">
-              Gaiser Baustoffe
-            </p>
+            <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="mb-2 h-16 w-auto" />
             <h1 className="font-title text-5xl leading-none text-slate-900 sm:text-6xl">
               Material
               <br />
