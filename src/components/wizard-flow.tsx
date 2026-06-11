@@ -47,6 +47,10 @@ function money(value: number) {
   }).format(value)
 }
 
+function resolvePublicAssetUrl(path: string) {
+  return `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
+}
+
 export function WizardFlow({ flowType }: { flowType: FlowType }) {
   const { products, selectedCompany, createRecord } = useAppState()
   const navigate = useNavigate()
@@ -125,7 +129,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
                   >
                     {visual.imagePath ? (
                       <img
-                        src={visual.imagePath}
+                        src={resolvePublicAssetUrl(visual.imagePath)}
                         alt={p.name}
                         className="w-full aspect-video object-cover transition-transform duration-300 group-hover:scale-105"
                       />

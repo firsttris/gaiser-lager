@@ -5,6 +5,7 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
+  base: process.env.NODE_ENV === 'production' ? '/gaiser-lager/' : '/',
   resolve: { tsconfigPaths: true },
   plugins: [
     devtools(),

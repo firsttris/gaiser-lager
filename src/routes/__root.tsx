@@ -33,7 +33,7 @@ export const Route = createRootRoute({
         content: 'yes',
       },
       {
-        title: 'Gaiser Dashboard',
+        title: 'Gaiser Lager',
       },
     ],
     links: [

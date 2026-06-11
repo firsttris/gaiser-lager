@@ -1,5 +1,5 @@
 {
-  "projectName": "gaiser-dashboard",
+  "projectName": "gaiser-lager",
   "mode": "file-router",
   "typescript": true,
   "tailwind": true,
