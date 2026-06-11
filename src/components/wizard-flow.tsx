@@ -119,7 +119,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="text-sm font-semibold text-slate-700">Material</label>
-            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {availableProducts.map((p) => {
                 const visual = getVisual(p.id)
                 const isSelected = p.id === selectedProductId
