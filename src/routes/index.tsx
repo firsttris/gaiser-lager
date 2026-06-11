@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
-import { resolvePublicAssetUrl } from '../utils/public-asset-url'
+import { Logo } from '../components/logo'
 
 export const Route = createFileRoute('/')({ component: App })
 
@@ -58,7 +58,7 @@ function App() {
 
         <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
-            <img src={resolvePublicAssetUrl('/assets/Logo.jpeg')} alt="Gaiser Logo" className="mb-2 h-16 w-auto" />
+            <Logo className="mb-2 h-16" />
             <h1 className="font-title text-5xl leading-none text-slate-900 sm:text-6xl">
               Material
               <br />
