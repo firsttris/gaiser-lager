@@ -63,6 +63,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
     type: FlowType
     constructionSiteName: string
     productName: string
+    productId: number
     amount: number
     unit: string
     total: number
@@ -99,6 +100,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
       type: flowType,
       constructionSiteName: constructionSiteName.trim(),
       productName: selectedProduct.name,
+      productId: selectedProduct.id,
       amount: parsedAmount,
       unit: selectedProduct.unit,
       total,
@@ -212,6 +214,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
   }
 
   if (step === 2) {
+    const step2Visual = selectedProduct ? getVisual(selectedProduct.id) : null
     return (
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <h3 className="font-title text-4xl text-slate-900">Vorgang pruefen</h3>
@@ -220,10 +223,31 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             <dt className="text-slate-500">Typ</dt>
             <dd className="font-semibold">{flowType === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Material</dt>
-            <dd className="font-semibold">{selectedProduct?.name}</dd>
-          </div>
+          {step2Visual ? (
+            <div className="relative overflow-hidden rounded-xl sm:col-span-2">
+              {step2Visual.imagePath ? (
+                <img
+                  src={resolvePublicAssetUrl(step2Visual.imagePath)}
+                  alt={selectedProduct?.name}
+                  className="w-full aspect-video object-cover sm:aspect-3/1"
+                />
+              ) : (
+                <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br sm:aspect-3/1 ${step2Visual.gradient}`}>
+                  <span className="text-3xl">{step2Visual.emoji}</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
+                <p className="text-xs text-white/70">Material</p>
+                <p className="text-sm font-semibold text-white drop-shadow">{selectedProduct?.name}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl bg-slate-50 p-4">
+              <dt className="text-slate-500">Material</dt>
+              <dd className="font-semibold">{selectedProduct?.name}</dd>
+            </div>
+          )}
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Menge</dt>
             <dd className="font-semibold">
@@ -268,6 +292,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
   }
 
   if (step === 3 && successRecord) {
+    const step3Visual = getVisual(successRecord.productId)
     return (
       <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         <div className="flex items-center gap-3">
@@ -290,9 +315,23 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             <dt className="text-slate-500">Typ</dt>
             <dd className="font-semibold">{successRecord.type === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Material</dt>
-            <dd className="font-semibold">{successRecord.productName}</dd>
+          <div className="relative overflow-hidden rounded-xl sm:col-span-2">
+            {step3Visual.imagePath ? (
+              <img
+                src={resolvePublicAssetUrl(step3Visual.imagePath)}
+                alt={successRecord.productName}
+                className="w-full aspect-video object-cover sm:aspect-3/1"
+              />
+            ) : (
+              <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br sm:aspect-3/1 ${step3Visual.gradient}`}>
+                <span className="text-3xl">{step3Visual.emoji}</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
+              <p className="text-xs text-white/70">Material</p>
+              <p className="text-sm font-semibold text-white drop-shadow">{successRecord.productName}</p>
+            </div>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Baustelle</dt>
