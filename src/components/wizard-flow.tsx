@@ -137,7 +137,7 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-                    <span className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-semibold leading-tight text-white drop-shadow">
+                    <span className="absolute bottom-0 left-0 right-0 truncate px-3 py-2 text-xs font-semibold leading-tight text-white drop-shadow sm:overflow-visible sm:whitespace-normal sm:text-clip sm:wrap-anywhere">
                       {p.name}
                     </span>
                     {isSelected && (
