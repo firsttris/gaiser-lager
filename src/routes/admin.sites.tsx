@@ -169,8 +169,8 @@ function AdminSitesPage() {
         ))}
       </div>
 
-      <div className="mt-5 hidden overflow-x-auto md:block">
-        <table className="w-full min-w-2xl table-fixed border-collapse text-sm">
+      <div className="mt-5 hidden md:block">
+        <table className="w-full table-fixed border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="px-3 py-2">Baustelle</th>
