@@ -224,15 +224,15 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             <dd className="font-semibold">{flowType === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
           {step2Visual ? (
-            <div className="relative overflow-hidden rounded-xl sm:col-span-2">
+            <div className="relative overflow-hidden rounded-xl">
               {step2Visual.imagePath ? (
                 <img
                   src={resolvePublicAssetUrl(step2Visual.imagePath)}
                   alt={selectedProduct?.name}
-                  className="w-full aspect-video object-cover sm:aspect-3/1"
+                  className="w-full aspect-video object-cover"
                 />
               ) : (
-                <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br sm:aspect-3/1 ${step2Visual.gradient}`}>
+                <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br ${step2Visual.gradient}`}>
                   <span className="text-3xl">{step2Visual.emoji}</span>
                 </div>
               )}
@@ -315,15 +315,15 @@ export function WizardFlow({ flowType }: { flowType: FlowType }) {
             <dt className="text-slate-500">Typ</dt>
             <dd className="font-semibold">{successRecord.type === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
-          <div className="relative overflow-hidden rounded-xl sm:col-span-2">
+          <div className="relative overflow-hidden rounded-xl">
             {step3Visual.imagePath ? (
               <img
                 src={resolvePublicAssetUrl(step3Visual.imagePath)}
                 alt={successRecord.productName}
-                className="w-full aspect-video object-cover sm:aspect-3/1"
+                className="w-full aspect-video object-cover"
               />
             ) : (
-              <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br sm:aspect-3/1 ${step3Visual.gradient}`}>
+              <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br ${step3Visual.gradient}`}>
                 <span className="text-3xl">{step3Visual.emoji}</span>
               </div>
             )}
