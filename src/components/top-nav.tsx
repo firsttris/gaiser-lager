@@ -3,6 +3,7 @@ import { Building2, ClipboardPlus, History, LogOut, Menu, X } from 'lucide-react
 import { useState } from 'react'
 import { NavLink } from './nav-link'
 import { useAppState } from '../state/app-state'
+import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 
 export function TopNav() {
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ export function TopNav() {
       <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-8">
         <div className="flex items-start justify-between gap-4 sm:gap-8">
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 sm:flex-nowrap">
-            <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="h-12 w-auto shrink-0 sm:h-16" />
+            <img src={resolvePublicAssetUrl('/assets/Logo.jpeg')} alt="Gaiser Logo" className="h-12 w-auto shrink-0 sm:h-16" />
             <div className="min-w-0 basis-full pt-4 sm:basis-auto sm:pt-0">
               <div className="mb-1 flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />

@@ -5,6 +5,7 @@ import { ClearDbButton } from '../components/clear-db-button'
 import { NavLink } from '../components/nav-link'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
+import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
 
@@ -36,7 +37,7 @@ function AdminPage() {
 
           <div className="relative grid gap-8 sm:grid-cols-2">
             <div>
-              <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="mb-4 h-16 w-auto" />
+              <img src={resolvePublicAssetUrl('/assets/Logo.jpeg')} alt="Gaiser Logo" className="mb-4 h-16 w-auto" />
               <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white uppercase">
                 Admin
               </p>
@@ -85,7 +86,7 @@ function AdminPage() {
         <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-8">
           <div className="flex items-start justify-between gap-4 sm:gap-8">
             <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 sm:flex-nowrap">
-              <img src="/assets/Logo.jpeg" alt="Gaiser Logo" className="h-12 w-auto shrink-0 sm:h-16" />
+              <img src={resolvePublicAssetUrl('/assets/Logo.jpeg')} alt="Gaiser Logo" className="h-12 w-auto shrink-0 sm:h-16" />
               <div className="min-w-0 basis-full pt-4 sm:basis-auto sm:pt-0">
                 <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">Admin</p>
                 <h1 className="font-title text-2xl leading-tight text-slate-900 sm:text-4xl sm:leading-none">Verwaltung</h1>

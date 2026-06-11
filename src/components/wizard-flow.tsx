@@ -2,6 +2,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type FlowType } from '../state/app-state'
+import { resolvePublicAssetUrl } from '../utils/public-asset-url'
 
 type ProductVisual = {
   gradient: string
@@ -46,10 +47,6 @@ function money(value: number) {
     currency: 'EUR',
     minimumFractionDigits: 2,
   }).format(value)
-}
-
-function resolvePublicAssetUrl(path: string) {
-  return `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
 }
 
 export function WizardFlow({ flowType }: { flowType: FlowType }) {
