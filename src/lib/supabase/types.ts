@@ -88,6 +88,7 @@ export type SignupSettingsRow = {
   master_pin_hash: string
   failed_pin_attempts: number
   pin_locked_until: string | null
+  inactivity_timeout_minutes: number
   updated_at: string
 }
 

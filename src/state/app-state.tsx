@@ -10,7 +10,12 @@ import {
   adminDeleteCompany,
   adminSetCompanyPin,
 } from '../server/companies'
-import { adminSetMasterPin, verifySignupMasterPin } from '../server/signup-settings'
+import {
+  adminSetMasterPin,
+  adminUpdateInactivityTimeout,
+  signupSettingsQueryOptions,
+  verifySignupMasterPin,
+} from '../server/signup-settings'
 import { adminDownloadBackup } from '../server/backup'
 import { downloadSqlFile } from '../utils/history-utils'
 import {
@@ -115,12 +120,20 @@ export type NumberingSettings = {
   numberPadding: number
 }
 
+export type SignupSettings = {
+  inactivityTimeoutMinutes: number
+}
+
 const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
   invoiceTemplate: 'RG-{JAHR}{MONAT}{TAG}-{NUMMER}',
   deliveryNoteTemplate: 'LS-{JAHR}{MONAT}{TAG}-{NUMMER}',
   nextInvoiceNumber: 1,
   nextDeliveryNoteNumber: 1,
   numberPadding: 4,
+}
+
+const DEFAULT_SIGNUP_SETTINGS: SignupSettings = {
+  inactivityTimeoutMinutes: 5,
 }
 
 type UpdateNumberingSettingsInput = Partial<NumberingSettings>
@@ -251,6 +264,10 @@ type VerifyMasterPinInput = {
   masterPin: string
 }
 
+type UpdateInactivityTimeoutInput = {
+  minutes: number
+}
+
 type AppState = {
   hydrated: boolean
   companies: Company[]
@@ -261,6 +278,7 @@ type AppState = {
   trucks: Truck[]
   constructionSites: ConstructionSite[]
   numberingSettings: NumberingSettings
+  signupSettings: SignupSettings
   login: (companyId: string, pin: string) => Promise<LoginResult>
   isLoggingIn: boolean
   logout: () => void
@@ -270,6 +288,8 @@ type AppState = {
   isVerifyingMasterPin: boolean
   setMasterPin: (input: SetMasterPinInput) => Promise<CreateCompanyResult>
   isSettingMasterPin: boolean
+  updateInactivityTimeout: (input: UpdateInactivityTimeoutInput) => Promise<CreateCompanyResult>
+  isUpdatingInactivityTimeout: boolean
   adminLogin: (email: string, password: string) => Promise<LoginResult>
   isAdminLoggingIn: boolean
   adminLogout: () => void
@@ -341,11 +361,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const trucksQuery = useQuery({ ...trucksQueryOptions(), enabled: hasSession })
   const constructionSitesQuery = useQuery({ ...constructionSitesQueryOptions(), enabled: hasSession })
   const numberingSettingsQuery = useQuery({ ...numberingSettingsQueryOptions(), enabled: isAdminLoggedIn })
+  const signupSettingsQuery = useQuery({ ...signupSettingsQueryOptions(), enabled: hasSession })
 
   const products = productsQuery.data ?? []
   const trucks = trucksQuery.data ?? []
   const constructionSites = constructionSitesQuery.data ?? []
   const numberingSettings = numberingSettingsQuery.data ?? DEFAULT_NUMBERING_SETTINGS
+  const signupSettings = signupSettingsQuery.data ?? DEFAULT_SIGNUP_SETTINGS
 
   const hydrated =
     adminSessionQuery.isFetched &&
@@ -385,6 +407,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     },
   })
   const setMasterPinMutation = useMutation({ mutationFn: adminSetMasterPin })
+  const updateInactivityTimeoutMutation = useMutation({
+    mutationFn: adminUpdateInactivityTimeout,
+    onSuccess: (result) => {
+      if (result.ok) invalidate(['signup-settings'])
+    },
+  })
   const verifyMasterPinMutation = useMutation({ mutationFn: verifySignupMasterPin })
   const createCompanyMutation = useMutation({
     mutationFn: adminCreateCompany,
@@ -538,6 +566,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       trucks,
       constructionSites,
       numberingSettings,
+      signupSettings,
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
       isLoggingIn: customerSignInMutation.isPending,
       logout: () => customerSignOutMutation.mutate({}),
@@ -547,6 +576,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isVerifyingMasterPin: verifyMasterPinMutation.isPending,
       setMasterPin: async (input) => setMasterPinMutation.mutateAsync({ data: input }),
       isSettingMasterPin: setMasterPinMutation.isPending,
+      updateInactivityTimeout: async (input) => updateInactivityTimeoutMutation.mutateAsync({ data: input }),
+      isUpdatingInactivityTimeout: updateInactivityTimeoutMutation.isPending,
       adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
       isAdminLoggingIn: adminSignInMutation.isPending,
       adminLogout: () => adminSignOutMutation.mutate({}),
@@ -618,11 +649,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       trucks,
       constructionSites,
       numberingSettings,
+      signupSettings,
       customerSignInMutation,
       customerSignOutMutation,
       customerSignUpMutation,
       verifyMasterPinMutation,
       setMasterPinMutation,
+      updateInactivityTimeoutMutation,
       adminSignInMutation,
       adminSignOutMutation,
       createRecordMutation,

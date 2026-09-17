@@ -23,10 +23,13 @@ const TOKEN_HINTS = [
 function AdminEinstellungenPage() {
   const {
     numberingSettings,
+    signupSettings,
     updateNumberingSettings,
     isUpdatingNumberingSettings,
     setMasterPin,
     isSettingMasterPin,
+    updateInactivityTimeout,
+    isUpdatingInactivityTimeout,
     downloadDatabaseBackup,
     isDownloadingBackup,
   } = useAppState()
@@ -41,6 +44,12 @@ function AdminEinstellungenPage() {
   const [newMasterPin, setNewMasterPin] = useState('')
   const [masterPinMessage, setMasterPinMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
+  const [inactivityTimeoutMinutes, setInactivityTimeoutMinutes] = useState(String(signupSettings.inactivityTimeoutMinutes))
+  const [inactivityTimeoutMessage, setInactivityTimeoutMessage] = useState<{
+    kind: 'success' | 'error'
+    text: string
+  } | null>(null)
+
   const [backupMessage, setBackupMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   // numberingSettings loads asynchronously (Supabase query) after this
@@ -53,6 +62,10 @@ function AdminEinstellungenPage() {
     setNextDeliveryNoteNumber(String(numberingSettings.nextDeliveryNoteNumber))
     setNumberPadding(String(numberingSettings.numberPadding))
   }, [numberingSettings])
+
+  useEffect(() => {
+    setInactivityTimeoutMinutes(String(signupSettings.inactivityTimeoutMinutes))
+  }, [signupSettings.inactivityTimeoutMinutes])
 
   const paddingValue = Math.max(Number(numberPadding) || 1, 1)
   const invoicePreview = formatGeneratedNumber(invoiceTemplate, Number(nextInvoiceNumber) || 0, paddingValue)
@@ -88,6 +101,22 @@ function AdminEinstellungenPage() {
 
     setNewMasterPin('')
     setMasterPinMessage({ kind: 'success', text: 'Master-PIN wurde geändert.' })
+  }
+
+  async function submitInactivityTimeout(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setInactivityTimeoutMessage(null)
+
+    const minutes = Math.max(0, Math.min(240, Number(inactivityTimeoutMinutes) || 0))
+
+    const result = await updateInactivityTimeout({ minutes })
+    if (!result.ok) {
+      setInactivityTimeoutMessage({ kind: 'error', text: result.message })
+      return
+    }
+
+    setInactivityTimeoutMinutes(String(minutes))
+    setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitaets-Timeout wurde gespeichert.' })
   }
 
   async function downloadBackup() {
@@ -230,6 +259,48 @@ function AdminEinstellungenPage() {
             }`}
           >
             {masterPinMessage.text}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <h3 className="font-title text-2xl text-slate-900">Automatischer Kunden-Logout bei Inaktivitaet</h3>
+        <p className="mt-2 text-sm text-slate-600">
+          Nach dieser Zeit ohne Eingaben wird der Kunde automatisch abgemeldet. Die letzten 30 Sekunden wird ein
+          Countdown als Hinweis angezeigt.
+        </p>
+
+        <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Inaktivitaetszeit (Minuten)</label>
+            <input
+              type="number"
+              min={0}
+              max={240}
+              value={inactivityTimeoutMinutes}
+              onChange={(e) => setInactivityTimeoutMinutes(e.target.value)}
+              className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            />
+            <p className="mt-1 text-xs text-slate-500">0 deaktiviert den automatischen Logout.</p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isUpdatingInactivityTimeout}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isUpdatingInactivityTimeout && <Spinner className="h-4 w-4" />}
+            Timeout speichern
+          </button>
+        </form>
+
+        {inactivityTimeoutMessage && (
+          <p
+            className={`mt-4 rounded-xl p-3 text-sm ${
+              inactivityTimeoutMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+            }`}
+          >
+            {inactivityTimeoutMessage.text}
           </p>
         )}
       </div>
