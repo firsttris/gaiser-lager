@@ -32,7 +32,7 @@ function CustomerLayout() {
   const [warningDeadline, setWarningDeadline] = useState<number | null>(null)
   const [currentTime, setCurrentTime] = useState(() => Date.now())
 
-  const logoutMutation = useMutation({
+  const { mutateAsync: logoutCustomer, isPending: isLoggingOut } = useMutation({
     mutationFn: customerSignOut,
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: ['auth', 'customer'] })
@@ -57,16 +57,16 @@ function CustomerLayout() {
   }, [])
 
   const triggerLogout = useCallback(() => {
-    if (logoutMutation.isPending) return
+    if (isLoggingOut) return
 
     clearTimers()
     clearWarning()
-    void logoutMutation.mutateAsync({})
-  }, [clearTimers, clearWarning, logoutMutation])
+    void logoutCustomer({})
+  }, [clearTimers, clearWarning, isLoggingOut, logoutCustomer])
 
   const scheduleTimers = useCallback(() => {
     const timeoutMs = inactivityMsRef.current
-    if (timeoutMs <= 0 || logoutMutation.isPending) return
+    if (timeoutMs <= 0 || isLoggingOut) return
 
     clearTimers()
     clearWarning()
@@ -83,7 +83,7 @@ function CustomerLayout() {
     logoutTimerRef.current = setTimeout(() => {
       triggerLogout()
     }, timeoutMs)
-  }, [clearTimers, clearWarning, logoutMutation.isPending, triggerLogout])
+  }, [clearTimers, clearWarning, isLoggingOut, triggerLogout])
 
   useEffect(() => {
     inactivityMsRef.current = inactivityMs
@@ -134,7 +134,7 @@ function CustomerLayout() {
         open={warningDeadline !== null}
         secondsRemaining={secondsRemaining}
         totalSeconds={Math.min(WARNING_SECONDS, Math.floor(inactivityMs / 1000))}
-        isLoggingOut={logoutMutation.isPending}
+        isLoggingOut={isLoggingOut}
         onContinueSession={scheduleTimers}
         onLogoutNow={triggerLogout}
       />

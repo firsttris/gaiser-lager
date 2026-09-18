@@ -281,7 +281,6 @@ function AdminEinstellungenPage() {
               onChange={(e) => setInactivityTimeoutMinutes(e.target.value)}
               className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
-            <p className="mt-1 text-xs text-slate-500">0 deaktiviert den automatischen Logout.</p>
           </div>
 
           <button
@@ -293,6 +292,8 @@ function AdminEinstellungenPage() {
             Timeout speichern
           </button>
         </form>
+
+        <p className="mt-1 text-xs text-slate-500">0 deaktiviert den automatischen Logout.</p>
 
         {inactivityTimeoutMessage && (
           <p
