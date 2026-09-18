@@ -156,6 +156,11 @@ function App() {
                 </Link>
               </p>
               <p>
+                <Link to="/preisliste" className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900">
+                  Preisliste anschauen
+                </Link>
+              </p>
+              <p>
                 <Link
                   to="/admin"
                   className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900"

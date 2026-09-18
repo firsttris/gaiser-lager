@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as KundeRouteImport } from './routes/kunde'
+import { Route as PreislisteRouteImport } from './routes/preisliste'
 import { Route as RegistrierenRouteImport } from './routes/registrieren'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
@@ -42,6 +43,11 @@ const AdminRoute = AdminRouteImport.update({
 const KundeRoute = KundeRouteImport.update({
   id: '/kunde',
   path: '/kunde',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreislisteRoute = PreislisteRouteImport.update({
+  id: '/preisliste',
+  path: '/preisliste',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistrierenRoute = RegistrierenRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
+  '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
+  '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
+  '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
+    | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
     | '/admin/einstellungen'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kunde'
+    | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
     | '/admin/einstellungen'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
+    | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
     | '/admin/einstellungen'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   KundeRoute: typeof KundeRouteWithChildren
+  PreislisteRoute: typeof PreislisteRoute
   RegistrierenRoute: typeof RegistrierenRoute
 }
 
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/kunde'
       fullPath: '/kunde'
       preLoaderRoute: typeof KundeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preisliste': {
+      id: '/preisliste'
+      path: '/preisliste'
+      fullPath: '/preisliste'
+      preLoaderRoute: typeof PreislisteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registrieren': {
@@ -456,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   KundeRoute: KundeRouteWithChildren,
+  PreislisteRoute: PreislisteRoute,
   RegistrierenRoute: RegistrierenRoute,
 }
 export const routeTree = rootRouteImport
