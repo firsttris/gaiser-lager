@@ -1,8 +1,9 @@
-import { jsPDF } from 'jspdf'
+import { GState, jsPDF } from 'jspdf'
 import { type RecordItem } from '../state/app-state'
 import { flowLabel, money } from './history-utils'
 import { formatBerlinDate } from './berlin-time'
 import { roundCents, VAT_RATE } from './money'
+import { isDevelopmentDatabase } from './environment'
 
 const LOGO_URL = `${import.meta.env.BASE_URL}assets/Logo.jpeg`
 const LOGO_ASPECT_RATIO = 303 / 873
@@ -248,11 +249,28 @@ function drawDetailRows(pdf: jsPDF, left: number, right: number, y: number, rows
   return y
 }
 
+// Documents generated against the local development database get a diagonal
+// watermark on every page, so they can't be mistaken for (or sent as) real ones.
+function drawDevelopmentWatermark(pdf: jsPDF) {
+  if (!isDevelopmentDatabase) return
+  pdf.saveGraphicsState()
+  pdf.setGState(new GState({ opacity: 0.18 }))
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(46)
+  pdf.setTextColor(220, 38, 38)
+  pdf.text('ENTWICKLUNG', 105, 150, { align: 'center', angle: 35 })
+  pdf.setFontSize(20)
+  pdf.text('kein gültiger Beleg', 118, 168, { align: 'center', angle: 35 })
+  pdf.restoreGraphicsState()
+  pdf.setTextColor(0)
+}
+
 function finishPages(pdf: jsPDF, right: number, meta: { metaLabelX: number; metaValueX: number; seiteY: number }) {
   const totalPages = pdf.getNumberOfPages()
   for (let page = 1; page <= totalPages; page++) {
     pdf.setPage(page)
     drawCompanyFooter(pdf)
+    drawDevelopmentWatermark(pdf)
   }
 
   if (totalPages > 1) {
@@ -747,6 +765,7 @@ export async function downloadCombinedDeliveryNote(
     pdf.setPage(page)
     if (page === 1) drawDeliveryNoteSignatureBlock(pdf, left, right)
     drawCompanyFooter(pdf)
+    drawDevelopmentWatermark(pdf)
   }
 
   for (let page = 1; page <= totalPages; page++) {

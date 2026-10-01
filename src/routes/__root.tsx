@@ -5,6 +5,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
 import { Spinner } from '../components/spinner'
+import { EnvironmentBanner } from '../components/environment-banner'
+import { isDevelopmentDatabase, isDevServerOnRemoteDatabase } from '../utils/environment'
 
 import appCss from '../styles.css?url'
 
@@ -24,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         name: 'theme-color',
-        content: '#0f172a',
+        content: isDevelopmentDatabase ? '#facc15' : '#0f172a',
       },
       {
         name: 'apple-mobile-web-app-capable',
@@ -39,7 +41,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content: 'yes',
       },
       {
-        title: 'Gaiser Lager',
+        title: isDevServerOnRemoteDatabase ? '[PROD!] Gaiser Lager' : isDevelopmentDatabase ? '[DEV] Gaiser Lager' : 'Gaiser Lager',
       },
     ],
     links: [
@@ -94,6 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
+        <EnvironmentBanner />
         <AppStateProvider>
           <HydrationGate>{children}</HydrationGate>
         </AppStateProvider>
