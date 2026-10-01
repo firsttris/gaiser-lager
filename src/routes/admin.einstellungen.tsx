@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { adminSessionStatusQueryOptions } from '../server/admin-auth'
+import { ADMIN_PASSWORD_MIN_LENGTH, adminChangePassword, adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useEffect, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
 import { PinInput } from '../components/company-form-inputs'
@@ -279,6 +280,8 @@ function AdminEinstellungenPage() {
         </p>
       )}
 
+      <AdminPasswordSection />
+
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="font-title text-2xl text-slate-900">Master-PIN für Kunden-Registrierung</h3>
         <p className="mt-2 text-sm text-slate-600">
@@ -397,5 +400,108 @@ function AdminEinstellungenPage() {
         )}
       </div>
     </section>
+  )
+}
+
+const PASSWORD_INPUT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800'
+
+function AdminPasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [repeatPassword, setRepeatPassword] = useState('')
+  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const changePassword = useMutation({ mutationFn: adminChangePassword })
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setMessage(null)
+
+    if (newPassword.length < ADMIN_PASSWORD_MIN_LENGTH) {
+      setMessage({ kind: 'error', text: `Das neue Passwort muss mindestens ${ADMIN_PASSWORD_MIN_LENGTH} Zeichen haben.` })
+      return
+    }
+    if (newPassword !== repeatPassword) {
+      setMessage({ kind: 'error', text: 'Die beiden neuen Passwörter stimmen nicht überein.' })
+      return
+    }
+
+    try {
+      const result = await changePassword.mutateAsync({ data: { currentPassword, newPassword } })
+      if (!result.ok) {
+        setMessage({ kind: 'error', text: result.message })
+        return
+      }
+    } catch {
+      setMessage({ kind: 'error', text: 'Passwort konnte nicht geändert werden.' })
+      return
+    }
+
+    setCurrentPassword('')
+    setNewPassword('')
+    setRepeatPassword('')
+    setMessage({ kind: 'success', text: 'Passwort wurde geändert. Andere Geräte wurden abgemeldet.' })
+  }
+
+  return (
+    <div className="mt-8 border-t border-slate-200 pt-6">
+      <h3 className="font-title text-2xl text-slate-900">Mein Passwort</h3>
+      <p className="mt-2 text-sm text-slate-600">
+        Ändert das Passwort des angemeldeten Admin-Kontos. Danach sind alle anderen Geräte mit diesem Konto abgemeldet.
+      </p>
+
+      <form onSubmit={submit} className="mt-4 grid gap-4 md:grid-cols-3">
+        <label className="text-sm font-semibold text-slate-700">
+          Aktuelles Passwort
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Neues Passwort
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            placeholder={`mind. ${ADMIN_PASSWORD_MIN_LENGTH} Zeichen`}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Neues Passwort wiederholen
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={repeatPassword}
+            onChange={(event) => setRepeatPassword(event.target.value)}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <div className="md:col-span-3">
+          <button
+            type="submit"
+            disabled={changePassword.isPending || !currentPassword || !newPassword || !repeatPassword}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {changePassword.isPending && <Spinner className="h-4 w-4" />}
+            Passwort ändern
+          </button>
+        </div>
+      </form>
+
+      {message && (
+        <p
+          className={`mt-4 rounded-xl p-3 text-sm ${
+            message.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+          }`}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
   )
 }

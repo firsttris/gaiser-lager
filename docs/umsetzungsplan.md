@@ -285,6 +285,11 @@ E-Rechnung (ZUGFeRD ja/nein); E-Mail-Adressen der Kunden gepflegt (P9).
    Eigener Unterpunkt, Aufwand je nach gewähltem Profil.
 6. **P11 Admin-Passwort:** „Mein Konto“ mit Passwort ändern; optional
    „Passwort vergessen“ (braucht SMTP in Supabase) und Admin-Verwaltung.
+   **Stand:** „Passwort ändern“ ist umgesetzt (Einstellungen → Mein
+   Passwort: aktuelles Passwort prüfen, mind. 10 Zeichen, andere Geräte
+   werden abgemeldet, keine Migration). Offen und weiter blockiert:
+   „Passwort vergessen“ (SMTP) sowie Schritte 1–5 (SMTP-Daten,
+   E-Rechnung).
 
 ---
 
