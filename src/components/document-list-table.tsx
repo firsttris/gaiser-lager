@@ -36,8 +36,10 @@ export function DocumentListTable({
 }: Props) {
   const selectable = selectedIds !== undefined && onSelectionChange !== undefined
   return (
-    <>
-      <div className="mt-4 space-y-3 md:hidden">
+    // Cards or table depending on the space the list actually has (container
+    // query), see HistoryTable.
+    <div className="@container">
+      <div className="mt-4 space-y-3 @4xl:hidden">
         {groups.map(({ id, items }) => {
           const total = items.reduce((sum, r) => sum + r.total, 0)
           const badge = getBadge(items)
@@ -52,13 +54,13 @@ export function DocumentListTable({
                       checked={selectedIds!.has(id)}
                       disabled={!rowSelectable}
                       onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
-                      className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 disabled:opacity-40"
+                      className="mt-1 h-6 w-6 shrink-0 rounded border-slate-300 disabled:opacity-40"
                     />
                   )}
                   <div className="min-w-0">
                     <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">{items[0].createdAt.split(', ')[0]}</p>
-                    <p className="text-xs text-slate-400">{items[0].createdAt.split(', ')[1]}</p>
+                    <p className="mt-0.5 text-xs text-slate-600">{items[0].createdAt.split(', ')[0]}</p>
+                    <p className="text-xs text-slate-600">{items[0].createdAt.split(', ')[1]}</p>
                     {showCompanyColumn && (
                       <p className="mt-1 text-sm font-semibold text-slate-900">{items[0].company}</p>
                     )}
@@ -75,14 +77,14 @@ export function DocumentListTable({
                   ))}
                 </div>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <dt className="text-slate-500">Positionen</dt>
+                  <dt className="text-slate-600">Positionen</dt>
                   <dd className="font-semibold text-slate-800">{items.length}</dd>
                 </div>
                 {showTotalColumn && (
                   <div>
-                    <dt className="text-slate-500">Gesamt</dt>
+                    <dt className="text-slate-600">Gesamt</dt>
                     <dd className="font-semibold text-slate-900">{money(total)}</dd>
                   </div>
                 )}
@@ -100,10 +102,10 @@ export function DocumentListTable({
         })}
       </div>
 
-      <div className="mt-4 hidden md:block">
+      <div className="mt-4 hidden @4xl:block">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-500">
+            <tr className="border-b border-slate-200 text-left text-slate-600">
               {selectable && (
                 <th className="w-8 px-2 py-2">
                   {onSelectAll && (
@@ -111,7 +113,7 @@ export function DocumentListTable({
                       type="checkbox"
                       checked={areAllSelected ?? false}
                       onChange={(e) => onSelectAll(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300"
+                      className="h-6 w-6 rounded border-slate-300"
                       aria-label="Alle sichtbaren Einträge markieren"
                     />
                   )}
@@ -141,13 +143,13 @@ export function DocumentListTable({
                         checked={selectedIds!.has(id)}
                         disabled={!rowSelectable}
                         onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300 disabled:opacity-40"
+                        className="h-6 w-6 rounded border-slate-300 disabled:opacity-40"
                       />
                     </td>
                   )}
                   <td className="px-2 py-2.5 text-xs">
                     <span className="block text-slate-600">{items[0].createdAt.split(', ')[0]}</span>
-                    <span className="block text-slate-400">{items[0].createdAt.split(', ')[1]}</span>
+                    <span className="block text-slate-600">{items[0].createdAt.split(', ')[1]}</span>
                   </td>
                   <td className="px-2 py-2.5 font-mono">{id}</td>
                   {showCompanyColumn && (
@@ -189,6 +191,6 @@ export function DocumentListTable({
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   )
 }

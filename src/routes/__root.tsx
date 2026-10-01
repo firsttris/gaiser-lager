@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { Spinner } from '../components/spinner'
 import { EnvironmentBanner } from '../components/environment-banner'
 import { useReloadOnNewVersion } from '../hooks/use-reload-on-new-version'
+import { FONT_SCALE_SCRIPT } from '../components/font-scale-switch'
 import { isDevelopmentDatabase, isDevServerOnRemoteDatabase } from '../utils/environment'
 
 import appCss from '../styles.css?url'
@@ -23,7 +24,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         name: 'viewport',
-        content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+        // Zooming stays allowed: many drivers wear glasses.
+        content: 'width=device-width, initial-scale=1',
       },
       {
         name: 'theme-color',
@@ -59,6 +61,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         href: `${import.meta.env.BASE_URL}logo192.png`,
       },
     ],
+    scripts: [{ children: FONT_SCALE_SCRIPT }],
   }),
   shellComponent: RootDocument,
   notFoundComponent: () => (
@@ -94,7 +97,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <html lang="de">
+    // data-font-scale is set by an inline script before hydration (see FONT_SCALE_SCRIPT).
+    <html lang="de" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

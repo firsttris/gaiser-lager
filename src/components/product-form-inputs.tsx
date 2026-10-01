@@ -110,7 +110,7 @@ export function PriceField({
         placeholder={placeholder}
         className={`w-full border border-slate-300 ${borderStyle} ${padding} pr-8 outline-none focus:border-slate-800`}
       />
-      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">
+      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-600">
         €
       </span>
     </div>

@@ -36,7 +36,7 @@ function FlowChoiceButton({
       : variant === 'lkw'
         ? 'border-blue-200 bg-blue-50 text-blue-700'
         : 'border-slate-200 bg-slate-100 text-slate-700'
-  const eyebrowColor = variant === 'pickup' ? 'text-amber-600' : variant === 'lkw' ? 'text-blue-600' : 'text-slate-500'
+  const eyebrowColor = variant === 'pickup' ? 'text-amber-600' : variant === 'lkw' ? 'text-blue-600' : 'text-slate-600'
   const arrowWrap =
     variant === 'pickup'
       ? 'bg-amber-50 text-amber-600'

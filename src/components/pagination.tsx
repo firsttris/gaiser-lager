@@ -18,10 +18,10 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
       <div className="flex items-center gap-3">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-600">
           {start}–{end} von {totalCount}
         </p>
-        <label className="flex items-center gap-1.5 text-xs text-slate-500">
+        <label className="flex items-center gap-1.5 text-xs text-slate-600">
           pro Seite
           <select
             value={pageSize}

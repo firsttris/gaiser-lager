@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { FontScaleSwitch } from './font-scale-switch'
 
 type PageShellProps = {
   children: ReactNode
@@ -12,5 +13,12 @@ const widthClasses: Record<NonNullable<PageShellProps['width']>, string> = {
 }
 
 export function PageShell({ children, className = '', width = 'default' }: PageShellProps) {
-  return <main className={`mx-auto w-full ${widthClasses[width]} px-4 py-6 sm:px-8 ${className}`}>{children}</main>
+  return (
+    <main className={`mx-auto w-full ${widthClasses[width]} px-4 py-6 sm:px-8 ${className}`}>
+      <div className="mb-3 flex justify-end">
+        <FontScaleSwitch />
+      </div>
+      {children}
+    </main>
+  )
 }

@@ -11,8 +11,8 @@ interface NavLinkProps extends Omit<RouterLinkProps, 'children' | 'className' | 
 
 export function NavLink({ children, compact = false, icon, ...props }: NavLinkProps) {
   const baseClasses = compact
-    ? 'inline-flex w-full items-center justify-start gap-3 whitespace-nowrap border-l-4 border-transparent px-3 py-2 text-sm font-semibold text-slate-500 no-underline transition hover:text-slate-800'
-    : 'inline-flex items-center gap-2 whitespace-nowrap border-b-2 border-transparent pb-1 text-sm font-semibold text-slate-500 no-underline transition hover:text-slate-800'
+    ? 'inline-flex w-full items-center justify-start gap-3 whitespace-nowrap border-l-4 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 no-underline transition hover:text-slate-800'
+    : 'inline-flex items-center gap-2 whitespace-nowrap border-b-2 border-transparent pb-1 text-sm font-semibold text-slate-600 no-underline transition hover:text-slate-800'
 
   const activeClasses = compact
     ? 'inline-flex w-full items-center justify-start gap-3 whitespace-nowrap border-l-4 border-amber-500 bg-amber-50/60 px-3 py-2 text-sm font-semibold text-slate-900 no-underline'

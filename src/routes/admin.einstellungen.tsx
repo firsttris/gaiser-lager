@@ -174,7 +174,7 @@ function AdminEinstellungenPage() {
               onChange={(e) => setInvoiceTemplate(e.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
-            <p className="mt-1 text-xs text-slate-500">Vorschau: {invoicePreview}</p>
+            <p className="mt-1 text-xs text-slate-600">Vorschau: {invoicePreview}</p>
           </div>
 
           <div>
@@ -197,7 +197,7 @@ function AdminEinstellungenPage() {
               onChange={(e) => setDeliveryNoteTemplate(e.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
-            <p className="mt-1 text-xs text-slate-500">Vorschau: {deliveryNotePreview}</p>
+            <p className="mt-1 text-xs text-slate-600">Vorschau: {deliveryNotePreview}</p>
           </div>
 
           <div>
@@ -356,7 +356,7 @@ function AdminEinstellungenPage() {
           </button>
         </form>
 
-        <p className="mt-1 text-xs text-slate-500">0 deaktiviert den automatischen Logout.</p>
+        <p className="mt-1 text-xs text-slate-600">0 deaktiviert den automatischen Logout.</p>
 
         {inactivityTimeoutMessage && (
           <p

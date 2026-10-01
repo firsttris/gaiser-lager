@@ -38,7 +38,7 @@ function FlowChoiceCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-semibold tracking-[0.18em] uppercase ${isPickup ? 'text-amber-600' : 'text-slate-500'}`}>
+          <p className={`text-sm font-semibold tracking-[0.18em] uppercase ${isPickup ? 'text-amber-600' : 'text-slate-600'}`}>
             {isPickup ? 'Abholung' : 'Annahme'}
           </p>
           <h3 className="font-title mt-2 text-5xl text-slate-900 sm:text-6xl">{title}</h3>

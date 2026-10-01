@@ -84,7 +84,7 @@ export function CompanySearchInput({
         aria-autocomplete="list"
         autoComplete="off"
         placeholder={`Firmenname eingeben (ab ${COMPANY_SEARCH_MIN_CHARS} Buchstaben)`}
-        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-amber-500"
+        className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg text-slate-900 outline-none transition focus:border-amber-500"
       />
 
       {showList && (
@@ -102,7 +102,7 @@ export function CompanySearchInput({
               // Keep focus in the input so the list doesn't close before the click lands.
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => select(company)}
-              className={`w-full rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+              className={`w-full rounded-lg px-4 py-3 text-left text-lg font-semibold transition ${
                 index === highlightedIndex ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 hover:bg-slate-100'
               }`}
             >

@@ -27,6 +27,11 @@ export function money(value: number) {
   }).format(value)
 }
 
+// Amounts in German notation (12,5 t), as on the PDFs.
+export function quantity(value: number) {
+  return value.toLocaleString('de-DE', { maximumFractionDigits: 3 })
+}
+
 export function flowLabel(type: RecordType) {
   if (type === 'lkw') return 'LKW'
   return type === 'pickup' ? 'Verkauf' : 'Annahme'

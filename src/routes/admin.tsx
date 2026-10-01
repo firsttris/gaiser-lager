@@ -215,7 +215,7 @@ function AdminPage() {
                     setIsMenuOpen(false)
                     void adminLogout()
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+                  className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
                 >
                   <LogOut className="h-4 w-4" strokeWidth={2.2} />
                   Abmelden
@@ -253,7 +253,7 @@ function AdminPage() {
               <button
                 type="button"
                 onClick={() => void adminLogout()}
-                className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.2} />
                 Abmelden

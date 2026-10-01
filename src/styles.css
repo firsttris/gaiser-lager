@@ -18,6 +18,35 @@
 html {
   scrollbar-gutter: stable;
   touch-action: manipulation;
+  /* Everything is sized in rem, so this scales text, spacing and buttons together. */
+  font-size: 100%;
+}
+
+/* Big portrait screens (the kiosk tablet at the yard) are read standing, from a
+   distance: larger by default. Any device can override this with the A/A+/A++
+   switch, stored per device (data-font-scale, see FontScaleSwitch). */
+@media (orientation: portrait) and (min-width: 1000px) {
+  html:not([data-font-scale]) {
+    font-size: 125%;
+  }
+}
+
+html[data-font-scale='normal'] {
+  font-size: 100%;
+}
+
+html[data-font-scale='large'] {
+  font-size: 112.5%;
+}
+
+html[data-font-scale='xlarge'] {
+  font-size: 125%;
+}
+
+/* Browser default placeholders are too pale on the reflective kiosk screen. */
+::placeholder {
+  color: var(--color-slate-500);
+  opacity: 1;
 }
 
 body {

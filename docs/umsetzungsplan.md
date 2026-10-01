@@ -16,7 +16,7 @@ gehen.
 | **0** ✅ | Sicherheit + offene Review-Fixes live bringen | P0, P3 (Sofortmaßnahme), P16 (teilweise) | ja (klein) | S |
 | **1** ✅ | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
 | **2** ✅ | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
-| **3** | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
+| **3** ✅ | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
 | **4** | Baustellen pro Firma + Mitarbeiter-Login + Lieferschein-Fotos | P3, P19 | ja | L |
 | **5** | E-Mail-Versand + Admin-Passwort | P10, P11 | ja | L |
 
@@ -180,6 +180,17 @@ Kundennummern; Ort aus PLZ.
 ---
 
 ## Paket 3 – Kiosk-Oberfläche
+
+> **Stand:** lokal umgesetzt und getestet (Branch `kundentermin`), keine
+> Migration. Getestet mit 1080 × 1920 (angenommene Xoro-Größe, **am Gerät
+> noch zu prüfen**). Umgesetzt: Zoomen erlaubt; große Bildschirme im
+> Hochformat automatisch 125 % Schrift (= 20 px), Schalter A / A+ / A++ pro
+> Gerät (wird gespeichert); dunklere Texte und Platzhalter; Listen schalten
+> nach verfügbarem Platz zwischen Tabelle und Karten (keine überlaufenden
+> Tabellen bei großer Schrift); Login-Seite einspaltig mit Preisliste;
+> PIN-Feld zeigt Punkte statt Ziffern (Kiosk); volle Belegnummern; Mengen im
+> deutschen Format; Baustellen im Dialog bearbeiten; größere Buttons,
+> Eingabefelder, Kacheln und Auswahlkästchen.
 
 **Ziel:** auf dem Xoro hochkant gut lesbar und gut bedienbar.
 

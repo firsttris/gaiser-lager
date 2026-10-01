@@ -236,60 +236,62 @@ function AdminKundenPage() {
         </p>
       )}
 
-      {/* Cards below the table breakpoint, so nothing gets squeezed. */}
-      <div className="mt-5 space-y-3 lg:hidden">
-        {companies.map((company) => (
-          <article key={company.id} className="rounded-xl border border-slate-200 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold wrap-break-word text-slate-900">{company.name}</p>
-                <p className="text-sm text-slate-700">Kd.-Nr. {company.customerNumber || '—'}</p>
+      <div className="@container">
+        {/* Cards when the list has too little room for the table (container query). */}
+        <div className="mt-5 space-y-3 @3xl:hidden">
+          {companies.map((company) => (
+            <article key={company.id} className="rounded-xl border border-slate-200 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold wrap-break-word text-slate-900">{company.name}</p>
+                  <p className="text-sm text-slate-700">Kd.-Nr. {company.customerNumber || '—'}</p>
+                </div>
+                <CompanyActions company={company} onEdit={startEdit} onDelete={setDeletingCompany} />
               </div>
-              <CompanyActions company={company} onEdit={startEdit} onDelete={setDeletingCompany} />
-            </div>
-            <p className="mt-2 text-sm text-slate-800">
-              {company.street || '—'}
-              <br />
-              {[company.postalCode, company.city].filter(Boolean).join(' ') || '—'}
-            </p>
-            <CompanyEmail email={company.email} />
-          </article>
-        ))}
-      </div>
+              <p className="mt-2 text-sm text-slate-800">
+                {company.street || '—'}
+                <br />
+                {[company.postalCode, company.city].filter(Boolean).join(' ') || '—'}
+              </p>
+              <CompanyEmail email={company.email} />
+            </article>
+          ))}
+        </div>
 
-      <div className="mt-5 hidden lg:block">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-700">
-              <th className="px-3 py-2">Kundenname</th>
-              <th className="w-28 px-3 py-2">Kd.-Nr.</th>
-              <th className="px-3 py-2">Adresse</th>
-              <th className="px-3 py-2">E-Mail</th>
-              <th className="w-32 px-3 py-2 text-right">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map((company) => (
-              <tr key={company.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
-                <td className="min-w-48 px-3 py-3 font-semibold wrap-break-word text-slate-900">{company.name}</td>
-                <td className="px-3 py-3 text-slate-800">{company.customerNumber || '—'}</td>
-                <td className="px-3 py-3 text-slate-800">
-                  {company.street || '—'}
-                  <br />
-                  {[company.postalCode, company.city].filter(Boolean).join(' ')}
-                </td>
-                <td className="px-3 py-3 break-all">
-                  <CompanyEmail email={company.email} />
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex justify-end">
-                    <CompanyActions company={company} onEdit={startEdit} onDelete={setDeletingCompany} />
-                  </div>
-                </td>
+        <div className="mt-5 hidden @3xl:block">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-slate-700">
+                <th className="px-3 py-2">Kundenname</th>
+                <th className="w-28 px-3 py-2">Kd.-Nr.</th>
+                <th className="px-3 py-2">Adresse</th>
+                <th className="px-3 py-2">E-Mail</th>
+                <th className="w-32 px-3 py-2 text-right">Aktionen</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {companies.map((company) => (
+                <tr key={company.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
+                  <td className="min-w-48 px-3 py-3 font-semibold wrap-break-word text-slate-900">{company.name}</td>
+                  <td className="px-3 py-3 text-slate-800">{company.customerNumber || '—'}</td>
+                  <td className="px-3 py-3 text-slate-800">
+                    {company.street || '—'}
+                    <br />
+                    {[company.postalCode, company.city].filter(Boolean).join(' ')}
+                  </td>
+                  <td className="px-3 py-3 break-all">
+                    <CompanyEmail email={company.email} />
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex justify-end">
+                      <CompanyActions company={company} onEdit={startEdit} onDelete={setDeletingCompany} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <FormDialog

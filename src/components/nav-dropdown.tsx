@@ -47,7 +47,7 @@ export function NavDropdown({
           type="button"
           onClick={() => setIsOpen((open) => !open)}
           className={`inline-flex w-full items-center justify-between gap-3 whitespace-nowrap border-l-4 px-3 py-2 text-sm font-semibold transition ${
-            isActive ? 'border-amber-500 bg-amber-50/60 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
+            isActive ? 'border-amber-500 bg-amber-50/60 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
           }`}
         >
           <span className="inline-flex items-center gap-3">
@@ -76,7 +76,7 @@ export function NavDropdown({
         type="button"
         onClick={() => setIsOpen((open) => !open)}
         className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition ${
-          isActive ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
+          isActive ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
         }`}
       >
         {icon}

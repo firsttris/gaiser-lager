@@ -189,7 +189,7 @@ export function WizardFlow({
                       </div>
                     )}
                     <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-                    <span className="absolute bottom-0 left-0 right-0 truncate px-3 py-2 text-xs font-semibold leading-tight text-white drop-shadow sm:overflow-visible sm:whitespace-normal sm:text-clip sm:wrap-anywhere">
+                    <span className="absolute bottom-0 left-0 right-0 px-3 py-2 text-base font-semibold leading-tight text-white drop-shadow">
                       {p.name}
                     </span>
                     {isSelected && (
@@ -211,8 +211,8 @@ export function WizardFlow({
               value={amount}
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
               inputMode="decimal"
-              placeholder="z.B. 12.5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-500"
+              placeholder="z.B. 12,5"
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-amber-500"
             />
           </div>
 
@@ -224,7 +224,7 @@ export function WizardFlow({
             placeholder="z.B. Nordring 12, Berlin"
             required
             helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 pr-11 outline-none focus:border-amber-500"
+            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-amber-500"
           />
         </div>
 
@@ -236,7 +236,7 @@ export function WizardFlow({
           <button
             type="button"
             onClick={() => (onExit ? onExit() : void navigate({ to: '/kunde/neuer-vorgang' }))}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurück
           </button>
@@ -244,7 +244,7 @@ export function WizardFlow({
             type="button"
             onClick={() => setStep(2)}
             disabled={!validAmount || !validConstructionSiteName}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Weiter zur Prüfung
           </button>
@@ -260,7 +260,7 @@ export function WizardFlow({
         <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Typ</dt>
+            <dt className="text-slate-600">Typ</dt>
             <dd className="font-semibold">{flowType === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
           {step2Visual ? (
@@ -284,22 +284,22 @@ export function WizardFlow({
             </div>
           ) : (
             <div className="rounded-xl bg-slate-50 p-4">
-              <dt className="text-slate-500">Material</dt>
+              <dt className="text-slate-600">Material</dt>
               <dd className="font-semibold">{selectedProduct?.name}</dd>
             </div>
           )}
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Menge</dt>
+            <dt className="text-slate-600">Menge</dt>
             <dd className="font-semibold">
               {amount} {selectedProduct?.unit}
             </dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Baustelle</dt>
+            <dt className="text-slate-600">Baustelle</dt>
             <dd className="font-semibold">{constructionSiteName.trim()}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Einzelpreis</dt>
+            <dt className="text-slate-600">Einzelpreis</dt>
             <dd className="font-semibold">
               {money(currentUnitPrice)} (netto)
             </dd>
@@ -314,7 +314,7 @@ export function WizardFlow({
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurück
           </button>
@@ -322,7 +322,7 @@ export function WizardFlow({
             type="button"
             onClick={submitRecord}
             disabled={!validAmount || !validConstructionSiteName || isCreatingRecord}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
@@ -354,7 +354,7 @@ export function WizardFlow({
 
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Typ</dt>
+            <dt className="text-slate-600">Typ</dt>
             <dd className="font-semibold">{successRecord.type === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
           </div>
           <div className="relative overflow-hidden rounded-xl">
@@ -376,11 +376,11 @@ export function WizardFlow({
             </div>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Baustelle</dt>
+            <dt className="text-slate-600">Baustelle</dt>
             <dd className="font-semibold">{successRecord.constructionSiteName}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Menge</dt>
+            <dt className="text-slate-600">Menge</dt>
             <dd className="font-semibold">
               {successRecord.amount} {successRecord.unit}
             </dd>
@@ -396,7 +396,7 @@ export function WizardFlow({
             type="button"
             onClick={() => void redownloadDeliveryNote()}
             disabled={isDownloadingNote}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
@@ -405,21 +405,21 @@ export function WizardFlow({
             <button
               type="button"
               onClick={onExit}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800"
             >
               Neuen Vorgang anlegen
             </button>
           ) : (
             <Link
               to="/kunde/neuer-vorgang"
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+              className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white no-underline hover:bg-slate-800"
             >
               Neuen Vorgang anlegen
             </Link>
           )}
           <Link
             to={vorgaengeTo}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 no-underline hover:bg-slate-200"
           >
             Zu den Vorgängen
           </Link>

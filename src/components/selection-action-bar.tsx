@@ -69,7 +69,7 @@ export function SelectionActionBar({ count, noun, pluralLabel, total, warning, o
               type="button"
               disabled={!isVisible}
               onClick={onClear}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X className="h-3.5 w-3.5" strokeWidth={2.25} />
               Aufheben

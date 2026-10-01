@@ -94,7 +94,7 @@ export function TruckWizardFlow({
             <select
               value={selectedTruckId}
               onChange={(e) => setSelectedTruckId(Number(e.target.value))}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-amber-500"
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-lg outline-none focus:border-amber-500"
             >
               {trucks.map((truck) => (
                 <option key={truck.id} value={truck.id}>
@@ -111,7 +111,7 @@ export function TruckWizardFlow({
               onChange={(e) => setHours(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
               inputMode="decimal"
               placeholder="z.B. 4.5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-amber-500"
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-amber-500"
             />
           </div>
 
@@ -124,7 +124,7 @@ export function TruckWizardFlow({
               placeholder="z.B. Nordring 12, Berlin"
               required
               helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-              inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 pr-11 outline-none focus:border-amber-500"
+              inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-amber-500"
             />
           </div>
         </div>
@@ -137,7 +137,7 @@ export function TruckWizardFlow({
           <button
             type="button"
             onClick={onExit}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurück
           </button>
@@ -145,7 +145,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={() => setStep(2)}
             disabled={!validHours || !validConstructionSiteName}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Weiter zur Prüfung
           </button>
@@ -160,23 +160,23 @@ export function TruckWizardFlow({
         <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Typ</dt>
+            <dt className="text-slate-600">Typ</dt>
             <dd className="font-semibold">LKW-Stunden</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">LKW</dt>
+            <dt className="text-slate-600">LKW</dt>
             <dd className="font-semibold">{selectedTruck?.name}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Stunden</dt>
+            <dt className="text-slate-600">Stunden</dt>
             <dd className="font-semibold">{hours} Std.</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Baustelle</dt>
+            <dt className="text-slate-600">Baustelle</dt>
             <dd className="font-semibold">{constructionSiteName.trim()}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Stundenpreis</dt>
+            <dt className="text-slate-600">Stundenpreis</dt>
             <dd className="font-semibold">
               {money(currentHourlyPrice)} (netto)
             </dd>
@@ -191,7 +191,7 @@ export function TruckWizardFlow({
           <button
             type="button"
             onClick={() => setStep(1)}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
           >
             Zurück
           </button>
@@ -199,7 +199,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={submitRecord}
             disabled={!validHours || !validConstructionSiteName || isCreatingTruckRecord}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingTruckRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
@@ -229,15 +229,15 @@ export function TruckWizardFlow({
 
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">LKW</dt>
+            <dt className="text-slate-600">LKW</dt>
             <dd className="font-semibold">{successRecord.truckName}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Baustelle</dt>
+            <dt className="text-slate-600">Baustelle</dt>
             <dd className="font-semibold">{successRecord.constructionSiteName}</dd>
           </div>
           <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-500">Stunden</dt>
+            <dt className="text-slate-600">Stunden</dt>
             <dd className="font-semibold">{successRecord.hours} Std.</dd>
           </div>
           <div className="rounded-xl bg-emerald-50 p-4">
@@ -251,7 +251,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={() => void redownloadDeliveryNote()}
             disabled={isDownloadingNote}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
@@ -259,13 +259,13 @@ export function TruckWizardFlow({
           <button
             type="button"
             onClick={onExit}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800"
           >
             Neuen Vorgang anlegen
           </button>
           <Link
             to={vorgaengeTo}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
+            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 no-underline hover:bg-slate-200"
           >
             Zu den Vorgängen
           </Link>

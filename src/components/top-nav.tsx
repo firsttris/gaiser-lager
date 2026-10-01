@@ -82,7 +82,7 @@ export function TopNav() {
                 setIsMenuOpen(false)
                 void logout()
               }}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-4 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-4 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
             >
               <LogOut className="h-4 w-4" strokeWidth={2.2} />
               Abmelden
@@ -116,7 +116,7 @@ export function TopNav() {
               onClick={() => {
                 void logout()
               }}
-              className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
             >
               <LogOut className="h-4 w-4" strokeWidth={2.2} />
               Abmelden
