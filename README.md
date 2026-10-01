@@ -75,7 +75,8 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 - **Rechnungs-PDFs** entstehen auf dem Server (`src/server/e-invoice.ts`) als
   ZUGFeRD-E-Rechnung (Profil EN 16931, PDF/A-3 mit eingebetteter Schrift).
   Geprüft mit dem Mustang-Validator; ohne vollständige Kundenanschrift gibt
-  es ein normales PDF. Lieferscheine und Stornos erzeugt weiter der Browser.
+  es ein normales PDF. Stornorechnungen ebenso (Typ 381 mit Bezug auf die
+  Rechnung). Lieferscheine und Lieferschein-Stornos erzeugt der Browser.
 - **E-Mail-Versand:** SMTP-Daten und Vorlage unter Einstellungen → E-Mail.
   Das SMTP-Passwort liegt AES-verschlüsselt in der Datenbank, der Schlüssel
   wird aus `SESSION_SECRET` abgeleitet (wer `SESSION_SECRET` ändert, muss das

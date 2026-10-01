@@ -9,7 +9,8 @@ import { Spinner } from './spinner'
 
 type RowStatus = { state: 'sending' } | { state: 'sent' } | { state: 'failed'; message: string }
 
-// Preview and send selected invoices by e-mail. Nothing goes out before the
+// Preview and send selected invoices by e-mail (for a cancelled invoice its
+// Stornorechnung). Nothing goes out before the
 // admin confirms; invoices are sent one by one so the progress is visible
 // and a single failure doesn't stop the rest.
 export function InvoiceEmailDialog({
@@ -69,7 +70,7 @@ export function InvoiceEmailDialog({
       setStatuses((current) => ({ ...current, [item.invoiceId]: { state: 'sending' } }))
       let status: RowStatus
       try {
-        const result = await adminSendInvoiceEmail({ data: { invoiceId: item.invoiceId } })
+        const result = await adminSendInvoiceEmail({ data: { invoiceId: item.invoiceId, kind: item.kind } })
         status = result.ok ? { state: 'sent' } : { state: 'failed', message: result.message }
       } catch {
         status = { state: 'failed', message: 'Verbindung zum Server fehlgeschlagen.' }
@@ -82,9 +83,9 @@ export function InvoiceEmailDialog({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:p-8">
-      <div role="dialog" aria-modal="true" aria-label="Rechnungen per E-Mail senden" className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-label="Per E-Mail senden" className="w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
-          <h2 className="font-title text-3xl text-slate-900">Rechnungen per E-Mail senden</h2>
+          <h2 className="font-title text-3xl text-slate-900">Per E-Mail senden</h2>
           <div className="flex gap-2">
             <button
               type="button"
@@ -102,7 +103,7 @@ export function InvoiceEmailDialog({
                 className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSending ? <Spinner className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-                {toSend.length === 1 ? '1 Rechnung senden' : `${toSend.length} Rechnungen senden`}
+                {toSend.length === 1 ? '1 Beleg senden' : `${toSend.length} Belege senden`}
               </button>
             )}
           </div>
@@ -151,7 +152,7 @@ export function InvoiceEmailDialog({
                       <div className="flex flex-wrap items-start gap-3">
                         <input
                           type="checkbox"
-                          aria-label={`${item.invoiceId} senden`}
+                          aria-label={`${item.documentNumber} senden`}
                           checked={!item.blocking && (selected?.has(item.invoiceId) ?? false)}
                           disabled={Boolean(item.blocking) || isSending || status?.state === 'sent'}
                           onChange={() => toggle(item.invoiceId)}
@@ -159,14 +160,27 @@ export function InvoiceEmailDialog({
                         />
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-slate-900">
-                            {item.invoiceId} · {item.companyName}
+                            {item.kind === 'cancellation'
+                              ? `Stornorechnung ${item.documentNumber} zu ${item.invoiceId}`
+                              : `Rechnung ${item.invoiceId}`}{' '}
+                            · {item.companyName}
                           </p>
                           <p className="text-sm text-slate-700">an {item.recipient || '—'}</p>
                           <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs font-semibold">
                             {item.blocking && <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-red-700">{item.blocking}</span>}
                             {item.lastSentAt && (
                               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-amber-800">
-                                bereits gesendet am {formatBerlinDateTime(item.lastSentAt)}
+                                {item.kind === 'cancellation' ? 'Stornorechnung' : 'Rechnung'} bereits gesendet am{' '}
+                                {formatBerlinDateTime(item.lastSentAt)} – nicht doppelt senden
+                              </span>
+                            )}
+                            {item.kind === 'cancellation' && (
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 ${item.invoiceSentAt ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-700'}`}
+                              >
+                                {item.invoiceSentAt
+                                  ? `Rechnung ${item.invoiceId} ging am ${formatBerlinDateTime(item.invoiceSentAt)} per Mail an den Kunden`
+                                  : `Rechnung ${item.invoiceId} wurde nicht per Mail verschickt`}
                               </span>
                             )}
                             {item.eInvoiceProblems.map((problem) => (
@@ -208,7 +222,8 @@ export function InvoiceEmailDialog({
                           <p className="mt-2 text-sm whitespace-pre-wrap text-slate-800">{item.text}</p>
                           <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-sm text-slate-700">
                             <Paperclip className="h-4 w-4" />
-                            Rechnung {item.invoiceId} als PDF{item.eInvoiceProblems.length ? '' : ' (E-Rechnung, ZUGFeRD)'}
+                            {item.kind === 'cancellation' ? `Stornorechnung ${item.documentNumber}` : `Rechnung ${item.invoiceId}`} als
+                            PDF{item.eInvoiceProblems.length ? '' : ' (E-Rechnung, ZUGFeRD)'}
                           </p>
                         </div>
                       )}

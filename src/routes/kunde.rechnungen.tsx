@@ -13,8 +13,7 @@ import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadStornoDoc } from '../utils/delivery-note-utils'
-import { downloadInvoicePdf } from '../utils/invoice-download'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { berlinIsoDate } from '../utils/berlin-time'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
@@ -97,7 +96,7 @@ function RechnungenPage() {
           loading={downloadingDocId === id}
         />
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadStornoDoc(items, selectedCompany ?? undefined)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, selectedCompany ?? undefined)} />
         )}
       </>
     )

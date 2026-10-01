@@ -30,7 +30,7 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
     // Invoices are for the office and the customer, not for drivers.
-    if (caller.role === 'employee') return { groups: [], totalCount: 0, emailedAt: {} as Record<string, string> }
+    if (caller.role === 'employee') return { groups: [], totalCount: 0, emailedAt: {} as Record<string, string>, cancellationEmailedAt: {} as Record<string, string> }
     const supabase = getServiceSupabaseClient()
 
     let query = supabase.from('invoice_groups').select('*', { count: 'exact' })
@@ -47,7 +47,7 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
       .range(from, from + data.pageSize - 1)
 
     if (error || !groupRows || groupRows.length === 0) {
-      return { groups: [], totalCount: count ?? 0, emailedAt: {} as Record<string, string> }
+      return { groups: [], totalCount: count ?? 0, emailedAt: {} as Record<string, string>, cancellationEmailedAt: {} as Record<string, string> }
     }
 
     const invoiceIds = groupRows.map((g) => g.invoice_id)
@@ -65,9 +65,16 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
     }
 
     // When the invoice was last e-mailed (only the office sees that).
-    const sentAt = caller.role === 'admin' ? await lastSentAtByInvoice(supabase, invoiceIds) : new Map<string, string>()
+    const isAdmin = caller.role === 'admin'
+    const sentAt = isAdmin ? await lastSentAtByInvoice(supabase, invoiceIds) : new Map<string, string>()
+    const cancellationSentAt = isAdmin ? await lastSentAtByInvoice(supabase, invoiceIds, 'cancellation') : new Map<string, string>()
     const groups = groupRows.map((g) => ({ id: g.invoice_id, items: itemsByInvoice.get(g.invoice_id) ?? [] }))
-    return { groups, totalCount: count ?? 0, emailedAt: Object.fromEntries(sentAt) as Record<string, string> }
+    return {
+      groups,
+      totalCount: count ?? 0,
+      emailedAt: Object.fromEntries(sentAt) as Record<string, string>,
+      cancellationEmailedAt: Object.fromEntries(cancellationSentAt) as Record<string, string>,
+    }
   })
 
 export const countAllInvoiceGroups = createServerFn({ method: 'GET' }).handler(async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { extractXml, Profile, validateXsd } from '@stackforge-eu/factur-x'
 import type { RecordItem } from '#/state/app-state'
-import { buildInvoiceDocument, renderInvoice } from './e-invoice'
+import { buildCancellationDocument, buildInvoiceDocument, renderInvoice } from './e-invoice'
 
 function record(overrides: Partial<RecordItem>): RecordItem {
   return {
@@ -77,12 +77,45 @@ describe('ZUGFeRD e-invoice', () => {
   })
 })
 
+describe('Stornorechnung', () => {
+  it('is a credit note (381) with positive amounts referencing the invoice', async () => {
+    const cancelled = records.map((r) => ({
+      ...r,
+      status: 'storniert' as const,
+      cancelId: 'ST-20261005-1',
+      cancelledAt: '2026-10-05T09:00:00Z',
+    }))
+    const doc = buildCancellationDocument(cancelled, company)!
+    expect(doc.cancellation).toEqual({ cancelId: 'ST-20261005-1', issueDate: '2026-10-05' })
+
+    const rendered = await renderInvoice(doc)
+    expect(rendered.eInvoice).toBe(true)
+    expect(rendered.fileName).toBe('storno-ST-20261005-1.pdf')
+
+    const { xml } = await extractXml(rendered.pdf)
+    expect(xml).toContain('<ram:TypeCode>381</ram:TypeCode>')
+    expect(xml).toContain('<ram:ID>ST-20261005-1</ram:ID>')
+    expect(xml).toMatch(/<ram:InvoiceReferencedDocument>\s*<ram:IssuerAssignedID>RG-1<\/ram:IssuerAssignedID>/)
+    expect(xml).toContain('<ram:GrandTotalAmount>909.04</ram:GrandTotalAmount>')
+    expect(xml).not.toContain('Gutschrift')
+    // One line per Vorgang, like the Storno PDF.
+    expect(xml.match(/<ram:IncludedSupplyChainTradeLineItem>/g)).toHaveLength(4)
+    expect((await validateXsd(xml, Profile.EN16931)).errors).toEqual([])
+  })
+
+  it('is not built for an invoice that is not cancelled', () => {
+    expect(buildCancellationDocument(records, company)).toBeNull()
+  })
+})
+
 describe('invoice e-mail', () => {
   it('fills subject and text from the invoice', async () => {
     const { buildInvoiceEmail } = await import('./invoice-email-content')
     const mail = buildInvoiceEmail(buildInvoiceDocument('RG-1', records, company), {
       invoice_subject_template: 'Rechnung {RECHNUNGSNUMMER}\n({KUNDE})',
       invoice_body_template: '{BETRAG} bis {FAELLIG_AM}, {BAUVORHABEN}, {LIEFERSCHEINE}, Datum {RECHNUNGSDATUM}',
+      cancellation_subject_template: '',
+      cancellation_body_template: '',
     })
     expect(mail.subject).toBe('Rechnung RG-1 (Muster Bau GmbH)')
     expect(mail.text).toBe('909,04 € bis 15.10.2026, Nordring 12, LS-1, LS-2, Datum 1.10.2026')

@@ -15,8 +15,8 @@ import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
 import { berlinIsoDate } from '../utils/berlin-time'
-import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { downloadInvoicePdf } from '../utils/invoice-download'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
 
@@ -170,7 +170,7 @@ function AdminVorgaengePage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (!group.length) return
-    await downloadStornoDoc(group, companyById(group[0].companyId))
+    await downloadCancellationPdf(group, companyById(group[0].companyId))
   }
 
   return (

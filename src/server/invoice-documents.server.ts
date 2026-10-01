@@ -1,8 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { buildInvoiceDocument, type InvoiceDocument } from './e-invoice'
+import { buildCancellationDocument, buildInvoiceDocument, type InvoiceDocument } from './e-invoice'
 import { toRecord } from './records'
 
-export async function loadInvoiceDocument(supabase: SupabaseClient, invoiceId: string): Promise<InvoiceDocument | null> {
+export type DocumentKind = 'invoice' | 'cancellation'
+
+// The invoice, or (kind 'cancellation') its Stornorechnung — null if the
+// invoice doesn't exist or isn't cancelled.
+export async function loadInvoiceDocument(
+  supabase: SupabaseClient,
+  invoiceId: string,
+  kind: DocumentKind = 'invoice',
+): Promise<InvoiceDocument | null> {
   const { data: rows } = await supabase.from('records').select('*').eq('invoice_id', invoiceId).order('id')
   if (!rows?.length) return null
   const records = rows.map(toRecord)
@@ -13,11 +21,14 @@ export async function loadInvoiceDocument(supabase: SupabaseClient, invoiceId: s
     .eq('id', records[0].companyId)
     .maybeSingle()
 
-  return buildInvoiceDocument(invoiceId, records, {
+  const companyData = {
     customerNumber: company?.customer_number ?? '',
     street: company?.street ?? '',
     postalCode: company?.postal_code ?? '',
     city: company?.city ?? '',
     email: company?.email ?? null,
-  })
+  }
+  return kind === 'cancellation'
+    ? buildCancellationDocument(records, companyData)
+    : buildInvoiceDocument(invoiceId, records, companyData)
 }

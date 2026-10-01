@@ -28,6 +28,8 @@ const updateEmailSettingsSchema = z.object({
   bcc: optionalEmail,
   invoiceSubjectTemplate: z.string().trim().min(1, 'Bitte einen Betreff eingeben.').max(300),
   invoiceBodyTemplate: z.string().trim().min(1, 'Bitte einen Text eingeben.').max(10_000),
+  cancellationSubjectTemplate: z.string().trim().min(1, 'Bitte einen Betreff für Stornorechnungen eingeben.').max(300),
+  cancellationBodyTemplate: z.string().trim().min(1, 'Bitte einen Text für Stornorechnungen eingeben.').max(10_000),
 })
 
 export type EmailSettingsInput = z.infer<typeof updateEmailSettingsSchema>
@@ -48,6 +50,8 @@ export const adminGetEmailSettings = createServerFn({ method: 'GET' })
       bcc: settings.bcc,
       invoiceSubjectTemplate: settings.invoice_subject_template,
       invoiceBodyTemplate: settings.invoice_body_template,
+      cancellationSubjectTemplate: settings.cancellation_subject_template,
+      cancellationBodyTemplate: settings.cancellation_body_template,
       problems: emailSettingsProblems(settings),
       /** Local development: everything goes to Mailpit. */
       mailpitUrl: isMailpitOnly ? DEV_MAILPIT.webUrl : null,
@@ -84,6 +88,8 @@ export const adminUpdateEmailSettings = createServerFn({ method: 'POST' })
         bcc: data.bcc,
         invoice_subject_template: data.invoiceSubjectTemplate,
         invoice_body_template: data.invoiceBodyTemplate,
+        cancellation_subject_template: data.cancellationSubjectTemplate,
+        cancellation_body_template: data.cancellationBodyTemplate,
         updated_at: new Date().toISOString(),
       })
       .eq('id', true)

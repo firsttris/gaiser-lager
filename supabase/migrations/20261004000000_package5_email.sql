@@ -1,4 +1,5 @@
--- Package 5 (see docs/umsetzungsplan.md, P10): sending invoices by e-mail.
+-- Package 5 (see docs/umsetzungsplan.md, P10): sending invoices and
+-- Stornorechnungen by e-mail.
 --
 -- DEPLOY ORDER: apply BEFORE deploying the package 5 code (new tables only,
 -- the old code ignores them).
@@ -33,6 +34,20 @@ Mit freundlichen Grüßen
 Gaiser GmbH Erdbau und Abbruch
 Hansjakobweg 14, 77830 Bühlertal
 Tel. +49 170 2416906 · info@gaiser-abbruch.de',
+  cancellation_subject_template text not null default 'Stornorechnung {STORNONUMMER} zu Rechnung {RECHNUNGSNUMMER} – Gaiser GmbH',
+  cancellation_body_template text not null default
+'Sehr geehrte Damen und Herren,
+
+anbei erhalten Sie unsere Stornorechnung {STORNONUMMER} vom {STORNODATUM}. Sie hebt unsere Rechnung {RECHNUNGSNUMMER} vom {RECHNUNGSDATUM} über {BETRAG} vollständig auf.
+
+Bitte buchen Sie die Rechnung {RECHNUNGSNUMMER} entsprechend aus.
+
+Die Stornorechnung ist eine E-Rechnung im ZUGFeRD-Format: Das PDF enthält die Daten zusätzlich als XML.
+
+Mit freundlichen Grüßen
+Gaiser GmbH Erdbau und Abbruch
+Hansjakobweg 14, 77830 Bühlertal
+Tel. +49 170 2416906 · info@gaiser-abbruch.de',
   updated_at               timestamptz not null default now()
 );
 
@@ -43,9 +58,12 @@ revoke all on public.email_settings from anon, authenticated;
 grant select, insert, update on public.email_settings to service_role;
 
 -- Every send attempt; the invoice list shows "gesendet am" from here.
+-- invoice_id is always the invoice; document_kind says whether the invoice
+-- itself or its Stornorechnung was sent.
 create table public.invoice_emails (
-  id          bigint generated always as identity primary key,
-  invoice_id  text not null,
+  id            bigint generated always as identity primary key,
+  invoice_id    text not null,
+  document_kind text not null default 'invoice' check (document_kind in ('invoice', 'cancellation')),
   company_id  uuid references public.companies(id) on delete set null,
   recipient   text not null,
   bcc         text not null default '',
@@ -57,7 +75,7 @@ create table public.invoice_emails (
   sent_at     timestamptz not null default now()
 );
 
-create index invoice_emails_invoice_id_idx on public.invoice_emails (invoice_id, sent_at desc);
+create index invoice_emails_invoice_id_idx on public.invoice_emails (invoice_id, document_kind, sent_at desc);
 
 alter table public.invoice_emails enable row level security;
 revoke all on public.invoice_emails from anon, authenticated;

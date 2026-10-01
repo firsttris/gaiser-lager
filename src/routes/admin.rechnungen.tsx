@@ -14,8 +14,8 @@ import { SelectionActionBar } from '../components/selection-action-bar'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { downloadInvoicePdf } from '../utils/invoice-download'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
@@ -77,12 +77,16 @@ function AdminRechnungenPage() {
 
   const pageGroups = groupsQuery.data?.groups ?? []
   const emailedAt = groupsQuery.data?.emailedAt ?? {}
+  const cancellationEmailedAt = groupsQuery.data?.cancellationEmailedAt ?? {}
 
   function extraBadges(items: RecordItem[]) {
-    const sentAt = items[0].invoiceId ? emailedAt[items[0].invoiceId] : undefined
+    const invoiceId = items[0].invoiceId ?? ''
+    const sentAt = emailedAt[invoiceId]
+    const stornoSentAt = cancellationEmailedAt[invoiceId]
     return [
       ...reverseChargeExtraBadges(items),
       ...(sentAt ? [{ label: `✉ ${formatBerlinDate(sentAt)}`, className: 'bg-sky-100 text-sky-800' }] : []),
+      ...(stornoSentAt ? [{ label: `✉ Storno ${formatBerlinDate(stornoSentAt)}`, className: 'bg-sky-100 text-sky-800' }] : []),
     ]
   }
   const filteredCount = groupsQuery.data?.totalCount ?? 0
@@ -95,9 +99,12 @@ function AdminRechnungenPage() {
     [selectedGroups],
   )
 
-  function isSelectableGroup(items: RecordItem[]) {
-    return invoiceBadge(items).label !== 'Storniert'
+  // Cancelled invoices can be selected too: their Stornorechnung can be
+  // e-mailed. Cancelling them again is not possible.
+  function isSelectableGroup(_items: RecordItem[]) {
+    return true
   }
+  const selectionHasCancelled = selectedGroups.some((g) => invoiceBadge(g.items).label === 'Storniert')
 
   const selectablePageGroups = useMemo(() => pageGroups.filter((g) => isSelectableGroup(g.items)), [pageGroups])
   const areAllVisibleSelected = selectablePageGroups.length > 0 && selectablePageGroups.every((g) => selectedIds.has(g.id))
@@ -113,7 +120,7 @@ function AdminRechnungenPage() {
         continue
       }
       const cancelled = await listRecordsByDocId({ data: { field: 'cancel_id', value: result.documentId } })
-      if (cancelled.length) await downloadStornoDoc(cancelled, companyById(cancelled[0].companyId))
+      if (cancelled.length) await downloadCancellationPdf(cancelled, companyById(cancelled[0].companyId))
     }
     clearSelection()
     setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
@@ -182,7 +189,7 @@ function AdminRechnungenPage() {
           />
         ))}
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadStornoDoc(items, customer)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, customer)} />
         )}
       </>
     )
@@ -267,6 +274,7 @@ function AdminRechnungenPage() {
             {
               label: 'Stornieren',
               icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectionHasCancelled,
               onClick: () => setPendingAction({
                 action: stornoSelection,
                 title: 'Rechnungen stornieren',

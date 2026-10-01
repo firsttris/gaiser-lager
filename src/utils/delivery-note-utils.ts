@@ -464,8 +464,28 @@ export function drawInvoicePdf(pdf: jsPDF, input: InvoicePdfInput) {
 // Cancellation document for either one invoice (Stornorechnung, mirrors the
 // invoice's VAT treatment incl. §13b) or not-yet-invoiced delivery notes
 // (Storno Lieferschein, net amounts only — no VAT was ever charged).
+// Storno of not-yet-invoiced delivery notes, generated in the browser.
+// Cancellations of invoices (Stornorechnung, an e-invoice) come from the
+// server, see downloadCancellationPdf in invoice-download.ts.
 export async function downloadStornoDoc(records: RecordItem[], customer?: InvoiceCustomer) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  drawStornoPdf(pdf, { records, customer, logoDataUrl: await loadLogoDataUrl() })
+  pdf.save(stornoPdfFileName(records[0].cancelId ?? ''))
+}
+
+export function stornoPdfFileName(cancelId: string) {
+  return `storno-${toSafeFileDate(cancelId)}.pdf`
+}
+
+// Wording follows the rules for correcting an invoice: it names the original
+// invoice (number and date), shows the reversed amounts including VAT and
+// avoids "Gutschrift", which in German VAT law means self-billing by the
+// customer (§ 14 Abs. 2 UStG).
+export function drawStornoPdf(
+  pdf: jsPDF,
+  input: { records: RecordItem[]; customer: InvoiceCustomer | undefined; logoDataUrl: string },
+) {
+  const { records, customer, logoDataUrl } = input
   const left = 15
   const right = 195
 
@@ -475,7 +495,6 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
   const reverseCharge = isInvoiceCancellation && Boolean(records[0].invoiceReverseCharge)
   const deliveryNoteIds = [...new Set(records.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
 
-  const logoDataUrl = await loadLogoDataUrl()
   const metaRows: Array<[string, string]> = [
     ['Storno-Nr.:', cancelId],
     ['Datum:', documentDate(records[0].cancelledAt)],
@@ -492,7 +511,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
 
   y += 9
   const details: Array<[string, string]> = isInvoiceCancellation
-    ? [['Storno zu Rechnung:', invoiceId ?? '']]
+    ? [['Storno zu Rechnung:', `${invoiceId ?? ''} vom ${documentDate(records[0].invoicedAt)}`]]
     : [['Storno zu Lieferschein:', deliveryNoteIds]]
   if (isInvoiceCancellation && deliveryNoteIds) details.push(['Lieferschein-Nr.:', deliveryNoteIds])
   details.push(['Ausführungszeitraum:', servicePeriod(records)])
@@ -502,7 +521,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
   y += 4
   pdf.text(
     isInvoiceCancellation
-      ? 'Hiermit stornieren wir die oben genannte Rechnung vollständig:'
+      ? 'Hiermit stornieren wir die oben genannte Rechnung vollständig. Folgende Positionen werden berichtigt:'
       : 'Hiermit stornieren wir den oben genannten Lieferschein vollständig:',
     left,
     y,
@@ -582,17 +601,17 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
     pdf.text('Zwischensumme (netto)', cols.pos, y)
     pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
     y += 6
-    pdf.text(`zzgl. ${Math.round(VAT_RATE * 100)}% USt.`, cols.pos, y)
+    pdf.text(`Umsatzsteuer ${Math.round(VAT_RATE * 100)}%`, cols.pos, y)
     pdf.text(money(-vat), cols.gesamtpreis, y, { align: 'right' })
     y += 7
     setFont(pdf, 'bold')
     pdf.setFontSize(11)
-    pdf.text('Gutschriftsbetrag', cols.pos, y)
+    pdf.text('Stornobetrag (brutto)', cols.pos, y)
     pdf.text(money(-gross), cols.gesamtpreis, y, { align: 'right' })
   } else {
     setFont(pdf, 'bold')
     pdf.setFontSize(11)
-    pdf.text(isInvoiceCancellation ? 'Gutschriftsbetrag' : 'Gesamtbetrag (netto)', cols.pos, y)
+    pdf.text(isInvoiceCancellation ? 'Stornobetrag' : 'Gesamtbetrag (netto)', cols.pos, y)
     pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
   }
   y += 1
@@ -606,8 +625,20 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
     pdf.text('Es liegt eine Steuerschuldnerschaft des Leistungsempfängers vor', left, y)
   }
 
+  if (isInvoiceCancellation) {
+    y += 10
+    setFont(pdf, 'normal')
+    pdf.setFontSize(9.5)
+    const note = pdf.splitTextToSize(
+      `Diese Stornorechnung hebt die Rechnung ${invoiceId} vom ${documentDate(records[0].invoicedAt)} vollständig auf. ` +
+        (reverseCharge ? '' : 'Die dort ausgewiesene Umsatzsteuer wird in gleicher Höhe berichtigt. ') +
+        'Bitte buchen Sie die Rechnung entsprechend aus.',
+      right - left,
+    )
+    pdf.text(note, left, y)
+  }
+
   finishPages(pdf, right, meta)
-  pdf.save(`storno-${toSafeFileDate(cancelId)}.pdf`)
 }
 
 export function toSafeFileDate(value: string) {

@@ -87,12 +87,15 @@ export type EmailSettingsRow = {
   bcc: string
   invoice_subject_template: string
   invoice_body_template: string
+  cancellation_subject_template: string
+  cancellation_body_template: string
   updated_at: string
 }
 
 export type InvoiceEmailRow = {
   id: number
   invoice_id: string
+  document_kind: 'invoice' | 'cancellation'
   company_id: string | null
   recipient: string
   bcc: string
@@ -221,8 +224,8 @@ export type Database = {
       }
       invoice_emails: {
         Row: InvoiceEmailRow
-        Insert: Omit<InvoiceEmailRow, 'id' | 'sent_at' | 'bcc' | 'error' | 'message_id' | 'company_id'> &
-          Partial<Pick<InvoiceEmailRow, 'bcc' | 'error' | 'message_id' | 'company_id'>>
+        Insert: Omit<InvoiceEmailRow, 'id' | 'sent_at' | 'bcc' | 'error' | 'message_id' | 'company_id' | 'document_kind'> &
+          Partial<Pick<InvoiceEmailRow, 'bcc' | 'error' | 'message_id' | 'company_id' | 'document_kind'>>
         Update: never
         Relationships: []
       }

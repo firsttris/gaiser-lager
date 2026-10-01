@@ -1,5 +1,6 @@
 // ZUGFeRD e-invoice (EN 16931, PDF/A-3): the invoice PDF with the invoice data
-// embedded as XML. Pure functions; loading from the database is in
+// embedded as XML. Also the cancellation of an invoice (Stornorechnung,
+// type 381 with positive amounts and a reference to the original invoice). Pure functions; loading from the database is in
 // invoice-documents.server.ts.
 import { jsPDF } from 'jspdf'
 import {
@@ -23,8 +24,10 @@ import {
   COMPANY_INFO,
   computeInvoiceTotals,
   drawInvoicePdf,
+  drawStornoPdf,
   EMBEDDED_FONT_FAMILY,
   invoicePdfFileName,
+  stornoPdfFileName,
 } from '#/utils/delivery-note-utils'
 
 // Invoices are payable within 14 days (printed on the invoice).
@@ -58,6 +61,8 @@ export type InvoiceDocument = {
   deliveryNoteRefs: string
   constructionSites: string
   totals: ReturnType<typeof computeInvoiceTotals>
+  /** Set when this is the cancellation (Stornorechnung) of the invoice. */
+  cancellation: { cancelId: string; issueDate: string } | null
 }
 
 export type InvoiceCompany = InvoiceDocument['company']
@@ -78,7 +83,27 @@ export function buildInvoiceDocument(invoiceId: string, records: RecordItem[], c
     deliveryNoteRefs: [...new Set(records.map((r) => r.deliveryNoteId).filter(Boolean))].join(', '),
     constructionSites: siteNames.length === 1 ? siteNames[0] : 'Diverse Baustellen',
     totals: computeInvoiceTotals(records, reverseCharge),
+    cancellation: null,
   }
+}
+
+// The Stornorechnung of a cancelled invoice: same customer, positions and
+// amounts as the invoice (cancellations always cover a whole invoice).
+export function buildCancellationDocument(
+  records: RecordItem[],
+  company: Omit<InvoiceCompany, 'id' | 'name'>,
+): InvoiceDocument | null {
+  const { invoiceId, cancelId, cancelledAt } = records[0]
+  if (!invoiceId || !cancelId) return null
+  return {
+    ...buildInvoiceDocument(invoiceId, records, company),
+    cancellation: { cancelId, issueDate: berlinIsoDate(cancelledAt ? new Date(cancelledAt) : new Date()) },
+  }
+}
+
+/** Number of the document itself (Storno-Nr. for a cancellation). */
+export function documentNumber(doc: InvoiceDocument) {
+  return doc.cancellation?.cancelId ?? doc.invoiceId
 }
 
 /**
@@ -100,12 +125,39 @@ function toFacturXInput(doc: InvoiceDocument): FacturXInvoiceInput {
   const serviceDates = doc.records.map((r) => berlinIsoDate(new Date(r.createdAtIso))).sort()
   const notes = [{ content: `Bauvorhaben: ${doc.constructionSites}` }]
   if (doc.deliveryNoteRefs) notes.push({ content: `Lieferschein-Nr.: ${doc.deliveryNoteRefs}` })
+  const cancellation = doc.cancellation
+  if (cancellation) {
+    notes.unshift({
+      content: `Stornorechnung: hebt die Rechnung ${doc.invoiceId} vom ${doc.issueDate} vollständig auf. Die dort ausgewiesene Umsatzsteuer wird in gleicher Höhe berichtigt.`,
+    })
+  }
+  // A cancellation lists every Vorgang (like its PDF), an invoice the
+  // aggregated positions.
+  const lines = cancellation
+    ? doc.records.map((record) => ({
+        type: record.type,
+        productName: record.productName,
+        unit: record.unit,
+        unitPrice: record.unitPrice,
+        amount: record.amount,
+        total: record.total,
+      }))
+    : lineItems
+  const payment = {
+    meansCode: '58',
+    iban: COMPANY_INFO.banks[0].iban.replace(/\s/g, ''),
+    bic: COMPANY_INFO.banks[0].bic,
+    accountName: COMPANY_INFO.name,
+    paymentReference: doc.invoiceId,
+    dueDate: doc.dueDate,
+    termsDescription: `Zahlbar innerhalb von ${PAYMENT_TERM_DAYS} Tagen ab Rechnungsstellung`,
+  }
 
   return {
     document: {
-      id: doc.invoiceId,
-      issueDate: doc.issueDate,
-      typeCode: DocumentTypeCode.COMMERCIAL_INVOICE,
+      id: documentNumber(doc),
+      issueDate: cancellation?.issueDate ?? doc.issueDate,
+      typeCode: cancellation ? DocumentTypeCode.CREDIT_NOTE : DocumentTypeCode.COMMERCIAL_INVOICE,
       buyerReference: doc.company.customerNumber || undefined,
       notes: [
         ...notes,
@@ -138,7 +190,8 @@ function toFacturXInput(doc: InvoiceDocument): FacturXInvoiceInput {
       },
       electronicAddress: doc.company.email ? { value: doc.company.email, schemeID: 'EM' } : undefined,
     },
-    lines: lineItems.map((item, index) => ({
+    references: cancellation ? [{ id: doc.invoiceId, type: 'preceding', issueDate: doc.issueDate }] : undefined,
+    lines: lines.map((item, index) => ({
       id: String(index + 1),
       name: `${flowLabel(item.type)}: ${item.productName}`,
       quantity: Math.round(item.amount * 1000) / 1000,
@@ -149,15 +202,8 @@ function toFacturXInput(doc: InvoiceDocument): FacturXInvoiceInput {
       vatRatePercent: vatPercent,
     })),
     billingPeriod: { startDate: serviceDates[0], endDate: serviceDates[serviceDates.length - 1] },
-    payment: {
-      meansCode: '58',
-      iban: COMPANY_INFO.banks[0].iban.replace(/\s/g, ''),
-      bic: COMPANY_INFO.banks[0].bic,
-      accountName: COMPANY_INFO.name,
-      paymentReference: doc.invoiceId,
-      dueDate: doc.dueDate,
-      termsDescription: `Zahlbar innerhalb von ${PAYMENT_TERM_DAYS} Tagen ab Rechnungsstellung`,
-    },
+    // A cancellation asks for no payment.
+    payment: cancellation ? undefined : payment,
     totals: {
       lineTotal: subtotal,
       taxBasisTotal: subtotal,
@@ -172,6 +218,10 @@ function toFacturXInput(doc: InvoiceDocument): FacturXInvoiceInput {
   }
 }
 
+function documentTitle(doc: InvoiceDocument) {
+  return doc.cancellation ? `Stornorechnung ${doc.cancellation.cancelId}` : `Rechnung ${doc.invoiceId}`
+}
+
 function renderInvoicePdfBytes(doc: InvoiceDocument) {
   // putOnlyUsedFonts: jsPDF otherwise lists its 14 standard fonts, which
   // PDF/A forbids because they aren't embedded.
@@ -181,20 +231,25 @@ function renderInvoicePdfBytes(doc: InvoiceDocument) {
   pdf.addFileToVFS('LiberationSans-Bold.ttf', dataUrlBase64(boldFontDataUrl))
   pdf.addFont('LiberationSans-Bold.ttf', EMBEDDED_FONT_FAMILY, 'bold')
 
-  drawInvoicePdf(pdf, {
-    records: doc.records,
-    customer: {
-      customerNumber: doc.company.customerNumber,
-      street: doc.company.street,
-      postalCode: doc.company.postalCode,
-      city: doc.company.city,
-    },
-    deliveryNoteRefs: doc.deliveryNoteRefs,
-    invoiceNo: doc.invoiceId,
-    reverseCharge: doc.reverseCharge,
-    logoDataUrl,
-  })
-  pdf.setProperties({ title: `Rechnung ${doc.invoiceId}`, author: COMPANY_INFO.name, creator: COMPANY_INFO.name })
+  const customer = {
+    customerNumber: doc.company.customerNumber,
+    street: doc.company.street,
+    postalCode: doc.company.postalCode,
+    city: doc.company.city,
+  }
+  if (doc.cancellation) {
+    drawStornoPdf(pdf, { records: doc.records, customer, logoDataUrl })
+  } else {
+    drawInvoicePdf(pdf, {
+      records: doc.records,
+      customer,
+      deliveryNoteRefs: doc.deliveryNoteRefs,
+      invoiceNo: doc.invoiceId,
+      reverseCharge: doc.reverseCharge,
+      logoDataUrl,
+    })
+  }
+  pdf.setProperties({ title: documentTitle(doc), author: COMPANY_INFO.name, creator: COMPANY_INFO.name })
   return new Uint8Array(pdf.output('arraybuffer'))
 }
 
@@ -210,7 +265,7 @@ export type RenderedInvoice = {
 // the data allows it.
 export async function renderInvoice(doc: InvoiceDocument): Promise<RenderedInvoice> {
   const plainPdf = renderInvoicePdfBytes(doc)
-  const fileName = invoicePdfFileName(doc.invoiceId)
+  const fileName = doc.cancellation ? stornoPdfFileName(doc.cancellation.cancelId) : invoicePdfFileName(doc.invoiceId)
   const problems = eInvoiceProblems(doc)
   if (problems.length) return { pdf: plainPdf, fileName, eInvoice: false, problems }
 
@@ -221,7 +276,7 @@ export async function renderInvoice(doc: InvoiceDocument): Promise<RenderedInvoi
     flavor: Flavor.ZUGFERD,
     rgbIccProfile: Buffer.from(SRGB_ICC_BASE64, 'base64'),
     unembeddedFonts: 'throw',
-    meta: { title: `Rechnung ${doc.invoiceId}`, author: COMPANY_INFO.name, creator: COMPANY_INFO.name },
+    meta: { title: documentTitle(doc), author: COMPANY_INFO.name, creator: COMPANY_INFO.name },
   })
   if (result.validation && !result.validation.valid) {
     throw new Error(`E-Rechnung ungültig: ${JSON.stringify(result.validation.errors)}`)

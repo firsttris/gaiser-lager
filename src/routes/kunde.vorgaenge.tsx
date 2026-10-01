@@ -12,8 +12,8 @@ import { TopNav } from '../components/top-nav'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, statusStages } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
-import { downloadInvoicePdf } from '../utils/invoice-download'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { berlinIsoDate } from '../utils/berlin-time'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
@@ -96,7 +96,7 @@ function HistoryPage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (group.length === 0) return
-    await downloadStornoDoc(group, selectedCompany ?? undefined)
+    await downloadCancellationPdf(group, selectedCompany ?? undefined)
   }
 
   function exportSelectedAsCsv() {

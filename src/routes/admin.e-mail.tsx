@@ -13,6 +13,7 @@ import {
 import { Spinner } from '../components/spinner'
 import { isValidEmail } from '../utils/email'
 import {
+  CANCELLATION_ONLY_TOKENS,
   fillTemplate,
   INVOICE_EMAIL_PLACEHOLDERS,
   SAMPLE_INVOICE_EMAIL_VALUES,
@@ -77,14 +78,13 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
     bcc: initial.bcc,
     invoiceSubjectTemplate: initial.invoiceSubjectTemplate,
     invoiceBodyTemplate: initial.invoiceBodyTemplate,
+    cancellationSubjectTemplate: initial.cancellationSubjectTemplate,
+    cancellationBodyTemplate: initial.cancellationBodyTemplate,
   })
   const [isDirty, setIsDirty] = useState(false)
   const [saveMessage, setSaveMessage] = useState<Message>(null)
   const [testAddress, setTestAddress] = useState('')
   const [testMessage, setTestMessage] = useState<Message>(null)
-  const bodyRef = useRef<HTMLTextAreaElement>(null)
-  const subjectRef = useRef<HTMLInputElement>(null)
-  const lastFocused = useRef<'subject' | 'body'>('body')
 
   const save = useMutation({
     mutationFn: adminUpdateEmailSettings,
@@ -95,20 +95,6 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
   function update<K extends keyof EmailSettingsInput>(key: K, value: EmailSettingsInput[K]) {
     setForm((current) => ({ ...current, [key]: value }))
     setIsDirty(true)
-  }
-
-  // Click on a placeholder: insert it where the cursor was (subject or text).
-  function insertPlaceholder(token: string) {
-    const target = lastFocused.current === 'subject' ? subjectRef.current : bodyRef.current
-    const key = lastFocused.current === 'subject' ? 'invoiceSubjectTemplate' : 'invoiceBodyTemplate'
-    const value = form[key]
-    const start = target?.selectionStart ?? value.length
-    const end = target?.selectionEnd ?? value.length
-    update(key, value.slice(0, start) + token + value.slice(end))
-    requestAnimationFrame(() => {
-      target?.focus()
-      target?.setSelectionRange(start + token.length, start + token.length)
-    })
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -161,8 +147,6 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
       setTestMessage({ kind: 'error', text: 'Testmail konnte nicht gesendet werden.' })
     }
   }
-
-  const unknownTokens = unknownPlaceholders(`${form.invoiceSubjectTemplate}\n${form.invoiceBodyTemplate}`)
 
   return (
     <>
@@ -285,80 +269,28 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend className="font-title text-2xl text-slate-900">Vorlage Rechnungs-Mail</legend>
-          <p className="mt-1 text-sm text-slate-700">
-            Platzhalter antippen, um sie an der Cursor-Position einzufügen. Sie werden beim Versand für jede Rechnung
-            ersetzt.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {INVOICE_EMAIL_PLACEHOLDERS.map((placeholder) => (
-              <button
-                key={placeholder.token}
-                type="button"
-                onClick={() => insertPlaceholder(placeholder.token)}
-                title={placeholder.description}
-                className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-800 hover:bg-slate-200"
-              >
-                {placeholder.token}
-              </button>
-            ))}
-          </div>
+        <TemplateEditor
+          title="Vorlage Rechnungs-Mail"
+          subject={form.invoiceSubjectTemplate}
+          body={form.invoiceBodyTemplate}
+          onSubjectChange={(value) => update('invoiceSubjectTemplate', value)}
+          onBodyChange={(value) => update('invoiceBodyTemplate', value)}
+          from={`${form.fromName} <${form.fromAddress || '…'}>`}
+          bcc={form.bcc}
+          attachment="rechnung-RG-20261001-0001.pdf (E-Rechnung, ZUGFeRD)"
+        />
 
-          <div className="mt-4 grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4">
-              <label className={LABEL_CLASS}>
-                Betreff
-                <input
-                  ref={subjectRef}
-                  value={form.invoiceSubjectTemplate}
-                  onFocus={() => (lastFocused.current = 'subject')}
-                  onChange={(e) => update('invoiceSubjectTemplate', e.target.value)}
-                  className={INPUT_CLASS}
-                />
-              </label>
-              <label className={LABEL_CLASS}>
-                Text
-                <textarea
-                  ref={bodyRef}
-                  value={form.invoiceBodyTemplate}
-                  onFocus={() => (lastFocused.current = 'body')}
-                  onChange={(e) => update('invoiceBodyTemplate', e.target.value)}
-                  rows={16}
-                  className={`${INPUT_CLASS} font-mono text-sm`}
-                />
-              </label>
-              {unknownTokens.length > 0 && (
-                <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                  Unbekannte Platzhalter (Tippfehler?): {unknownTokens.join(', ')}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <p className={LABEL_CLASS}>Vorschau (Beispielrechnung)</p>
-              <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Von:</span> {form.fromName} &lt;{form.fromAddress || '…'}&gt;
-                </p>
-                <p className="text-sm text-slate-700">
-                  <span className="font-semibold">An:</span> buchhaltung@muster-bau.example
-                  {form.bcc && <> · BCC: {form.bcc}</>}
-                </p>
-                <p className="mt-2 font-semibold text-slate-900">
-                  {fillTemplate(form.invoiceSubjectTemplate, SAMPLE_INVOICE_EMAIL_VALUES)}
-                </p>
-                <p className="mt-3 text-sm whitespace-pre-wrap text-slate-800">
-                  {fillTemplate(form.invoiceBodyTemplate, SAMPLE_INVOICE_EMAIL_VALUES)}
-                </p>
-                <p className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-sm text-slate-700">
-                  <Paperclip className="h-4 w-4" />
-                  rechnung-RG-20261001-0001.pdf (E-Rechnung, ZUGFeRD)
-                </p>
-              </div>
-            </div>
-          </div>
-        </fieldset>
+        <TemplateEditor
+          title="Vorlage Stornorechnungs-Mail"
+          isCancellation
+          subject={form.cancellationSubjectTemplate}
+          body={form.cancellationBodyTemplate}
+          onSubjectChange={(value) => update('cancellationSubjectTemplate', value)}
+          onBodyChange={(value) => update('cancellationBodyTemplate', value)}
+          from={`${form.fromName} <${form.fromAddress || '…'}>`}
+          bcc={form.bcc}
+          attachment="storno-ST-20261005-17.pdf (E-Rechnung, ZUGFeRD)"
+        />
 
         <button
           type="submit"
@@ -398,5 +330,129 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
         <MessageBox message={testMessage} />
       </div>
     </>
+  )
+}
+
+// Subject + text with placeholder buttons (inserted at the cursor), typo
+// warning and a live preview with sample values.
+function TemplateEditor({
+  title,
+  isCancellation = false,
+  subject,
+  body,
+  onSubjectChange,
+  onBodyChange,
+  from,
+  bcc,
+  attachment,
+}: {
+  title: string
+  isCancellation?: boolean
+  subject: string
+  body: string
+  onSubjectChange: (value: string) => void
+  onBodyChange: (value: string) => void
+  from: string
+  bcc: string
+  attachment: string
+}) {
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const subjectRef = useRef<HTMLInputElement>(null)
+  const lastFocused = useRef<'subject' | 'body'>('body')
+  const placeholders = INVOICE_EMAIL_PLACEHOLDERS.filter(
+    (placeholder) => isCancellation || !CANCELLATION_ONLY_TOKENS.includes(placeholder.token),
+  )
+  const unknownTokens = unknownPlaceholders(`${subject}\n${body}`)
+  const misplacedTokens = isCancellation ? [] : CANCELLATION_ONLY_TOKENS.filter((token) => `${subject}${body}`.includes(token))
+
+  function insertPlaceholder(token: string) {
+    const isSubject = lastFocused.current === 'subject'
+    const target = isSubject ? subjectRef.current : bodyRef.current
+    const value = isSubject ? subject : body
+    const start = target?.selectionStart ?? value.length
+    const end = target?.selectionEnd ?? value.length
+    ;(isSubject ? onSubjectChange : onBodyChange)(value.slice(0, start) + token + value.slice(end))
+    requestAnimationFrame(() => {
+      target?.focus()
+      target?.setSelectionRange(start + token.length, start + token.length)
+    })
+  }
+
+  return (
+    <fieldset>
+      <legend className="font-title text-2xl text-slate-900">{title}</legend>
+      <p className="mt-1 text-sm text-slate-700">
+        Platzhalter antippen, um sie an der Cursor-Position einzufügen. Sie werden beim Versand für jede{' '}
+        {isCancellation ? 'Stornorechnung' : 'Rechnung'} ersetzt.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {placeholders.map((placeholder) => (
+          <button
+            key={placeholder.token}
+            type="button"
+            onClick={() => insertPlaceholder(placeholder.token)}
+            title={placeholder.description}
+            className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-800 hover:bg-slate-200"
+          >
+            {placeholder.token}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
+          <label className={LABEL_CLASS}>
+            Betreff
+            <input
+              ref={subjectRef}
+              value={subject}
+              onFocus={() => (lastFocused.current = 'subject')}
+              onChange={(e) => onSubjectChange(e.target.value)}
+              className={INPUT_CLASS}
+            />
+          </label>
+          <label className={LABEL_CLASS}>
+            Text
+            <textarea
+              ref={bodyRef}
+              value={body}
+              onFocus={() => (lastFocused.current = 'body')}
+              onChange={(e) => onBodyChange(e.target.value)}
+              rows={16}
+              className={`${INPUT_CLASS} font-mono text-sm`}
+            />
+          </label>
+          {unknownTokens.length > 0 && (
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+              Unbekannte Platzhalter (Tippfehler?): {unknownTokens.join(', ')}
+            </p>
+          )}
+          {misplacedTokens.length > 0 && (
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+              {misplacedTokens.join(', ')} gibt es nur bei Stornorechnungen und bleibt hier leer.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <p className={LABEL_CLASS}>Vorschau (Beispiel)</p>
+          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-700">
+              <span className="font-semibold">Von:</span> {from}
+            </p>
+            <p className="text-sm text-slate-700">
+              <span className="font-semibold">An:</span> buchhaltung@muster-bau.example
+              {bcc && <> · BCC: {bcc}</>}
+            </p>
+            <p className="mt-2 font-semibold text-slate-900">{fillTemplate(subject, SAMPLE_INVOICE_EMAIL_VALUES)}</p>
+            <p className="mt-3 text-sm whitespace-pre-wrap text-slate-800">{fillTemplate(body, SAMPLE_INVOICE_EMAIL_VALUES)}</p>
+            <p className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-sm text-slate-700">
+              <Paperclip className="h-4 w-4" />
+              {attachment}
+            </p>
+          </div>
+        </div>
+      </div>
+    </fieldset>
   )
 }

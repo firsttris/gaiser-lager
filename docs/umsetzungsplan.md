@@ -276,8 +276,14 @@ sind sauber pro Firma getrennt.
 > Migration `20261004000000_package5_email.sql` **vor** dem Deploy.
 > Gewählte Standards (änderbar): ZUGFeRD-Profil EN 16931; eine Mail pro
 > Rechnung; BCC-Kopie optional in den Einstellungen; reiner Text; „Kunden-
-> objekt“ = Bauvorhaben (`{BAUVORHABEN}`); Stornorechnungen werden (noch)
-> nicht per Mail verschickt und sind noch keine E-Rechnung.
+> objekt“ = Bauvorhaben (`{BAUVORHABEN}`).
+> Stornorechnungen: ebenfalls E-Rechnung (Typ 381 mit Bezug auf die
+> ursprüngliche Rechnung), Versand nur manuell über denselben Dialog mit
+> eigener Vorlage; Hinweis, wenn Storno oder Rechnung schon gemailt wurden.
+> Wortlaut ohne „Gutschrift“ (meint im UStG die Abrechnung durch den
+> Leistungsempfänger), stattdessen „Stornobetrag“ plus Hinweis, dass die
+> Rechnung Nr. … vom … vollständig aufgehoben und die Umsatzsteuer berichtigt
+> wird.
 > Getestet: Mustang-Validator (PDF/A-3b konform, EN-16931-Regeln 0 Fehler),
 > XSD-Prüfung im Unit-Test, Versand über Mailpit inkl. BCC, Anhang,
 > Versandprotokoll und „bereits gesendet“-Warnung.

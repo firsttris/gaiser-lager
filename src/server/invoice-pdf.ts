@@ -5,15 +5,15 @@ import { requireAnySession } from './auth-context'
 import { renderInvoice } from './e-invoice'
 import { loadInvoiceDocument } from './invoice-documents.server'
 
-// Invoice PDFs are rendered on the server (ZUGFeRD e-invoice); the browser
-// only saves the result.
+// Invoice and Stornorechnung PDFs are rendered on the server (ZUGFeRD
+// e-invoice); the browser only saves the result.
 export const getInvoicePdf = createServerFn({ method: 'POST' })
-  .validator((data: unknown) => z.object({ invoiceId: z.string().min(1) }).parse(data))
+  .validator((data: unknown) => z.object({ invoiceId: z.string().min(1), kind: z.enum(['invoice', 'cancellation']).default('invoice') }).parse(data))
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
     if (caller.role === 'employee') throw new Error('FORBIDDEN')
 
-    const doc = await loadInvoiceDocument(getServiceSupabaseClient(), data.invoiceId)
+    const doc = await loadInvoiceDocument(getServiceSupabaseClient(), data.invoiceId, data.kind)
     if (!doc || (caller.role === 'customer' && doc.company.id !== caller.companyId)) {
       throw new Error('NOT_FOUND')
     }
