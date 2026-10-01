@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { constructionSitesQueryOptions } from '../server/construction-sites'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type RecordItem } from '../state/app-state'
@@ -22,7 +24,8 @@ export function TruckWizardFlow({
   onExit: () => void
   vorgaengeTo: string
 }) {
-  const { trucks, constructionSites, createTruckRecord, isCreatingTruckRecord } = useAppState()
+  const { trucks, createTruckRecord, isCreatingTruckRecord } = useAppState()
+  const { data: constructionSites = [] } = useQuery(constructionSitesQueryOptions(company.id))
 
   const [step, setStep] = useState(1)
   const [isDownloadingNote, setIsDownloadingNote] = useState(false)

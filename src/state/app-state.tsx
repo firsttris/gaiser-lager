@@ -335,7 +335,7 @@ type AppState = {
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => Promise<CreateCompanyResult>
   isDeletingConstructionSite: boolean
   // Each runs as one database transaction; resolve only once it's persisted.
-  createInvoice: (recordIds: number[], reverseCharge: boolean) => Promise<IssuedDocumentResult>
+  createInvoice: (recordIds: number[]) => Promise<IssuedDocumentResult>
   cancelRecords: (recordIds: number[]) => Promise<IssuedDocumentResult>
   markInvoicesPaid: (invoiceIds: string[]) => Promise<ActionResult>
   updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
@@ -529,16 +529,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     },
   })
 
+  // A new Vorgang may have created a new construction site on the way.
   const createRecordMutation = useMutation({
     mutationFn: apiCreateRecord,
     onSuccess: (record) => {
-      if (record) invalidate(['records'])
+      if (record) {
+        invalidate(['records'])
+        invalidate(['construction-sites'])
+      }
     },
   })
   const createTruckRecordMutation = useMutation({
     mutationFn: apiCreateTruckRecord,
     onSuccess: (record) => {
-      if (record) invalidate(['records'])
+      if (record) {
+        invalidate(['records'])
+        invalidate(['construction-sites'])
+      }
     },
   })
   // Document actions change records shown both in Vorgänge (['records']) and
@@ -642,8 +649,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingConstructionSite: updateSiteMutation.isPending,
       deleteConstructionSite: async (input) => deleteSiteMutation.mutateAsync({ data: input }),
       isDeletingConstructionSite: deleteSiteMutation.isPending,
-      createInvoice: async (recordIds, reverseCharge) => {
-        const result = await withActionError(() => createInvoiceMutation.mutateAsync({ data: { recordIds, reverseCharge } }))
+      createInvoice: async (recordIds) => {
+        const result = await withActionError(() => createInvoiceMutation.mutateAsync({ data: { recordIds } }))
         if (result.ok) invalidate(['numbering-settings'])
         return result
       },

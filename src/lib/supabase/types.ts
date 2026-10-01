@@ -206,8 +206,12 @@ export type Database = {
         Returns: CustomerNumberIncrementResult
       }
       create_invoice: {
-        Args: { p_record_ids: number[]; p_reverse_charge: boolean }
+        Args: { p_record_ids: number[] }
         Returns: IssuedDocumentResult
+      }
+      company_construction_sites: {
+        Args: { p_company_id: string }
+        Returns: { id: string; name: string }[]
       }
       cancel_records: {
         Args: { p_record_ids: number[] }

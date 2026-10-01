@@ -1,4 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { constructionSitesQueryOptions } from '../server/construction-sites'
 import { useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
@@ -71,8 +73,9 @@ export function WizardFlow({
   onExit?: () => void
   vorgaengeTo?: string
 }) {
-  const { products, selectedCompany: loggedInCompany, constructionSites, createRecord, isCreatingRecord } = useAppState()
+  const { products, selectedCompany: loggedInCompany, createRecord, isCreatingRecord } = useAppState()
   const selectedCompany = company ?? loggedInCompany
+  const { data: constructionSites = [] } = useQuery(constructionSitesQueryOptions(selectedCompany?.id))
   const navigate = useNavigate()
 
   const [step, setStep] = useState(1)

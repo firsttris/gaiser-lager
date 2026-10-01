@@ -40,7 +40,6 @@ function AdminVorgaengePage() {
   const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
-  const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
@@ -133,9 +132,9 @@ function AdminVorgaengePage() {
     setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
   }
 
-  async function createSammelrechnung(isReverseCharge: boolean) {
+  async function createSammelrechnung() {
     if (!canCreateInvoice) return
-    const result = await createInvoice(selectedRecords.map((r) => r.id), isReverseCharge)
+    const result = await createInvoice(selectedRecords.map((r) => r.id))
     if (!result.ok) {
       setActionError(result.message)
       return
@@ -294,7 +293,7 @@ function AdminVorgaengePage() {
               icon: <FilePlus className="h-3.5 w-3.5" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !canCreateInvoice,
-              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
+              onClick: () => setSammelrechnungOpen(true),
             },
           ]}
         />
@@ -341,20 +340,6 @@ function AdminVorgaengePage() {
             <p className="mt-2 text-sm text-slate-600">
               {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedRecords[0]?.company} · {money(selectedTotal)}
             </p>
-            <label className="mt-4 flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={sammelReverseCharge}
-                onChange={(e) => setSammelReverseCharge(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
-            </label>
-            {sammelReverseCharge && (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfängers wird auf der Rechnung ergänzt.
-              </p>
-            )}
             <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
@@ -369,7 +354,7 @@ function AdminVorgaengePage() {
                 onClick={async () => {
                   setIsCreatingInvoice(true)
                   try {
-                    await createSammelrechnung(sammelReverseCharge)
+                    await createSammelrechnung()
                     setSammelrechnungOpen(false)
                   } finally {
                     setIsCreatingInvoice(false)

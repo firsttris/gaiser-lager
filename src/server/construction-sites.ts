@@ -11,7 +11,7 @@ const createSiteSchema = z.object({ name: z.string() })
 const updateSiteSchema = z.object({ id: z.string().uuid(), name: z.string() })
 const deleteSiteSchema = z.object({ id: z.string().uuid() })
 
-function toSite(row: ConstructionSiteRow) {
+function toSite(row: Pick<ConstructionSiteRow, 'id' | 'name'>) {
   return { id: row.id, name: row.name }
 }
 
@@ -19,14 +19,29 @@ function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, ' ')
 }
 
-export const listConstructionSites = createServerFn({ method: 'GET' }).handler(async () => {
-  await requireAnySession()
+const listSitesSchema = z.object({ companyId: z.string().uuid().optional() }).optional()
 
-  const supabase = getServiceSupabaseClient()
-  const { data, error } = await supabase.from('construction_sites').select('*').order('name', { ascending: true })
-  if (error || !data) return []
-  return data.map(toSite)
-})
+// Customers only ever see the sites used in their own Vorgänge (never other
+// customers' addresses). Admins get the sites of one company when a
+// companyId is given (suggestions in "Neuer Vorgang"), otherwise all of them
+// (Admin → Baustellen).
+export const listConstructionSites = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => listSitesSchema.parse(data))
+  .handler(async ({ data }) => {
+    const caller = await requireAnySession()
+    const companyId = caller.role === 'customer' ? caller.companyId : data?.companyId
+    const supabase = getServiceSupabaseClient()
+
+    if (companyId) {
+      const { data: rows, error } = await supabase.rpc('company_construction_sites', { p_company_id: companyId })
+      if (error || !rows) return []
+      return rows.map(toSite)
+    }
+
+    const { data: rows, error } = await supabase.from('construction_sites').select('*').order('name', { ascending: true })
+    if (error || !rows) return []
+    return rows.map(toSite)
+  })
 
 export const adminCreateConstructionSite = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
@@ -125,10 +140,10 @@ export const adminDeleteConstructionSite = createServerFn({ method: 'POST' })
     return { ok: true } as const
   })
 
-export const constructionSitesQueryOptions = () =>
+export const constructionSitesQueryOptions = (companyId?: string) =>
   queryOptions({
-    queryKey: ['construction-sites'] as const,
-    queryFn: () => listConstructionSites(),
+    queryKey: ['construction-sites', companyId ?? 'all'] as const,
+    queryFn: () => listConstructionSites({ data: companyId ? { companyId } : undefined }),
   })
 
 // Internal helper for record creation (src/server/records.ts) — atomic

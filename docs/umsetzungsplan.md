@@ -13,7 +13,7 @@ gehen.
 
 | Paket | Inhalt | Punkte | Datenbank? | Größe |
 | --- | --- | --- | --- | --- |
-| **0** | Sicherheit + offene Review-Fixes live bringen | P0, P3 (Sofortmaßnahme), P16 (teilweise) | ja (klein) | S |
+| **0** ✅ | Sicherheit + offene Review-Fixes live bringen | P0, P3 (Sofortmaßnahme), P16 (teilweise) | ja (klein) | S |
 | **1** | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
 | **2** | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
 | **3** | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
@@ -69,6 +69,12 @@ Diese Grundlagen werden einmal gebaut und dann überall verwendet:
 ---
 
 ## Paket 0 – Sicherheit und offene Fixes live bringen
+
+> **Stand:** lokal umgesetzt und getestet (Branch `kundentermin`), noch
+> nicht in der Produktion. Migration:
+> `20261002000000_package0_security_and_cleanup.sql`. §13b wird über eine
+> neue Migration entfernt (statt die evtl. schon eingespielte
+> `20261001000000` zu ändern).
 
 **Ziel:** Lücken in der Produktion schließen, Review-Fixes ausrollen.
 

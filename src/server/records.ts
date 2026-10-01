@@ -27,7 +27,6 @@ const createTruckRecordSchema = z.object({
 
 const createInvoiceSchema = z.object({
   recordIds: z.array(z.number().int()).min(1),
-  reverseCharge: z.boolean(),
 })
 
 const cancelRecordsSchema = z.object({
@@ -280,10 +279,7 @@ export const createInvoice = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => createInvoiceSchema.parse(data))
   .handler(async ({ data, context }): Promise<IssuedDocumentResult> => {
-    const { data: rows, error } = await context.supabase.rpc('create_invoice', {
-      p_record_ids: data.recordIds,
-      p_reverse_charge: data.reverseCharge,
-    })
+    const { data: rows, error } = await context.supabase.rpc('create_invoice', { p_record_ids: data.recordIds })
     const row = rows?.[0]
     if (error || !row) return documentError(error, 'Die Rechnung konnte nicht erstellt werden.')
     return { ok: true, documentId: row.document_id, documentDate: row.document_date }
