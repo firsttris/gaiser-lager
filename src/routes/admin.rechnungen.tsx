@@ -16,6 +16,7 @@ import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } f
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
+import { berlinIsoDate } from '../utils/berlin-time'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -28,21 +29,23 @@ export const Route = createFileRoute('/admin/rechnungen')({
 })
 
 function AdminRechnungenPage() {
-  const { companies, updateRecordStatus, assignCancel } = useAppState()
+  const { companies, cancelRecords, markInvoicesPaid } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'offen' | 'bezahlt' | 'storniert'>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   const companyOptions = useMemo(
-    () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
+    () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
     [companies],
   )
-  const companyId = companyFilter === 'all' ? undefined : companies.find((c) => c.name === companyFilter)?.id
+  const companyId = companyFilter === 'all' ? undefined : companyFilter
+  const companyById = (id: string) => companies.find((c) => c.id === id)
 
   const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
   const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
@@ -84,34 +87,42 @@ function AdminRechnungenPage() {
   const selectablePageGroups = useMemo(() => pageGroups.filter((g) => isSelectableGroup(g.items)), [pageGroups])
   const areAllVisibleSelected = selectablePageGroups.length > 0 && selectablePageGroups.every((g) => selectedIds.has(g.id))
 
-  function cancelGroup(items: RecordItem[]) {
-    const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
-    const originalDocId = items[0].invoiceId ?? items[0].deliveryNoteId
-    downloadStornoDoc(items, items[0].company, cancelId, originalDocId)
-    assignCancel(items.map((r) => r.id), cancelId)
-    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
-  function stornoSelection() {
-    selectedGroups.forEach((g) => cancelGroup(g.items))
+  // One cancellation per invoice, each its own transaction. The Storno PDF is
+  // generated from the records as stored after the cancellation.
+  async function stornoSelection() {
+    const failures: string[] = []
+    for (const group of selectedGroups) {
+      const result = await cancelRecords(group.items.map((r) => r.id))
+      if (!result.ok) {
+        failures.push(`${group.id}: ${result.message}`)
+        continue
+      }
+      const cancelled = await listRecordsByDocId({ data: { field: 'cancel_id', value: result.documentId } })
+      if (cancelled.length) await downloadStornoDoc(cancelled, companyById(cancelled[0].companyId))
+    }
     clearSelection()
+    setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
   }
 
-  function bezahltSelection() {
-    selectedGroups.forEach((g) => g.items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')))
+  async function bezahltSelection() {
+    const result = await markInvoicesPaid(selectedGroups.map((g) => g.id))
+    if (!result.ok) {
+      setActionError(result.message)
+      return
+    }
+    setActionError(null)
     clearSelection()
   }
 
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), true)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsvFile(`admin-rechnungen-${stamp}.csv`, csv)
+    downloadCsvFile(`admin-rechnungen-${berlinIsoDate()}.csv`, csv)
   }
 
   async function downloadSelectedInvoices() {
     for (const group of selectedGroups) {
-      const customer = companies.find((c) => c.name === group.items[0].company)
+      const customer = companyById(group.items[0].companyId)
       const deliveryNoteIds = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
       await handleInvoiceDownload(group.id, group.items, customer, deliveryNoteIds.join(', '))
     }
@@ -138,7 +149,7 @@ function AdminRechnungenPage() {
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const customer = companies.find((c) => c.name === items[0].company)
+    const customer = companyById(items[0].companyId)
     const deliveryNoteIds = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
     const deliveryNoteRefs = deliveryNoteIds.join(', ')
     return (
@@ -159,7 +170,7 @@ function AdminRechnungenPage() {
           />
         ))}
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadStornoDoc(items, customer)} />
         )}
       </>
     )
@@ -187,8 +198,8 @@ function AdminRechnungenPage() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Firmen</option>
-              {companyOptions.map((name) => (
-                <option key={name} value={name}>{name}</option>
+              {companyOptions.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
               ))}
             </select>
           </label>
@@ -259,6 +270,10 @@ function AdminRechnungenPage() {
           ]}
         />
 
+        {actionError && (
+          <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-4 text-sm font-medium text-rose-700">{actionError}</p>
+        )}
+
         {groupsQuery.isLoading ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
         ) : pageGroups.length === 0 ? (
@@ -289,7 +304,7 @@ function AdminRechnungenPage() {
         title={pendingAction?.title ?? ''}
         message={pendingAction?.message ?? ''}
         confirmLabel="Ja"
-        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
     </section>

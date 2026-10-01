@@ -12,6 +12,7 @@ import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, statusStages } from '../utils/history-utils'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { berlinIsoDate } from '../utils/berlin-time'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
 
@@ -85,7 +86,8 @@ function HistoryPage() {
     try {
       const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
       if (group.length === 0) return
-      await downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
+      const deliveryNoteRefs = [...new Set(group.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+      await downloadInvoicePdf(group, selectedCompany ?? undefined, deliveryNoteRefs, invoiceId, group[0].invoiceReverseCharge)
     } finally {
       setDownloadingDocId(null)
     }
@@ -94,14 +96,14 @@ function HistoryPage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (group.length === 0) return
-    downloadStornoDoc(group, selectedCompany?.name ?? '', cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
+    await downloadStornoDoc(group, selectedCompany ?? undefined)
   }
 
   function exportSelectedAsCsv() {
     if (selectedRecords.length === 0) return
 
     const csv = createHistoryCsv(selectedRecords, false)
-    const stamp = new Date().toISOString().slice(0, 10)
+    const stamp = berlinIsoDate()
     const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`history-${company}-${stamp}.csv`, csv)
   }

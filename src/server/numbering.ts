@@ -1,9 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
-import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
-import { formatGeneratedNumber } from '#/utils/numbering-format'
 import type { NumberingSettingsRow, Database } from '#/lib/supabase/types'
 
 type NumberingSettingsUpdate = Database['public']['Tables']['numbering_settings']['Update']
@@ -31,7 +29,7 @@ export const getNumberingSettings = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data } = await context.supabase.from('numbering_settings').select('*').eq('id', true).single()
     if (!data) {
-      throw new Error('numbering_settings row is missing — was supabase/schema-phase2.sql run?')
+      throw new Error('numbering_settings row is missing — were the migrations in supabase/migrations/ applied?')
     }
     return toSettings(data)
   })
@@ -60,23 +58,6 @@ export const updateNumberingSettings = createServerFn({ method: 'POST' })
     }
 
     return { ok: true } as const
-  })
-
-// Admin-triggered, but calls the atomic counter RPC via the service-role
-// client rather than the RLS-scoped admin client — the surrounding
-// requireAdminSession check already gates this, and the RPC doesn't need its
-// own RLS/security-definer setup on top of that.
-export const generateInvoiceNumber = createServerFn({ method: 'POST' })
-  .middleware([requireAdminSession])
-  .handler(async () => {
-    const supabase = getServiceSupabaseClient()
-    const { data, error } = await supabase.rpc('next_invoice_number')
-    const row = data?.[0]
-    if (error || !row) {
-      throw new Error('Rechnungsnummer konnte nicht erzeugt werden.')
-    }
-
-    return formatGeneratedNumber(row.template, row.counter, row.padding)
   })
 
 export const numberingSettingsQueryOptions = () =>

@@ -13,6 +13,7 @@ import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
+import { berlinIsoDate } from '../utils/berlin-time'
 import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
@@ -28,7 +29,7 @@ export const Route = createFileRoute('/admin/vorgaenge')({
 })
 
 function AdminVorgaengePage() {
-  const { companies, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
+  const { companies, createInvoice, cancelRecords } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -36,17 +37,19 @@ function AdminVorgaengePage() {
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   const companyOptions = useMemo(
-    () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
+    () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
     [companies],
   )
-  const companyId = companyFilter === 'all' ? undefined : companies.find((c) => c.name === companyFilter)?.id
+  const companyId = companyFilter === 'all' ? undefined : companyFilter
+  const companyById = (id: string) => companies.find((c) => c.id === id)
 
   const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
   const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
@@ -87,16 +90,15 @@ function AdminVorgaengePage() {
   } = useRecordSelection(pageRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
-  const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
+  const selectedCompanyIds = Array.from(new Set(selectedRecords.map((r) => r.companyId)))
   const selectedAllOpenLieferschein = selectedRecords.length > 0 && selectedRecords.every((r) => r.status === 'lieferschein')
-  const canCreateInvoice = selectedAllOpenLieferschein && selectedCompanies.length === 1
+  const canCreateInvoice = selectedAllOpenLieferschein && selectedCompanyIds.length === 1
   const canStorno = selectedAllOpenLieferschein
 
   function exportSelectedAsCsv() {
     if (selectedRecords.length === 0) return
     const csv = createHistoryCsv(selectedRecords, true)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsvFile(`admin-history-${stamp}.csv`, csv)
+    downloadCsvFile(`admin-history-${berlinIsoDate()}.csv`, csv)
   }
 
   const selectedDeliveryNoteIds = [...new Set(selectedRecords.map((r) => r.deliveryNoteId).filter((id): id is string => Boolean(id)))]
@@ -114,25 +116,33 @@ function AdminVorgaengePage() {
     }
   }
 
-  function stornoSelection() {
-    selectedRecords.forEach((record) => {
-      const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${record.id}`
-      downloadStornoDoc([record], record.company, cancelId, record.deliveryNoteId)
-      assignCancel([record.id], cancelId)
-      updateRecordStatus(record.id, 'storniert')
-    })
+  // Each selected delivery note record is cancelled on its own (one Storno
+  // document per record). The PDF is only generated once the cancellation is
+  // stored, from the records as the database now has them.
+  async function stornoSelection() {
+    const failures: string[] = []
+    for (const record of selectedRecords) {
+      const result = await cancelRecords([record.id])
+      if (!result.ok) {
+        failures.push(`${record.deliveryNoteId ?? `#${record.id}`}: ${result.message}`)
+        continue
+      }
+      await handleCancelClick(result.documentId)
+    }
     clearSelection()
+    setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
   }
 
   async function createSammelrechnung(isReverseCharge: boolean) {
     if (!canCreateInvoice) return
-    const deliveryNoteRefs = selectedRecords.map((r) => r.deliveryNoteId).filter(Boolean).join(', ')
-    const customer = companies.find((c) => c.name === selectedCompanies[0])
-    const invoiceNo = await generateInvoiceNumber()
-    await downloadInvoicePdf(selectedRecords, customer, deliveryNoteRefs, invoiceNo, isReverseCharge)
-    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
-    assignInvoice(selectedRecords.map((r) => r.id), invoiceNo, isReverseCharge)
+    const result = await createInvoice(selectedRecords.map((r) => r.id), isReverseCharge)
+    if (!result.ok) {
+      setActionError(result.message)
+      return
+    }
+    setActionError(null)
     clearSelection()
+    await handleInvoiceClick(result.documentId)
   }
 
   async function handleDeliveryNoteClick(deliveryNoteId: string) {
@@ -140,8 +150,7 @@ function AdminVorgaengePage() {
     try {
       const group = await listRecordsByDocId({ data: { field: 'delivery_note_id', value: deliveryNoteId } })
       if (!group.length) return
-      const customer = companies.find((c) => c.name === group[0].company)
-      await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
+      await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, companyById(group[0].companyId))
     } finally {
       setDownloadingDocId(null)
     }
@@ -152,8 +161,8 @@ function AdminVorgaengePage() {
     try {
       const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
       if (!group.length) return
-      const customer = companies.find((c) => c.name === group[0].company)
-      await downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
+      const deliveryNoteRefs = [...new Set(group.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+      await downloadInvoicePdf(group, companyById(group[0].companyId), deliveryNoteRefs, invoiceId, group[0].invoiceReverseCharge)
     } finally {
       setDownloadingDocId(null)
     }
@@ -162,7 +171,7 @@ function AdminVorgaengePage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (!group.length) return
-    downloadStornoDoc(group, group[0].company, cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
+    await downloadStornoDoc(group, companyById(group[0].companyId))
   }
 
   return (
@@ -195,8 +204,8 @@ function AdminVorgaengePage() {
               className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
             >
               <option value="all">Alle Firmen</option>
-              {companyOptions.map((name) => (
-                <option key={name} value={name}>{name}</option>
+              {companyOptions.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
               ))}
             </select>
           </label>
@@ -247,7 +256,7 @@ function AdminVorgaengePage() {
           pluralLabel="Einträge"
           total={selectedTotal}
           warning={
-            selectedAllOpenLieferschein && selectedCompanies.length > 1
+            selectedAllOpenLieferschein && selectedCompanyIds.length > 1
               ? 'Rechnung ist nur möglich, wenn alle markierten Einträge zur gleichen Firma gehören.'
               : undefined
           }
@@ -290,6 +299,10 @@ function AdminVorgaengePage() {
           ]}
         />
 
+        {actionError && (
+          <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-4 text-sm font-medium text-rose-700">{actionError}</p>
+        )}
+
         {recordsQuery.isLoading ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
         ) : pageRecords.length === 0 ? (
@@ -326,7 +339,7 @@ function AdminVorgaengePage() {
           >
             <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
             <p className="mt-2 text-sm text-slate-600">
-              {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedCompanies[0]} · {money(selectedTotal)}
+              {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedRecords[0]?.company} · {money(selectedTotal)}
             </p>
             <label className="mt-4 flex cursor-pointer items-center gap-3">
               <input
@@ -379,7 +392,7 @@ function AdminVorgaengePage() {
         title={pendingAction?.title ?? ''}
         message={pendingAction?.message ?? ''}
         confirmLabel="Ja"
-        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
     </section>

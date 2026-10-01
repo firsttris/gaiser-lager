@@ -116,7 +116,7 @@ function AdminKundenPage() {
     const company = companies.find((item) => item.id === companyId)
     if (!company) return
 
-    const pin = window.prompt(`Neue 4-stellige PIN fuer ${company.name}:`)
+    const pin = window.prompt(`Neue 4-stellige PIN für ${company.name}:`)
     if (pin === null) return
 
     if (!/^\d{4}$/.test(pin)) {
@@ -130,7 +130,7 @@ function AdminKundenPage() {
       return
     }
 
-    editForm.setMessage(`PIN fuer ${company.name} wurde zurueckgesetzt.`, 'success')
+    editForm.setMessage(`PIN für ${company.name} wurde zurückgesetzt.`, 'success')
   }
 
   return (
@@ -285,7 +285,7 @@ function AdminKundenPage() {
                 className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSettingCompanyPin && <Spinner className="h-3 w-3" />}
-                PIN zuruecksetzen
+                PIN zurücksetzen
               </button>
             </div>
 
@@ -435,7 +435,7 @@ function AdminKundenPage() {
                       className="flex shrink-0 items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSettingCompanyPin && <Spinner className="h-3 w-3" />}
-                      Zuruecksetzen
+                      Zurücksetzen
                     </button>
                   </div>
                 </td>

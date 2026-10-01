@@ -11,6 +11,7 @@ export type CompanyRow = {
   pin_hash: string
   failed_pin_attempts: number
   pin_locked_until: string | null
+  pin_changed_at: string | null
   created_at: string
   updated_at: string
 }
@@ -71,6 +72,8 @@ export type RecordRow = {
   invoice_id: string | null
   invoice_reverse_charge: boolean
   cancel_id: string | null
+  invoiced_at: string | null
+  cancelled_at: string | null
 }
 
 export type NumberingSettingsRow = {
@@ -107,14 +110,15 @@ export type InvoiceGroupRow = {
 
 type NumberIncrementResult = { template: string; counter: number; padding: number }[]
 type CustomerNumberIncrementResult = { counter: number }[]
+type IssuedDocumentResult = { document_id: string; document_date: string }[]
 
 export type Database = {
   public: {
     Tables: {
       companies: {
         Row: CompanyRow
-        Insert: Omit<CompanyRow, 'id' | 'created_at' | 'updated_at' | 'failed_pin_attempts' | 'pin_locked_until'> &
-          Partial<Pick<CompanyRow, 'failed_pin_attempts' | 'pin_locked_until'>>
+        Insert: Omit<CompanyRow, 'id' | 'created_at' | 'updated_at' | 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at'> &
+          Partial<Pick<CompanyRow, 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at'>>
         Update: Partial<Omit<CompanyRow, 'id' | 'created_at' | 'updated_at'>>
         Relationships: []
       }
@@ -146,7 +150,15 @@ export type Database = {
         Row: RecordRow
         Insert: Omit<
           RecordRow,
-          'id' | 'created_at' | 'construction_site_id' | 'delivery_note_id' | 'invoice_id' | 'invoice_reverse_charge' | 'cancel_id'
+          | 'id'
+          | 'created_at'
+          | 'construction_site_id'
+          | 'delivery_note_id'
+          | 'invoice_id'
+          | 'invoice_reverse_charge'
+          | 'cancel_id'
+          | 'invoiced_at'
+          | 'cancelled_at'
         > &
           Partial<
             Pick<
@@ -192,6 +204,26 @@ export type Database = {
       next_customer_number: {
         Args: Record<string, never>
         Returns: CustomerNumberIncrementResult
+      }
+      create_invoice: {
+        Args: { p_record_ids: number[]; p_reverse_charge: boolean }
+        Returns: IssuedDocumentResult
+      }
+      cancel_records: {
+        Args: { p_record_ids: number[] }
+        Returns: IssuedDocumentResult
+      }
+      mark_invoices_paid: {
+        Args: { p_invoice_ids: string[] }
+        Returns: number
+      }
+      claim_company_pin_attempt: {
+        Args: { p_company_id: string; p_max_attempts: number; p_lock_minutes: number }
+        Returns: boolean
+      }
+      claim_master_pin_attempt: {
+        Args: { p_max_attempts: number; p_lock_minutes: number }
+        Returns: boolean
       }
     }
   }

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAnySession } from './auth-context'
 import { toRecord } from './records'
+import { berlinDayEndExclusive, berlinDayStart } from '#/utils/berlin-time'
 
 const listInvoiceGroupsPageSchema = z.object({
   page: z.number().int().positive(),
@@ -10,8 +11,8 @@ const listInvoiceGroupsPageSchema = z.object({
   companyId: z.string().uuid().optional(),
   status: z.enum(['offen', 'bezahlt', 'storniert']).optional(),
   search: z.string().optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
 // UI-facing filter values ('offen') vs. the raw records.status the
@@ -34,8 +35,8 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
     if (caller.role === 'admin' && data.companyId) query = query.eq('company_id', data.companyId)
     if (data.status) query = query.eq('status', STATUS_FILTER_TO_RECORD_STATUS[data.status])
     if (data.search) query = query.ilike('invoice_id', `%${data.search.trim()}%`)
-    if (data.dateFrom) query = query.gte('created_at', `${data.dateFrom}T00:00:00`)
-    if (data.dateTo) query = query.lte('created_at', `${data.dateTo}T23:59:59.999`)
+    if (data.dateFrom) query = query.gte('created_at', berlinDayStart(data.dateFrom).toISOString())
+    if (data.dateTo) query = query.lt('created_at', berlinDayEndExclusive(data.dateTo).toISOString())
 
     const from = (data.page - 1) * data.pageSize
     const { data: groupRows, error, count } = await query

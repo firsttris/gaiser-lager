@@ -1,193 +1,60 @@
-Welcome to your new TanStack Start app! 
+# Gaiser Lager
 
-# Getting Started
+Kundenportal und Verwaltung für das Lager der Gaiser GmbH Erdbau und Abbruch:
+Kunden legen Abhol-, Anlieferungs- und LKW-Vorgänge an und laden ihre
+Lieferscheine/Rechnungen herunter; im Admin-Bereich werden Vorgänge
+abgerechnet, storniert und Stammdaten (Material, LKW, Kunden, Baustellen)
+gepflegt.
 
-To run this application:
+Stack: TanStack Start (React 19, Router, Query), Tailwind CSS, Supabase
+(Postgres + Auth), jsPDF für die Dokumente, Deployment auf Vercel (Nitro).
+
+## Entwicklung
 
 ```bash
 npm install
-npm run dev
-```
-
-# Building For Production
-
-To build this application for production:
-
-```bash
+cp .env.example .env   # Werte eintragen, siehe unten
+npm run dev            # http://localhost:3000
+npm test               # Unit-Tests (Vitest)
+npx tsc --noEmit       # Typecheck
 npm run build
 ```
 
-## Testing
+### Umgebungsvariablen
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+| Variable | Zweck |
+| --- | --- |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | öffentlich, landen im Browser-Bundle |
+| `SUPABASE_SECRET_KEY` | nur Server, umgeht Row Level Security |
+| `SESSION_SECRET` | verschlüsselt die Session-Cookies (`openssl rand -base64 32`) |
 
-```bash
-npm run test
-```
+> **Achtung:** Das in `.env` eingetragene Supabase-Projekt ist die
+> Produktionsdatenbank. Für Tests eine lokale Datenbank verwenden.
 
-## Styling
+## Architektur in Kürze
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+- **Admins** melden sich über Supabase Auth an; ihre Server-Funktionen laufen
+  mit dem Admin-Token, Row Level Security ist die eigentliche Prüfung.
+- **Kunden** melden sich mit Firma + 4-stelliger PIN an (eigenes,
+  verschlüsseltes Session-Cookie). Ihre Server-Funktionen laufen mit dem
+  Service-Key und filtern selbst auf die eigene Firma (`requireAnySession`).
+  Eine PIN-Änderung macht bestehende Kunden-Sessions ungültig.
+- **Rechnung erstellen, Stornieren, Als bezahlt markieren** laufen jeweils als
+  eine Transaktion in Postgres (`create_invoice`, `cancel_records`,
+  `mark_invoices_paid`); erst danach wird das PDF erzeugt.
+- **Datumsangaben** werden immer in deutscher Zeit (`Europe/Berlin`)
+  angezeigt, gefiltert und in Belegnummern eingesetzt, unabhängig von der
+  Zeitzone des Servers (`src/utils/berlin-time.ts`).
+- **Vorgänge** speichern Produkt-, Baustellen- und Firmennamen als Kopie.
+  Umbenennungen in den Stammdaten wirken nur auf noch nicht abgerechnete
+  Vorgänge, gestellte Rechnungen bleiben unverändert.
 
-### Removing Tailwind CSS
+## Datenbank
 
-If you prefer not to use Tailwind CSS:
+Das Schema liegt vollständig in `supabase/migrations/`. Neue Migrationen
+werden mit der Supabase CLI eingespielt (`npx supabase db push`) — vorher
+gegen eine lokale Datenbank testen und vor dem Einspielen in Produktion ein
+Backup ziehen (Admin → Einstellungen → SQL-Backup).
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Die GitHub Action `supabase-keepalive.yml` verhindert, dass das kostenlose
+Supabase-Projekt nach 7 Tagen Inaktivität pausiert.

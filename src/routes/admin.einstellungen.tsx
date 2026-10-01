@@ -116,7 +116,7 @@ function AdminEinstellungenPage() {
     }
 
     setInactivityTimeoutMinutes(String(minutes))
-    setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitaets-Timeout wurde gespeichert.' })
+    setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitäts-Timeout wurde gespeichert.' })
   }
 
   async function downloadBackup() {
@@ -264,7 +264,7 @@ function AdminEinstellungenPage() {
       </div>
 
       <div className="mt-8 border-t border-slate-200 pt-6">
-        <h3 className="font-title text-2xl text-slate-900">Automatischer Kunden-Logout bei Inaktivitaet</h3>
+        <h3 className="font-title text-2xl text-slate-900">Automatischer Kunden-Logout bei Inaktivität</h3>
         <p className="mt-2 text-sm text-slate-600">
           Nach dieser Zeit ohne Eingaben wird der Kunde automatisch abgemeldet. Die letzten 30 Sekunden wird ein
           Countdown als Hinweis angezeigt.
@@ -272,7 +272,7 @@ function AdminEinstellungenPage() {
 
         <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Inaktivitaetszeit (Minuten)</label>
+            <label className="text-sm font-semibold text-slate-700">Inaktivitätszeit (Minuten)</label>
             <input
               type="number"
               min={0}

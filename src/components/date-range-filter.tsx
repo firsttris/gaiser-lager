@@ -57,8 +57,12 @@ export function DateRangeFilter({ value, onChange }: Props) {
   )
 }
 
+// Calendar date as the user sees it. (toISOString() would convert local
+// midnight to UTC first, which in Germany yields the previous day.)
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
 }
 
 // Resolves a preset into concrete ISO date boundaries for the server-side

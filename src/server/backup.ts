@@ -31,20 +31,48 @@ function sqlLiteral(value: unknown): string {
   return `'${String(value).replace(/'/g, "''")}'`
 }
 
-async function dumpTable(supabase: SupabaseClient<Database>, table: TableName) {
-  const { data, error } = await supabase.from(table).select('*')
-  if (error) throw new Error(`Backup fehlgeschlagen (Tabelle "${table}"): ${error.message}`)
+// PostgREST caps every response at max_rows (1000, see supabase/config.toml),
+// so each table is read page by page in a stable order until a short page
+// comes back — a single select('*') silently truncated larger tables.
+const PAGE_SIZE = 1000
 
-  const rows = data ?? []
+const ORDER_COLUMN: Record<(typeof TABLES_IN_DEPENDENCY_ORDER)[number], string> = {
+  companies: 'id',
+  construction_sites: 'id',
+  admin_users: 'user_id',
+  products: 'id',
+  trucks: 'id',
+  numbering_settings: 'id',
+  signup_settings: 'id',
+  records: 'id',
+}
+
+async function fetchAllRows(supabase: SupabaseClient<Database>, table: (typeof TABLES_IN_DEPENDENCY_ORDER)[number]) {
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .order(ORDER_COLUMN[table], { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) throw new Error(`Backup fehlgeschlagen (Tabelle "${table}"): ${error.message}`)
+    const page = (data ?? []) as Record<string, unknown>[]
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) return rows
+  }
+}
+
+async function dumpTable(supabase: SupabaseClient<Database>, table: (typeof TABLES_IN_DEPENDENCY_ORDER)[number]) {
+  const rows = await fetchAllRows(supabase, table)
   if (rows.length === 0) return `-- Tabelle "${table}": keine Zeilen\n`
 
-  const columns = Object.keys(rows[0] as Record<string, unknown>)
+  const columns = Object.keys(rows[0])
   const columnList = columns.map((c) => `"${c}"`).join(', ')
   const inserts = rows.map((row) => {
-    const values = columns.map((col) => sqlLiteral((row as Record<string, unknown>)[col]))
+    const values = columns.map((col) => sqlLiteral(row[col]))
     return `INSERT INTO public.${table} (${columnList}) VALUES (${values.join(', ')});`
   })
-  return inserts.join('\n') + '\n'
+  return `-- ${rows.length} Zeilen\n` + inserts.join('\n') + '\n'
 }
 
 export const adminDownloadBackup = createServerFn({ method: 'GET' })
@@ -67,7 +95,7 @@ export const adminDownloadBackup = createServerFn({ method: 'GET' })
       `--\n` +
       `-- Reiner Daten-Dump (INSERT-Statements). Zum Wiederherstellen zuerst das\n` +
       `-- Schema aus supabase/migrations/ auf eine leere Datenbank anwenden,\n` +
-      `-- anschliessend dieses Skript ausfuehren.\n\n` +
+      `-- anschließend dieses Skript ausführen.\n\n` +
       `BEGIN;\n\n${parts.join('\n')}\nCOMMIT;\n`
 
     return { ok: true, filename: `gaiser-backup-${generatedAt.slice(0, 10)}.sql`, content } as const

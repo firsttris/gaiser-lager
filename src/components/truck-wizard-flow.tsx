@@ -161,7 +161,7 @@ export function TruckWizardFlow({
   if (step === 2) {
     return (
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-        <h3 className="font-title text-4xl text-slate-900">Vorgang pruefen</h3>
+        <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Typ</dt>
@@ -197,7 +197,7 @@ export function TruckWizardFlow({
             onClick={() => setStep(1)}
             className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
-            Zurueck
+            Zurück
           </button>
           <button
             type="button"

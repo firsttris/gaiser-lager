@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { PIN_HASH_ROUNDS } from './companies'
-import { checkAndConsumeMasterPin } from './master-pin.server'
+import { verifyMasterPin } from './master-pin.server'
 
 const setMasterPinSchema = z.object({
   pin: z.string().regex(/^\d{4}$/),
@@ -23,7 +23,7 @@ const updateInactivityTimeoutSchema = z.object({
 // before the customer ever sees the account-creation form.
 export const verifySignupMasterPin = createServerFn({ method: 'POST' })
   .validator((data: unknown) => verifyMasterPinSchema.parse(data))
-  .handler(async ({ data }) => checkAndConsumeMasterPin(data.masterPin))
+  .handler(async ({ data }) => verifyMasterPin(data.masterPin))
 
 export const getSignupSettings = createServerFn({ method: 'GET' }).handler(async () => {
   const supabase = getServiceSupabaseClient()
@@ -37,8 +37,7 @@ export const getSignupSettings = createServerFn({ method: 'GET' }).handler(async
 // Admin-triggered, but writes via the service-role client rather than the
 // RLS-scoped admin client — signup_settings has no RLS grants for
 // authenticated at all (see the create_signup_settings migration), so the
-// surrounding requireAdminSession check is what gates this, same as
-// generateInvoiceNumber in numbering.ts.
+// surrounding requireAdminSession check is what gates this.
 export const adminSetMasterPin = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => setMasterPinSchema.parse(data))
@@ -70,7 +69,7 @@ export const adminUpdateInactivityTimeout = createServerFn({ method: 'POST' })
       .eq('id', true)
 
     if (error) {
-      return { ok: false, message: 'Das Inaktivitaets-Timeout konnte nicht gespeichert werden.' } as const
+      return { ok: false, message: 'Das Inaktivitäts-Timeout konnte nicht gespeichert werden.' } as const
     }
 
     return { ok: true } as const

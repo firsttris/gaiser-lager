@@ -5,6 +5,8 @@ import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import { findOrCreateConstructionSite } from './construction-sites'
 import { formatGeneratedNumber } from '#/utils/numbering-format'
+import { berlinDayEndExclusive, berlinDayStart, formatBerlinDateTime } from '#/utils/berlin-time'
+import { roundCents } from '#/utils/money'
 import type { PriceCategory, RecordRow } from '#/lib/supabase/types'
 import type { RecordItem } from '../state/app-state'
 
@@ -23,25 +25,25 @@ const createTruckRecordSchema = z.object({
   companyId: z.string().uuid().optional(),
 })
 
-const updateStatusSchema = z.object({
-  recordId: z.number(),
-  status: z.enum(['offen', 'lieferschein', 'rechnung', 'bezahlt', 'storniert']),
+const createInvoiceSchema = z.object({
+  recordIds: z.array(z.number().int()).min(1),
+  reverseCharge: z.boolean(),
 })
 
-const assignInvoiceSchema = z.object({
-  recordIds: z.array(z.number()),
-  invoiceId: z.string(),
-  reverseCharge: z.boolean().optional(),
+const cancelRecordsSchema = z.object({
+  recordIds: z.array(z.number().int()).min(1),
 })
 
-const assignCancelSchema = z.object({
-  recordIds: z.array(z.number()),
-  cancelId: z.string(),
+const markInvoicesPaidSchema = z.object({
+  invoiceIds: z.array(z.string().min(1)).min(1),
 })
+
+const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
 export function toRecord(row: RecordRow): RecordItem {
   return {
     id: row.id,
+    companyId: row.company_id,
     company: row.company_name,
     constructionSiteId: row.construction_site_id ?? '',
     constructionSiteName: row.construction_site_name,
@@ -52,11 +54,14 @@ export function toRecord(row: RecordRow): RecordItem {
     unitPrice: row.unit_price,
     total: row.total,
     status: row.status,
-    createdAt: new Date(row.created_at).toLocaleString('de-DE'),
+    createdAt: formatBerlinDateTime(row.created_at),
+    createdAtIso: row.created_at,
     deliveryNoteId: row.delivery_note_id ?? undefined,
     invoiceId: row.invoice_id ?? undefined,
     invoiceReverseCharge: row.invoice_reverse_charge,
+    invoicedAt: row.invoiced_at ?? undefined,
     cancelId: row.cancel_id ?? undefined,
+    cancelledAt: row.cancelled_at ?? undefined,
   }
 }
 
@@ -98,7 +103,7 @@ export const createRecord = createServerFn({ method: 'POST' })
     if (!site) return null
 
     const unitPrice = productUnitPrice(product, data.type, company.price_category)
-    const total = unitPrice * data.amount
+    const total = roundCents(unitPrice * data.amount)
 
     const { data: numbering, error: numberingError } = await supabase.rpc('next_delivery_note_number')
     const numberingRow = numbering?.[0]
@@ -147,7 +152,7 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
     if (!site) return null
 
     const unitPrice = company.price_category === 'private' ? truck.private_price : truck.business_price
-    const total = unitPrice * data.hours
+    const total = roundCents(unitPrice * data.hours)
 
     const { data: numbering, error: numberingError } = await supabase.rpc('next_delivery_note_number')
     const numberingRow = numbering?.[0]
@@ -185,8 +190,8 @@ const listRecordsPageSchema = z.object({
   type: z.enum(['pickup', 'dropoff', 'lkw']).optional(),
   status: z.enum(['offen', 'lieferschein', 'rechnung', 'bezahlt', 'storniert']).optional(),
   search: z.string().optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
+  dateFrom: isoDateSchema.optional(),
+  dateTo: isoDateSchema.optional(),
 })
 
 // PostgREST's .or() takes a comma-separated filter list — strip characters
@@ -215,8 +220,8 @@ export const listRecordsPage = createServerFn({ method: 'GET' })
       )
     }
 
-    if (data.dateFrom) query = query.gte('created_at', `${data.dateFrom}T00:00:00`)
-    if (data.dateTo) query = query.lte('created_at', `${data.dateTo}T23:59:59.999`)
+    if (data.dateFrom) query = query.gte('created_at', berlinDayStart(data.dateFrom).toISOString())
+    if (data.dateTo) query = query.lt('created_at', berlinDayEndExclusive(data.dateTo).toISOString())
 
     const from = (data.page - 1) * data.pageSize
     const { data: rows, error, count } = await query
@@ -260,26 +265,45 @@ export const countAllRecords = createServerFn({ method: 'GET' }).handler(async (
   return count ?? 0
 })
 
-export const updateRecordStatus = createServerFn({ method: 'POST' })
+type IssuedDocumentResult = { ok: true; documentId: string; documentDate: string } | { ok: false; message: string }
+
+// Postgres functions raise their user-facing (German) messages with
+// errcode P0001; anything else is an unexpected failure.
+function documentError(error: { code?: string; message: string } | null, fallback: string) {
+  return { ok: false, message: error?.code === 'P0001' ? error.message : fallback } as const
+}
+
+// Invoice creation, cancellation and payment each run as one transaction in
+// Postgres (see the atomic_document_workflow migration) — either every record
+// of the document is updated or none is.
+export const createInvoice = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
-  .validator((data: unknown) => updateStatusSchema.parse(data))
-  .handler(async ({ data, context }) => {
-    await context.supabase.from('records').update({ status: data.status }).eq('id', data.recordId)
+  .validator((data: unknown) => createInvoiceSchema.parse(data))
+  .handler(async ({ data, context }): Promise<IssuedDocumentResult> => {
+    const { data: rows, error } = await context.supabase.rpc('create_invoice', {
+      p_record_ids: data.recordIds,
+      p_reverse_charge: data.reverseCharge,
+    })
+    const row = rows?.[0]
+    if (error || !row) return documentError(error, 'Die Rechnung konnte nicht erstellt werden.')
+    return { ok: true, documentId: row.document_id, documentDate: row.document_date }
   })
 
-export const assignInvoice = createServerFn({ method: 'POST' })
+export const cancelRecords = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
-  .validator((data: unknown) => assignInvoiceSchema.parse(data))
-  .handler(async ({ data, context }) => {
-    await context.supabase
-      .from('records')
-      .update({ invoice_id: data.invoiceId, invoice_reverse_charge: data.reverseCharge ?? false })
-      .in('id', data.recordIds)
+  .validator((data: unknown) => cancelRecordsSchema.parse(data))
+  .handler(async ({ data, context }): Promise<IssuedDocumentResult> => {
+    const { data: rows, error } = await context.supabase.rpc('cancel_records', { p_record_ids: data.recordIds })
+    const row = rows?.[0]
+    if (error || !row) return documentError(error, 'Die Stornierung ist fehlgeschlagen.')
+    return { ok: true, documentId: row.document_id, documentDate: row.document_date }
   })
 
-export const assignCancel = createServerFn({ method: 'POST' })
+export const markInvoicesPaid = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
-  .validator((data: unknown) => assignCancelSchema.parse(data))
+  .validator((data: unknown) => markInvoicesPaidSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await context.supabase.from('records').update({ cancel_id: data.cancelId }).in('id', data.recordIds)
+    const { error } = await context.supabase.rpc('mark_invoices_paid', { p_invoice_ids: data.invoiceIds })
+    if (error) return documentError(error, 'Die Rechnungen konnten nicht als bezahlt markiert werden.')
+    return { ok: true } as const
   })

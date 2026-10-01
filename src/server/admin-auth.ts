@@ -30,7 +30,13 @@ export const adminSignIn = createServerFn({ method: 'POST' })
       .maybeSingle()
 
     if (!adminRow) {
-      await supabase.auth.signOut()
+      // Valid Supabase user, but not an admin: revoke the session we just
+      // created instead of leaving a live token behind.
+      try {
+        await getServiceSupabaseClient().auth.admin.signOut(signIn.session.access_token, 'global')
+      } catch {
+        // Best-effort — no cookie gets set either way.
+      }
       return GENERIC_ERROR
     }
 

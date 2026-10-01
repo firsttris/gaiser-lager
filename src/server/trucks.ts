@@ -5,6 +5,8 @@ import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import type { TruckRow } from '#/lib/supabase/types'
+import { parsePrices } from '#/utils/money'
+import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
 
 const createTruckSchema = z.object({
   name: z.string(),
@@ -24,22 +26,6 @@ function toTruck(row: TruckRow) {
   }
 }
 
-function parsePrices(privatePrice: string, businessPrice: string) {
-  const parsedPrivatePrice = Number(privatePrice)
-  const parsedBusinessPrice = Number(businessPrice)
-
-  if (
-    Number.isNaN(parsedPrivatePrice) ||
-    Number.isNaN(parsedBusinessPrice) ||
-    parsedPrivatePrice < 0 ||
-    parsedBusinessPrice < 0
-  ) {
-    return null
-  }
-
-  return { parsedPrivatePrice, parsedBusinessPrice }
-}
-
 export const listTrucks = createServerFn({ method: 'GET' }).handler(async () => {
   await requireAnySession()
 
@@ -55,12 +41,12 @@ export const adminCreateTruck = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const cleanedName = data.name.trim()
     if (!cleanedName) {
-      return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' } as const
+      return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' } as const
     }
 
     const prices = parsePrices(data.privatePrice, data.businessPrice)
     if (!prices) {
-      return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' } as const
+      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase.from('trucks').insert({
@@ -87,12 +73,12 @@ export const adminUpdateTruck = createServerFn({ method: 'POST' })
 
     const cleanedName = data.name.trim()
     if (!cleanedName) {
-      return { ok: false, message: 'Bitte LKW-Bezeichnung ausfuellen.' } as const
+      return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' } as const
     }
 
     const prices = parsePrices(data.privatePrice, data.businessPrice)
     if (!prices) {
-      return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' } as const
+      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase
@@ -110,6 +96,7 @@ export const adminUpdateTruck = createServerFn({ method: 'POST' })
         .update({ product_name: cleanedName })
         .eq('type', 'lkw')
         .eq('product_name', currentTruck.name)
+        .in('status', RENAMEABLE_RECORD_STATUSES)
     }
 
     return { ok: true } as const
@@ -133,7 +120,7 @@ export const adminDeleteTruck = createServerFn({ method: 'POST' })
     if (historyCount && historyCount > 0) {
       return {
         ok: false,
-        message: 'LKW kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+        message: 'LKW kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
       } as const
     }
 
@@ -144,7 +131,7 @@ export const adminDeleteTruck = createServerFn({ method: 'POST' })
 
     const { error } = await context.supabase.from('trucks').delete().eq('id', data.id)
     if (error) {
-      return { ok: false, message: 'Der LKW konnte nicht geloescht werden.' } as const
+      return { ok: false, message: 'Der LKW konnte nicht gelöscht werden.' } as const
     }
 
     return { ok: true } as const

@@ -13,6 +13,7 @@ import { useGroupSelection } from '../hooks/use-group-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
 import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { berlinIsoDate } from '../utils/berlin-time'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 
@@ -62,7 +63,7 @@ function RechnungenPage() {
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), false)
-    const stamp = new Date().toISOString().slice(0, 10)
+    const stamp = berlinIsoDate()
     const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
   }
@@ -95,7 +96,7 @@ function RechnungenPage() {
           loading={downloadingDocId === id}
         />
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadStornoDoc(items, selectedCompany ?? undefined)} />
         )}
       </>
     )

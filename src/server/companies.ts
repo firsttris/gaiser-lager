@@ -10,6 +10,10 @@ export const PIN_HASH_ROUNDS = 12
 
 export const priceCategorySchema = z.enum(['private', 'business'])
 
+// Postgres unique_violation — the only unique constraint on companies that a
+// user can hit is the customer number.
+const UNIQUE_VIOLATION = '23505'
+
 const createCompanySchema = z.object({
   name: z.string().min(1),
   customerNumber: z.string(),
@@ -89,6 +93,9 @@ export const adminCreateCompany = createServerFn({ method: 'POST' })
     })
 
     if (error) {
+      if (error.code === UNIQUE_VIOLATION) {
+        return { ok: false, message: 'Diese Kundennummer ist bereits vergeben.' } as const
+      }
       return { ok: false, message: 'Der Kunde konnte nicht angelegt werden.' } as const
     }
 
@@ -114,6 +121,9 @@ export const adminUpdateCompany = createServerFn({ method: 'POST' })
       .eq('id', data.id)
 
     if (error) {
+      if (error.code === UNIQUE_VIOLATION) {
+        return { ok: false, message: 'Diese Kundennummer ist bereits vergeben.' } as const
+      }
       return { ok: false, message: 'Der Kunde konnte nicht aktualisiert werden.' } as const
     }
 
@@ -128,11 +138,11 @@ export const adminSetCompanyPin = createServerFn({ method: 'POST' })
 
     const { error } = await context.supabase
       .from('companies')
-      .update({ pin_hash: pinHash, failed_pin_attempts: 0, pin_locked_until: null })
+      .update({ pin_hash: pinHash, failed_pin_attempts: 0, pin_locked_until: null, pin_changed_at: new Date().toISOString() })
       .eq('id', data.companyId)
 
     if (error) {
-      return { ok: false, message: 'Die PIN konnte nicht geaendert werden.' } as const
+      return { ok: false, message: 'Die PIN konnte nicht geändert werden.' } as const
     }
 
     return { ok: true } as const
@@ -145,7 +155,7 @@ export const adminDeleteCompany = createServerFn({ method: 'POST' })
     const { error } = await context.supabase.from('companies').delete().eq('id', data.id)
 
     if (error) {
-      return { ok: false, message: 'Die Firma konnte nicht geloescht werden.' } as const
+      return { ok: false, message: 'Die Firma konnte nicht gelöscht werden. Firmen mit Vorgängen können nicht gelöscht werden.' } as const
     }
 
     return { ok: true } as const

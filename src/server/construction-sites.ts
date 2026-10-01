@@ -5,6 +5,7 @@ import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import type { ConstructionSiteRow } from '#/lib/supabase/types'
+import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
 
 const createSiteSchema = z.object({ name: z.string() })
 const updateSiteSchema = z.object({ id: z.string().uuid(), name: z.string() })
@@ -33,7 +34,7 @@ export const adminCreateConstructionSite = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const cleanedName = normalizeName(data.name)
     if (!cleanedName) {
-      return { ok: false, message: 'Bitte Baustellenname ausfuellen.' } as const
+      return { ok: false, message: 'Bitte Baustellenname ausfüllen.' } as const
     }
 
     const { data: existing } = await context.supabase
@@ -70,7 +71,7 @@ export const adminUpdateConstructionSite = createServerFn({ method: 'POST' })
 
     const cleanedName = normalizeName(data.name)
     if (!cleanedName) {
-      return { ok: false, message: 'Bitte Baustellenname ausfuellen.' } as const
+      return { ok: false, message: 'Bitte Baustellenname ausfüllen.' } as const
     }
 
     const { data: existing } = await context.supabase
@@ -90,7 +91,11 @@ export const adminUpdateConstructionSite = createServerFn({ method: 'POST' })
     }
 
     if (currentSite.name !== cleanedName) {
-      await context.supabase.from('records').update({ construction_site_name: cleanedName }).eq('construction_site_id', data.id)
+      await context.supabase
+        .from('records')
+        .update({ construction_site_name: cleanedName })
+        .eq('construction_site_id', data.id)
+        .in('status', RENAMEABLE_RECORD_STATUSES)
     }
 
     return { ok: true } as const
@@ -108,13 +113,13 @@ export const adminDeleteConstructionSite = createServerFn({ method: 'POST' })
     if (historyCount && historyCount > 0) {
       return {
         ok: false,
-        message: 'Baustelle kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+        message: 'Baustelle kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
       } as const
     }
 
     const { error } = await context.supabase.from('construction_sites').delete().eq('id', data.id)
     if (error) {
-      return { ok: false, message: 'Die Baustelle wurde nicht gefunden.' } as const
+      return { ok: false, message: 'Die Baustelle konnte nicht gelöscht werden.' } as const
     }
 
     return { ok: true } as const

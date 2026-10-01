@@ -36,14 +36,13 @@ import {
 import {
   numberingSettingsQueryOptions,
   updateNumberingSettings as apiUpdateNumberingSettings,
-  generateInvoiceNumber as apiGenerateInvoiceNumber,
 } from '../server/numbering'
 import {
   createRecord as apiCreateRecord,
   createTruckRecord as apiCreateTruckRecord,
-  updateRecordStatus as apiUpdateRecordStatus,
-  assignInvoice as apiAssignInvoice,
-  assignCancel as apiAssignCancel,
+  createInvoice as apiCreateInvoice,
+  cancelRecords as apiCancelRecords,
+  markInvoicesPaid as apiMarkInvoicesPaid,
 } from '../server/records'
 
 export { formatGeneratedNumber } from '../utils/numbering-format'
@@ -92,6 +91,7 @@ export type ConstructionSite = {
 
 export type RecordItem = {
   id: number
+  companyId: string
   company: string
   constructionSiteId: string
   constructionSiteName: string
@@ -102,14 +102,21 @@ export type RecordItem = {
   unitPrice: number
   total: number
   status: RecordStatus
+  // Formatted for display in German time ("1.10.2026, 08:15:00").
   createdAt: string
+  // Raw ISO timestamps, for anything that computes with dates.
+  createdAtIso: string
   deliveryNoteId?: string
   invoiceId?: string
   invoiceReverseCharge?: boolean
+  invoicedAt?: string
   cancelId?: string
+  cancelledAt?: string
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }
+export type IssuedDocumentResult = { ok: true; documentId: string; documentDate: string } | { ok: false; message: string }
+type ActionResult = { ok: true } | { ok: false; message: string }
 type CreateCompanyResult = { ok: true } | { ok: false; message: string }
 
 export type NumberingSettings = {
@@ -327,17 +334,27 @@ type AppState = {
   isUpdatingConstructionSite: boolean
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => Promise<CreateCompanyResult>
   isDeletingConstructionSite: boolean
-  updateRecordStatus: (recordId: number, status: RecordStatus) => void
-  assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
-  assignCancel: (recordIds: number[], cancelId: string) => void
+  // Each runs as one database transaction; resolve only once it's persisted.
+  createInvoice: (recordIds: number[], reverseCharge: boolean) => Promise<IssuedDocumentResult>
+  cancelRecords: (recordIds: number[]) => Promise<IssuedDocumentResult>
+  markInvoicesPaid: (invoiceIds: string[]) => Promise<ActionResult>
   updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
   isUpdatingNumberingSettings: boolean
-  generateInvoiceNumber: () => Promise<string>
   downloadDatabaseBackup: () => Promise<CreateCompanyResult>
   isDownloadingBackup: boolean
 }
 
 const AppStateContext = createContext<AppState | null>(null)
+
+// Turns a thrown server-function error (network, expired session) into the
+// same { ok: false } shape as a rejected action, so callers handle one path.
+async function withActionError<T extends { ok: boolean }>(run: () => Promise<T>): Promise<T | { ok: false; message: string }> {
+  try {
+    return await run()
+  } catch {
+    return { ok: false, message: 'Die Aktion ist fehlgeschlagen. Bitte Verbindung prüfen und erneut versuchen.' }
+  }
+}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -524,17 +541,23 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (record) invalidate(['records'])
     },
   })
-  const updateRecordStatusMutation = useMutation({
-    mutationFn: apiUpdateRecordStatus,
-    onSuccess: () => invalidate(['records']),
+  // Document actions change records shown both in Vorgänge (['records']) and
+  // Rechnungen (['invoice-groups']), so both lists are refreshed.
+  const invalidateDocuments = () => {
+    invalidate(['records'])
+    invalidate(['invoice-groups'])
+  }
+  const createInvoiceMutation = useMutation({
+    mutationFn: apiCreateInvoice,
+    onSettled: invalidateDocuments,
   })
-  const assignInvoiceMutation = useMutation({
-    mutationFn: apiAssignInvoice,
-    onSuccess: () => invalidate(['records']),
+  const cancelRecordsMutation = useMutation({
+    mutationFn: apiCancelRecords,
+    onSettled: invalidateDocuments,
   })
-  const assignCancelMutation = useMutation({
-    mutationFn: apiAssignCancel,
-    onSuccess: () => invalidate(['records']),
+  const markInvoicesPaidMutation = useMutation({
+    mutationFn: apiMarkInvoicesPaid,
+    onSettled: invalidateDocuments,
   })
 
   const updateNumberingSettingsMutation = useMutation({
@@ -542,10 +565,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     onSuccess: (result) => {
       if (result.ok) invalidate(['numbering-settings'])
     },
-  })
-  const generateInvoiceNumberMutation = useMutation({
-    mutationFn: apiGenerateInvoiceNumber,
-    onSuccess: () => invalidate(['numbering-settings']),
   })
 
   const downloadBackupMutation = useMutation({
@@ -623,13 +642,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingConstructionSite: updateSiteMutation.isPending,
       deleteConstructionSite: async (input) => deleteSiteMutation.mutateAsync({ data: input }),
       isDeletingConstructionSite: deleteSiteMutation.isPending,
-      updateRecordStatus: (recordId, status) => updateRecordStatusMutation.mutate({ data: { recordId, status } }),
-      assignInvoice: (recordIds, invoiceId, reverseCharge) =>
-        assignInvoiceMutation.mutate({ data: { recordIds, invoiceId, reverseCharge } }),
-      assignCancel: (recordIds, cancelId) => assignCancelMutation.mutate({ data: { recordIds, cancelId } }),
+      createInvoice: async (recordIds, reverseCharge) => {
+        const result = await withActionError(() => createInvoiceMutation.mutateAsync({ data: { recordIds, reverseCharge } }))
+        if (result.ok) invalidate(['numbering-settings'])
+        return result
+      },
+      cancelRecords: async (recordIds) => withActionError(() => cancelRecordsMutation.mutateAsync({ data: { recordIds } })),
+      markInvoicesPaid: async (invoiceIds) => withActionError(() => markInvoicesPaidMutation.mutateAsync({ data: { invoiceIds } })),
       updateNumberingSettings: async (input) => updateNumberingSettingsMutation.mutateAsync({ data: input }),
       isUpdatingNumberingSettings: updateNumberingSettingsMutation.isPending,
-      generateInvoiceNumber: async () => generateInvoiceNumberMutation.mutateAsync({}),
       downloadDatabaseBackup: async () => {
         try {
           const result = await downloadBackupMutation.mutateAsync({})
@@ -675,11 +696,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       createSiteMutation,
       updateSiteMutation,
       deleteSiteMutation,
-      updateRecordStatusMutation,
-      assignInvoiceMutation,
-      assignCancelMutation,
+      createInvoiceMutation,
+      cancelRecordsMutation,
+      markInvoicesPaidMutation,
       updateNumberingSettingsMutation,
-      generateInvoiceNumberMutation,
       downloadBackupMutation,
     ],
   )

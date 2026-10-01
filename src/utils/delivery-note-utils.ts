@@ -1,6 +1,8 @@
 import { jsPDF } from 'jspdf'
 import { type RecordItem } from '../state/app-state'
 import { flowLabel, money } from './history-utils'
+import { formatBerlinDate } from './berlin-time'
+import { roundCents, VAT_RATE } from './money'
 
 const LOGO_URL = `${import.meta.env.BASE_URL}assets/Logo.jpeg`
 const LOGO_ASPECT_RATIO = 303 / 873
@@ -162,24 +164,36 @@ export type InvoiceCustomer = {
   city?: string
 }
 
-export async function downloadInvoicePdf(
-  invoiceRecords: RecordItem[],
+// Documents are dated with the day they were issued (stored in the database),
+// not the day the PDF happens to be downloaded. Legacy documents without a
+// stored date fall back to today, as before.
+function documentDate(issuedAt: string | undefined) {
+  return formatBerlinDate(issuedAt ?? new Date())
+}
+
+function servicePeriod(records: RecordItem[]) {
+  const times = records.map((r) => new Date(r.createdAtIso).getTime())
+  const first = formatBerlinDate(new Date(Math.min(...times)))
+  const last = formatBerlinDate(new Date(Math.max(...times)))
+  return first === last ? first : `${first} - ${last}`
+}
+
+function latestRecordDate(records: RecordItem[]) {
+  return formatBerlinDate(new Date(Math.max(...records.map((r) => new Date(r.createdAtIso).getTime()))))
+}
+
+// Recipient address block (left) + document meta rows (right), shared by
+// invoices and cancellations. Returns where the body can start and where the
+// "Seite" value sits so it can be rewritten once the page count is known.
+function drawRecipientAndMeta(
+  pdf: jsPDF,
+  left: number,
+  right: number,
+  logoDataUrl: string,
+  customerName: string,
   customer: InvoiceCustomer | undefined,
-  deliveryNoteId: string | undefined,
-  invoiceNo: string,
-  reverseCharge = false,
-): Promise<string> {
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-  const left = 15
-  const right = 195
-
-  const customerName = invoiceRecords[0].company
-  const customerNumber = customer?.customerNumber
-  const customerStreet = customer?.street
-  const customerPostalCodeAndCity = [customer?.postalCode, customer?.city].filter(Boolean).join(' ')
-  const invoiceDate = new Date().toLocaleDateString('de-DE')
-
-  const logoDataUrl = await loadLogoDataUrl()
+  metaRows: Array<[string, string]>,
+) {
   const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
 
   let y = 38 + 7
@@ -187,24 +201,18 @@ export async function downloadInvoicePdf(
   pdf.setFontSize(11)
   pdf.text(customerName, left, y)
 
-  if (customerStreet) {
+  if (customer?.street) {
     y += 5
-    pdf.text(customerStreet, left, y)
+    pdf.text(customer.street, left, y)
   }
 
+  const customerPostalCodeAndCity = [customer?.postalCode, customer?.city].filter(Boolean).join(' ')
   if (customerPostalCodeAndCity) {
     y += 5
     pdf.text(customerPostalCodeAndCity, left, y)
   }
 
   const metaLabelX = 122
-  const metaRows: Array<[string, string]> = [
-    ['Rechnungs-Nr.:', invoiceNo],
-    ['Datum:', invoiceDate],
-  ]
-  if (customerNumber) metaRows.push(['Kunden-Nr.:', customerNumber])
-  metaRows.push(['Seite:', '1 von 1'])
-
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(9)
   const metaValueX = metaLabelX + Math.max(...metaRows.map(([label]) => pdf.getTextWidth(label))) + 3
@@ -220,7 +228,69 @@ export async function downloadInvoicePdf(
     metaY += 5
   }
 
-  y = Math.max(metaY, y) + 8
+  return { y: Math.max(metaY, y) + 8, metaLabelX, metaValueX, seiteY }
+}
+
+// Label/value rows under the document title; long values (e.g. many delivery
+// note numbers) wrap instead of running off the page. Returns the next y.
+function drawDetailRows(pdf: jsPDF, left: number, right: number, y: number, rows: Array<[string, string]>) {
+  pdf.setFontSize(9.5)
+  pdf.setFont('helvetica', 'bold')
+  const valueX = left + Math.max(...rows.map(([label]) => pdf.getTextWidth(label))) + 3
+  for (const [label, value] of rows) {
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(label, left, y)
+    pdf.setFont('helvetica', 'normal')
+    const lines: string[] = pdf.splitTextToSize(value, right - valueX)
+    pdf.text(lines, valueX, y)
+    y += 5 * lines.length
+  }
+  return y
+}
+
+function finishPages(pdf: jsPDF, right: number, meta: { metaLabelX: number; metaValueX: number; seiteY: number }) {
+  const totalPages = pdf.getNumberOfPages()
+  for (let page = 1; page <= totalPages; page++) {
+    pdf.setPage(page)
+    drawCompanyFooter(pdf)
+  }
+
+  if (totalPages > 1) {
+    pdf.setPage(1)
+    pdf.setFillColor(255, 255, 255)
+    pdf.rect(meta.metaLabelX, meta.seiteY - 3.5, right - meta.metaLabelX, 5, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.text('Seite:', meta.metaLabelX, meta.seiteY)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`1 von ${totalPages}`, meta.metaValueX, meta.seiteY)
+  }
+}
+
+export async function downloadInvoicePdf(
+  invoiceRecords: RecordItem[],
+  customer: InvoiceCustomer | undefined,
+  deliveryNoteId: string | undefined,
+  invoiceNo: string,
+  reverseCharge = false,
+): Promise<string> {
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+  const left = 15
+  const right = 195
+
+  const customerName = invoiceRecords[0].company
+  const invoiceDate = documentDate(invoiceRecords[0].invoicedAt)
+
+  const logoDataUrl = await loadLogoDataUrl()
+  const metaRows: Array<[string, string]> = [
+    ['Rechnungs-Nr.:', invoiceNo],
+    ['Datum:', invoiceDate],
+  ]
+  if (customer?.customerNumber) metaRows.push(['Kunden-Nr.:', customer.customerNumber])
+  metaRows.push(['Seite:', '1 von 1'])
+
+  const meta = drawRecipientAndMeta(pdf, left, right, logoDataUrl, customerName, customer, metaRows)
+  let y = meta.y
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(20)
   pdf.text(reverseCharge ? 'Rechnung §13b' : 'Rechnung', left, y)
@@ -228,29 +298,14 @@ export async function downloadInvoicePdf(
   y += 9
   const siteNames = new Set(invoiceRecords.map((r) => r.constructionSiteName || '-'))
   const bauvorhaben = siteNames.size === 1 ? [...siteNames][0] : 'Diverse Baustellen'
-  const zeitraum = `${invoiceRecords[invoiceRecords.length - 1].createdAt} - ${invoiceRecords[0].createdAt}`
+  const zeitraum = servicePeriod(invoiceRecords)
 
-  const detailLabels = ['Bauvorhaben:', 'Ausführungszeitraum:', ...(deliveryNoteId ? ['Lieferschein-Nr.:'] : [])]
-  pdf.setFontSize(9.5)
-  pdf.setFont('helvetica', 'bold')
-  const detailValueX = left + Math.max(...detailLabels.map((label) => pdf.getTextWidth(label))) + 3
-
-  pdf.text('Bauvorhaben:', left, y)
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(bauvorhaben, detailValueX, y)
-  y += 5
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Ausführungszeitraum:', left, y)
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(zeitraum, detailValueX, y)
-
-  if (deliveryNoteId) {
-    y += 5
-    pdf.setFont('helvetica', 'bold')
-    pdf.text('Lieferschein-Nr.:', left, y)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(deliveryNoteId, detailValueX, y)
-  }
+  const detailRows: Array<[string, string]> = [
+    ['Bauvorhaben:', bauvorhaben],
+    ['Ausführungszeitraum:', zeitraum],
+  ]
+  if (deliveryNoteId) detailRows.push(['Lieferschein-Nr.:', deliveryNoteId])
+  y = drawDetailRows(pdf, left, right, y, detailRows) - 5
 
   y += 9
   pdf.setFontSize(9.5)
@@ -290,7 +345,7 @@ export async function downloadInvoicePdf(
   pdf.setFontSize(9)
 
   for (const [index, item] of lineItems.entries()) {
-    subtotal += item.total
+    subtotal = roundCents(subtotal + item.total)
 
     if (y > 245) {
       pdf.addPage()
@@ -338,8 +393,8 @@ export async function downloadInvoicePdf(
     y += 9
     pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
   } else {
-    const vat = subtotal * 0.19
-    const gross = subtotal + vat
+    const vat = roundCents(subtotal * VAT_RATE)
+    const gross = roundCents(subtotal + vat)
 
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(10)
@@ -362,160 +417,159 @@ export async function downloadInvoicePdf(
     pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
   }
 
-  const totalPages = pdf.getNumberOfPages()
-  for (let page = 1; page <= totalPages; page++) {
-    pdf.setPage(page)
-    drawCompanyFooter(pdf)
-  }
-
-  if (totalPages > 1) {
-    pdf.setPage(1)
-    pdf.setFillColor(255, 255, 255)
-    pdf.rect(metaLabelX, seiteY - 3.5, right - metaLabelX, 5, 'F')
-    pdf.setFont('helvetica', 'bold')
-    pdf.setFontSize(9)
-    pdf.text('Seite:', metaLabelX, seiteY)
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(`1 von ${totalPages}`, metaValueX, seiteY, { align: 'right' })
-  }
+  finishPages(pdf, right, meta)
 
   pdf.save(`rechnung-${toSafeFileDate(invoiceNo)}.pdf`)
 
   return invoiceNo
 }
 
-export function downloadStornoDoc(
-  records: RecordItem[],
-  companyName: string,
-  cancelId: string,
-  originalDocId?: string,
-) {
+// Cancellation document for either one invoice (Stornorechnung, mirrors the
+// invoice's VAT treatment incl. §13b) or not-yet-invoiced delivery notes
+// (Storno Lieferschein, net amounts only — no VAT was ever charged).
+export async function downloadStornoDoc(records: RecordItem[], customer?: InvoiceCustomer) {
   const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
-  const left = 12
-  const right = 198
-  let y = 16
+  const left = 15
+  const right = 195
 
-  pdf.setDrawColor(220)
-  pdf.setFillColor(254, 242, 242)
-  pdf.roundedRect(left, y, 186, 26, 2, 2, 'FD')
+  const cancelId = records[0].cancelId ?? ''
+  const invoiceId = records[0].invoiceId
+  const isInvoiceCancellation = Boolean(invoiceId)
+  const reverseCharge = isInvoiceCancellation && Boolean(records[0].invoiceReverseCharge)
+  const deliveryNoteIds = [...new Set(records.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
+
+  const logoDataUrl = await loadLogoDataUrl()
+  const metaRows: Array<[string, string]> = [
+    ['Storno-Nr.:', cancelId],
+    ['Datum:', documentDate(records[0].cancelledAt)],
+  ]
+  if (customer?.customerNumber) metaRows.push(['Kunden-Nr.:', customer.customerNumber])
+  metaRows.push(['Seite:', '1 von 1'])
+
+  const meta = drawRecipientAndMeta(pdf, left, right, logoDataUrl, records[0].company, customer, metaRows)
+  let y = meta.y
 
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(20)
-  pdf.text('STORNORECHNUNG', left + 4, y + 9)
-  pdf.setFontSize(11)
-  pdf.text('Gaiser Baustoffe', left + 4, y + 16)
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text('Musterstraße 1, 10115 Berlin', left + 4, y + 21)
+  pdf.text(isInvoiceCancellation ? (reverseCharge ? 'Stornorechnung §13b' : 'Stornorechnung') : 'Storno Lieferschein', left, y)
 
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(10)
-  pdf.text(`Nr.: ${cancelId}`, right - 4, y + 10, { align: 'right' })
-  pdf.setFont('helvetica', 'normal')
-  pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, right - 4, y + 16, { align: 'right' })
-  pdf.text(`Positionen: ${records.length}`, right - 4, y + 21, { align: 'right' })
+  y += 9
+  const details: Array<[string, string]> = isInvoiceCancellation
+    ? [['Storno zu Rechnung:', invoiceId ?? '']]
+    : [['Storno zu Lieferschein:', deliveryNoteIds]]
+  if (isInvoiceCancellation && deliveryNoteIds) details.push(['Lieferschein-Nr.:', deliveryNoteIds])
+  details.push(['Ausführungszeitraum:', servicePeriod(records)])
 
-  y += 36
+  y = drawDetailRows(pdf, left, right, y, details)
 
-  pdf.setDrawColor(225)
-  pdf.roundedRect(left, y, 120, 24, 2, 2)
-
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(9)
-  pdf.text('Rechnungsadresse', left + 3, y + 6)
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text(companyName, left + 3, y + 11)
-  pdf.text('z. Hd. Buchhaltung', left + 3, y + 21)
-
-  y += 40
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  if (originalDocId) {
-    pdf.text(`Storno zu: ${originalDocId}`, left, y)
-    y += 5
-  }
+  y += 4
   pdf.text(
-    `Leistungszeitraum: ${records[0].createdAt} bis ${records[records.length - 1].createdAt}`,
+    isInvoiceCancellation
+      ? 'Hiermit stornieren wir die oben genannte Rechnung vollständig:'
+      : 'Hiermit stornieren wir den oben genannten Lieferschein vollständig:',
     left,
     y,
   )
 
-  y += 10
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFillColor(254, 226, 226)
-  pdf.rect(left, y - 4.5, 186, 7.5, 'F')
-  pdf.text('Pos.', left, y)
-  pdf.text('Datum', 24, y)
-  pdf.text('Leistung', 56, y)
-  pdf.text('Menge', 132, y)
-  pdf.text('EP', 158, y)
-  pdf.text('Betrag', right, y, { align: 'right' })
+  y += 8
+  const cols = {
+    pos: left,
+    datum: left + 10,
+    bezeichnung: left + 32,
+    anzahl: 130,
+    einheit: 133,
+    einzelpreis: 165,
+    gesamtpreis: right,
+  }
+
+  function drawTableHeader() {
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.setFillColor(191, 191, 191)
+    pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
+    pdf.text('Pos.', cols.pos, y)
+    pdf.text('Datum', cols.datum, y)
+    pdf.text('Bezeichnung', cols.bezeichnung, y)
+    pdf.text('Anzahl', cols.anzahl, y, { align: 'right' })
+    pdf.text('Einheit', cols.einheit, y)
+    pdf.text('Einzelpreis', cols.einzelpreis, y, { align: 'right' })
+    pdf.text('Gesamtpreis', cols.gesamtpreis, y, { align: 'right' })
+    y += 2.5
+    pdf.setDrawColor(180)
+    pdf.line(left, y, right, y)
+    y += 7
+    pdf.setFont('helvetica', 'normal')
+  }
+
+  drawTableHeader()
+
+  let subtotal = 0
+  for (const [index, record] of records.entries()) {
+    if (y > 245) {
+      pdf.addPage()
+      y = 20
+      drawTableHeader()
+    }
+
+    subtotal = roundCents(subtotal + record.total)
+    const service = `${flowLabel(record.type)}: ${record.productName}`
+    const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
+
+    pdf.setFontSize(9)
+    pdf.text(`${index + 1}.`, cols.pos, y)
+    pdf.text(formatBerlinDate(record.createdAtIso), cols.datum, y)
+    pdf.text(serviceShort, cols.bezeichnung, y)
+    pdf.text(formatQty(record.amount), cols.anzahl, y, { align: 'right' })
+    pdf.text(record.unit, cols.einheit, y)
+    pdf.text(money(record.unitPrice), cols.einzelpreis, y, { align: 'right' })
+    pdf.text(money(-record.total), cols.gesamtpreis, y, { align: 'right' })
+    y += 7
+  }
+
+  if (y > 220) {
+    pdf.addPage()
+    y = 20
+  }
 
   y += 3
-  pdf.setDrawColor(190)
+  pdf.setDrawColor(0)
   pdf.line(left, y, right, y)
   y += 7
 
-  let subtotal = 0
-
-  for (const [index, record] of records.entries()) {
-    subtotal += record.total
-
-    if (y > 270) {
-      pdf.addPage()
-      y = 20
-    }
+  if (isInvoiceCancellation && !reverseCharge) {
+    const vat = roundCents(subtotal * VAT_RATE)
+    const gross = roundCents(subtotal + vat)
 
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-
-    const createdAt = record.createdAt.slice(0, 10)
-    const service = `${flowLabel(record.type)}: ${record.productName} (${record.constructionSiteName || '-'})`
-    const serviceShort = service.length > 40 ? `${service.slice(0, 37)}...` : service
-
-    pdf.text(String(index + 1), left, y)
-    pdf.text(createdAt, 24, y)
-    pdf.text(serviceShort, 56, y)
-    pdf.text(`${record.amount} ${record.unit}`, 132, y)
-    pdf.text(money(record.unitPrice), 158, y)
-    pdf.text(`-${money(record.total)}`, right, y, { align: 'right' })
-
-    y += 4
-    pdf.setDrawColor(235)
-    pdf.line(left, y, right, y)
+    pdf.setFontSize(10)
+    pdf.text('Zwischensumme (netto)', cols.pos, y)
+    pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
     y += 6
+    pdf.text(`zzgl. ${Math.round(VAT_RATE * 100)}% USt.`, cols.pos, y)
+    pdf.text(money(-vat), cols.gesamtpreis, y, { align: 'right' })
+    y += 7
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.text('Gutschriftsbetrag', cols.pos, y)
+    pdf.text(money(-gross), cols.gesamtpreis, y, { align: 'right' })
+  } else {
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.text(isInvoiceCancellation ? 'Gutschriftsbetrag' : 'Gesamtbetrag (netto)', cols.pos, y)
+    pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
+  }
+  y += 1
+  pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
+
+  if (reverseCharge) {
+    y += 10
+    pdf.setFontSize(9.5)
+    pdf.text('Bei den oben genannten Leistungen handelt es sich um eine Bauleistung im Sinne von § 13b UStG', left, y)
+    y += 5
+    pdf.text('Es liegt eine Steuerschuldnerschaft des Leistungsempfängers vor', left, y)
   }
 
-  const vat = subtotal * 0.19
-  const gross = subtotal + vat
-  const summaryBoxWidth = 72
-  const summaryBoxX = 126
-  const summaryTop = 236
-
-  pdf.setDrawColor(220)
-  pdf.roundedRect(summaryBoxX, summaryTop, summaryBoxWidth, 24, 2, 2)
-  y = summaryTop + 7
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(10)
-  pdf.text('Zwischensumme (netto):', summaryBoxX + 3, y)
-  pdf.text(`-${money(subtotal)}`, summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-  y += 5
-  pdf.text('zzgl. 19% USt.:', summaryBoxX + 3, y)
-  pdf.text(`-${money(vat)}`, summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-  y += 6
-  pdf.setFont('helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('Gutschriftsbetrag:', summaryBoxX + 3, y)
-  pdf.text(`-${money(gross)}`, summaryBoxX + summaryBoxWidth - 3, y, { align: 'right' })
-
-  y += 14
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text('Diese Gutschrift storniert den oben genannten Beleg vollständig.', left, y)
-
+  finishPages(pdf, right, meta)
   pdf.save(`storno-${toSafeFileDate(cancelId)}.pdf`)
 }
 
@@ -553,7 +607,7 @@ export async function downloadCombinedDeliveryNote(
   const right = 195
 
   const logoDataUrl = await loadLogoDataUrl()
-  const date = new Date().toLocaleDateString('de-DE')
+  const date = latestRecordDate(records)
   const siteNames = new Set(records.map((r) => r.constructionSiteName || '-'))
   const bauvorhaben = siteNames.size === 1 ? [...siteNames][0] : 'Diverse Baustellen'
 
@@ -654,7 +708,7 @@ export async function downloadCombinedDeliveryNote(
       pdf.setFontSize(9)
     }
 
-    total += record.total
+    total = roundCents(total + record.total)
 
     const service = `${flowLabel(record.type)}: ${record.productName}`
     const serviceShort = service.length > 44 ? `${service.slice(0, 41)}...` : service
@@ -706,6 +760,6 @@ export async function downloadCombinedDeliveryNote(
 
   const fileName = deliveryNoteId
     ? `lieferschein-${toSafeFileDate(deliveryNoteId)}.pdf`
-    : `lieferschein-sammel-${toSafeFileDate(new Date().toLocaleString('de-DE'))}.pdf`
+    : `lieferschein-sammel-${toSafeFileDate(date)}.pdf`
   pdf.save(fileName)
 }
