@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { type ConstructionSite, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
@@ -16,9 +16,12 @@ export const Route = createFileRoute('/admin/baustellen')({
 })
 
 const INPUT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800'
+const SELECT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-800'
+const WITHOUT_COMPANY = 'none'
 
 function AdminSitesPage() {
   const {
+    companies,
     constructionSites,
     createConstructionSite,
     isCreatingConstructionSite,
@@ -27,6 +30,9 @@ function AdminSitesPage() {
     deleteConstructionSite,
   } = useAppState()
   const [createName, setCreateName] = useState('')
+  const [createCompanyId, setCreateCompanyId] = useState('')
+  const [companyFilter, setCompanyFilter] = useState('all')
+  const [editCompanyId, setEditCompanyId] = useState('')
   const [createMessage, setCreateMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
   const [editingSite, setEditingSite] = useState<ConstructionSite | null>(null)
   const [editName, setEditName] = useState('')
@@ -34,10 +40,38 @@ function AdminSitesPage() {
   const [deletingSite, setDeletingSite] = useState<ConstructionSite | null>(null)
   const [listMessage, setListMessage] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
 
+  const sortedCompanies = useMemo(() => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')), [companies])
+  const companyName = useMemo(() => new Map(companies.map((company) => [company.id, company.name])), [companies])
+  const sitesWithoutCompany = constructionSites.filter((site) => !site.companyId).length
+  const visibleSites = constructionSites
+    .filter((site) =>
+      companyFilter === 'all' ? true : companyFilter === WITHOUT_COMPANY ? !site.companyId : site.companyId === companyFilter,
+    )
+    .sort(
+      (a, b) =>
+        (companyName.get(a.companyId ?? '') ?? '~').localeCompare(companyName.get(b.companyId ?? '') ?? '~', 'de') ||
+        a.name.localeCompare(b.name, 'de'),
+    )
+
+  const companyOptions = (
+    <>
+      <option value="">Bitte Kunde auswählen</option>
+      {sortedCompanies.map((company) => (
+        <option key={company.id} value={company.id}>
+          {company.name}
+        </option>
+      ))}
+    </>
+  )
+
   async function submitConstructionSite(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const result = await createConstructionSite({ name: createName })
+    if (!createCompanyId) {
+      setCreateMessage({ kind: 'error', text: 'Bitte einen Kunden auswählen.' })
+      return
+    }
+    const result = await createConstructionSite({ name: createName, companyId: createCompanyId })
     if (!result.ok) {
       setCreateMessage({ kind: 'error', text: result.message })
       return
@@ -49,6 +83,7 @@ function AdminSitesPage() {
 
   function startEdit(site: ConstructionSite) {
     setEditName(site.name)
+    setEditCompanyId(site.companyId ?? '')
     setEditError('')
     setEditingSite(site)
   }
@@ -56,7 +91,11 @@ function AdminSitesPage() {
   async function saveEdit() {
     if (!editingSite) return
 
-    const result = await updateConstructionSite({ id: editingSite.id, name: editName })
+    if (!editCompanyId) {
+      setEditError('Bitte einen Kunden auswählen.')
+      return
+    }
+    const result = await updateConstructionSite({ id: editingSite.id, name: editName, companyId: editCompanyId })
     if (!result.ok) {
       setEditError(result.message)
       return
@@ -81,11 +120,18 @@ function AdminSitesPage() {
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Baustellen</h2>
       <p className="mt-2 text-sm text-slate-700">
-        Baustellen können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
+        Jede Baustelle gehört zu genau einem Kunden und wird nur diesem vorgeschlagen. Baustellen können hier angelegt,
+        bearbeitet und bei fehlender Historie gelöscht werden.
       </p>
 
       <form onSubmit={submitConstructionSite} className="mt-4 grid gap-4 md:grid-cols-5">
-        <div className="md:col-span-4">
+        <div className="md:col-span-2">
+          <label className="text-sm font-semibold text-slate-700">Kunde</label>
+          <select value={createCompanyId} onChange={(event) => setCreateCompanyId(event.target.value)} className={SELECT_CLASS}>
+            {companyOptions}
+          </select>
+        </div>
+        <div className="md:col-span-2">
           <label className="text-sm font-semibold text-slate-700">Baustelle</label>
           <input
             value={createName}
@@ -122,13 +168,38 @@ function AdminSitesPage() {
         </p>
       )}
 
-      <div className="mt-6 space-y-3">
-        {constructionSites.map((site) => (
+      <label className="mt-6 block max-w-sm text-sm font-semibold text-slate-700">
+        Kunde
+        <select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)} className={SELECT_CLASS}>
+          <option value="all">Alle Kunden</option>
+          {sitesWithoutCompany > 0 && <option value={WITHOUT_COMPANY}>Ohne Kunde ({sitesWithoutCompany})</option>}
+          {sortedCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {sitesWithoutCompany > 0 && (
+        <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-900">
+          {sitesWithoutCompany} alte {sitesWithoutCompany === 1 ? 'Baustelle ist' : 'Baustellen sind'} noch keinem Kunden
+          zugeordnet und werden niemandem vorgeschlagen. Bitte zuordnen oder löschen.
+        </p>
+      )}
+
+      <div className="mt-4 space-y-3">
+        {visibleSites.map((site) => (
           <article
             key={site.id}
             className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 odd:bg-white even:bg-slate-50"
           >
-            <p className="min-w-0 font-semibold wrap-break-word text-slate-900">{site.name}</p>
+            <div className="min-w-0">
+              <p className="font-semibold wrap-break-word text-slate-900">{site.name}</p>
+              <p className={`text-sm ${site.companyId ? 'text-slate-700' : 'font-semibold text-amber-800'}`}>
+                {site.companyId ? (companyName.get(site.companyId) ?? '—') : 'ohne Kunde'}
+              </p>
+            </div>
             <div className="flex shrink-0 gap-2">
               <button
                 type="button"
@@ -164,6 +235,12 @@ function AdminSitesPage() {
         <div>
           <label className="text-sm font-semibold text-slate-700">Baustelle</label>
           <input value={editName} onChange={(event) => setEditName(event.target.value)} className={INPUT_CLASS} />
+        </div>
+        <div>
+          <label className="text-sm font-semibold text-slate-700">Kunde</label>
+          <select value={editCompanyId} onChange={(event) => setEditCompanyId(event.target.value)} className={SELECT_CLASS}>
+            {companyOptions}
+          </select>
         </div>
         <p className="text-sm text-slate-700">
           Der neue Name gilt für offene Vorgänge. Bereits abgerechnete Vorgänge und Rechnungen bleiben unverändert.

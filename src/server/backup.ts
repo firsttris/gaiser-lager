@@ -6,18 +6,21 @@ import type { Database } from '#/lib/supabase/types'
 
 type TableName = keyof Database['public']['Tables']
 
-// Data-only dump: table order respects foreign keys (companies and
-// construction_sites before records, which references both). Schema itself
+// Data-only dump: table order respects foreign keys (companies,
+// construction_sites and employees before records, which references them). Schema itself
 // lives in supabase/migrations/ and is not repeated here.
 const TABLES_IN_DEPENDENCY_ORDER = [
   'companies',
   'construction_sites',
   'admin_users',
+  'employees',
   'products',
   'trucks',
   'numbering_settings',
   'signup_settings',
   'records',
+  // Only the metadata; the photo files themselves live in Supabase Storage.
+  'delivery_note_photos',
 ] as const satisfies ReadonlyArray<TableName>
 
 // Tables with a serial/bigserial id column — after inserting explicit ids,
@@ -40,6 +43,8 @@ const ORDER_COLUMN: Record<(typeof TABLES_IN_DEPENDENCY_ORDER)[number], string> 
   companies: 'id',
   construction_sites: 'id',
   admin_users: 'user_id',
+  employees: 'id',
+  delivery_note_photos: 'id',
   products: 'id',
   trucks: 'id',
   numbering_settings: 'id',

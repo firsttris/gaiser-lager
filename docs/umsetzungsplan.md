@@ -17,7 +17,7 @@ gehen.
 | **1** ✅ | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
 | **2** ✅ | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
 | **3** ✅ | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
-| **4** | Baustellen pro Firma + Mitarbeiter-Login + Lieferschein-Fotos | P3, P19 | ja | L |
+| **4** ✅ | Baustellen pro Firma + Mitarbeiter-Login + Lieferschein-Fotos | P3, P19 | ja | L |
 | **5** | E-Mail-Versand + Admin-Passwort | P10, P11 | ja | L |
 
 Größe: S ≈ ein halber bis ein Tag, M ≈ 2–3 Tage, L ≈ 4–6 Tage, jeweils
@@ -215,6 +215,20 @@ Kundennummern; Ort aus PLZ.
 ---
 
 ## Paket 4 – Baustellen pro Firma, Mitarbeiter, Lieferschein-Fotos
+
+> **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
+> Migration `20261003000000_package4_sites_employees_photos.sql` **vor** dem
+> Deploy einspielen, vorher `npm run db:clone` als Generalprobe.
+> Gewählte Standards (änderbar): Unbenutzte Altbaustellen bleiben „ohne
+> Kunde“ (nur Admin sieht sie, zuordnen oder löschen); Fotos werden vorerst
+> unbegrenzt aufbewahrt; Fahrer-Login sichtbar auf der Startseite
+> („Mitarbeiter-Anmeldung (Fahrer)“), Name antippen + PIN, Inaktivitäts-Logout
+> wie bei Kunden. Abweichung vom Plan: Fotos werden auf dem Gerät auf
+> ~0,3–0,5 MB verkleinert und über den eigenen Server hochgeladen (keine
+> Upload-Links nötig). Unterwegs behoben: Nach dem Login konnte die nächste
+> Seite kurz „nicht angemeldet“ sehen und zur Startseite springen (betraf
+> potenziell alle drei Logins). `db:clone` ist jetzt eine Generalprobe fürs
+> Deployment (siehe README).
 
 **Ziel:** Fahrer buchen selbst und laden Deponie-Belege hoch; Baustellen
 sind sauber pro Firma getrennt.

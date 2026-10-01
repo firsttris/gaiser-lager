@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
-import { requireAnySession } from './auth-context'
+import { type CallerContext, requireAnySession } from './auth-context'
 import { findOrCreateConstructionSite } from './construction-sites'
 import { formatGeneratedNumber } from '#/utils/numbering-format'
 import { berlinDayEndExclusive, berlinDayStart, formatBerlinDateTime } from '#/utils/berlin-time'
@@ -44,6 +44,7 @@ export function toRecord(row: RecordRow): RecordItem {
     id: row.id,
     companyId: row.company_id,
     company: row.company_name,
+    createdByName: row.created_by_name ?? undefined,
     constructionSiteId: row.construction_site_id ?? '',
     constructionSiteName: row.construction_site_name,
     type: row.type,
@@ -64,19 +65,34 @@ export function toRecord(row: RecordRow): RecordItem {
   }
 }
 
-// Resolves which company a dual-mode call may act on. Customers can only
-// ever create records for their own company — any companyId they send is
-// ignored. Admins must explicitly say which company the record is for.
-async function resolveActingCompanyId(companyIdFromCaller: string | undefined) {
+// Resolves which company a record is created for and who booked it.
+// Customers can only ever book for their own company (any companyId they send
+// is ignored); employees and admins must say which company it is for.
+async function resolveBooking(companyIdFromCaller: string | undefined) {
   const caller = await requireAnySession()
-  if (caller.role === 'customer') return caller.companyId
-  return companyIdFromCaller ?? null
+  const companyId = caller.role === 'customer' ? caller.companyId : (companyIdFromCaller ?? null)
+  const bookedBy =
+    caller.role === 'employee'
+      ? { created_by_employee_id: caller.employeeId, created_by_name: caller.employeeName }
+      : {}
+  return { companyId, bookedBy }
+}
+
+// What each role may see: admins everything, customers their company's
+// records, employees the records they booked themselves.
+function scopeToCaller<Q extends { eq: (column: 'company_id' | 'created_by_employee_id', value: string) => Q }>(
+  query: Q,
+  caller: CallerContext,
+): Q {
+  if (caller.role === 'customer') return query.eq('company_id', caller.companyId)
+  if (caller.role === 'employee') return query.eq('created_by_employee_id', caller.employeeId)
+  return query
 }
 
 export const createRecord = createServerFn({ method: 'POST' })
   .validator((data: unknown) => createRecordSchema.parse(data))
   .handler(async ({ data }) => {
-    const companyId = await resolveActingCompanyId(data.companyId)
+    const { companyId, bookedBy } = await resolveBooking(data.companyId)
     if (!companyId) return null
 
     const supabase = getServiceSupabaseClient()
@@ -88,7 +104,7 @@ export const createRecord = createServerFn({ method: 'POST' })
     // A product belongs to exactly one flow (Abholung or Anlieferung).
     if (!company || !product || product.flow !== data.type) return null
 
-    const site = await findOrCreateConstructionSite(supabase, data.constructionSiteName)
+    const site = await findOrCreateConstructionSite(supabase, company.id, data.constructionSiteName)
     if (!site) return null
 
     const unitPrice = product.price
@@ -115,6 +131,7 @@ export const createRecord = createServerFn({ method: 'POST' })
         status: 'lieferschein',
         delivery_note_id: deliveryNoteId,
         invoice_reverse_charge: false,
+        ...bookedBy,
       })
       .select('*')
       .single()
@@ -126,7 +143,7 @@ export const createRecord = createServerFn({ method: 'POST' })
 export const createTruckRecord = createServerFn({ method: 'POST' })
   .validator((data: unknown) => createTruckRecordSchema.parse(data))
   .handler(async ({ data }) => {
-    const companyId = await resolveActingCompanyId(data.companyId)
+    const { companyId, bookedBy } = await resolveBooking(data.companyId)
     if (!companyId) return null
 
     const supabase = getServiceSupabaseClient()
@@ -137,7 +154,7 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
     ])
     if (!company || !truck) return null
 
-    const site = await findOrCreateConstructionSite(supabase, data.constructionSiteName)
+    const site = await findOrCreateConstructionSite(supabase, company.id, data.constructionSiteName)
     if (!site) return null
 
     const unitPrice = truck.price
@@ -164,6 +181,7 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
         status: 'lieferschein',
         delivery_note_id: deliveryNoteId,
         invoice_reverse_charge: false,
+        ...bookedBy,
       })
       .select('*')
       .single()
@@ -196,8 +214,8 @@ export const listRecordsPage = createServerFn({ method: 'GET' })
     const supabase = getServiceSupabaseClient()
 
     let query = supabase.from('records').select('*', { count: 'exact' })
-    query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
-    if (caller.role === 'admin' && data.companyId) query = query.eq('company_id', data.companyId)
+    query = scopeToCaller(query, caller)
+    if (caller.role !== 'customer' && data.companyId) query = query.eq('company_id', data.companyId)
     if (data.type) query = query.eq('type', data.type)
     if (data.status) query = query.eq('status', data.status)
 
@@ -236,7 +254,7 @@ export const listRecordsByDocId = createServerFn({ method: 'GET' })
     const supabase = getServiceSupabaseClient()
 
     let query = supabase.from('records').select('*').eq(data.field, data.value).order('id', { ascending: false })
-    query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
+    query = scopeToCaller(query, caller)
 
     const { data: rows, error } = await query
     if (error || !rows) return []
@@ -248,7 +266,7 @@ export const countAllRecords = createServerFn({ method: 'GET' }).handler(async (
   const supabase = getServiceSupabaseClient()
 
   let query = supabase.from('records').select('*', { count: 'exact', head: true })
-  query = caller.role === 'admin' ? query : query.eq('company_id', caller.companyId)
+  query = scopeToCaller(query, caller)
 
   const { count } = await query
   return count ?? 0

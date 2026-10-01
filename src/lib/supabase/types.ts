@@ -45,7 +45,34 @@ export type TruckRow = {
 export type ConstructionSiteRow = {
   id: string
   name: string
+  /** NULL only for legacy sites nobody used; see the package 4 migration. */
+  company_id: string | null
   created_at: string
+}
+
+export type EmployeeRow = {
+  id: string
+  name: string
+  pin_hash: string
+  active: boolean
+  failed_pin_attempts: number
+  pin_locked_until: string | null
+  pin_changed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type DeliveryNotePhotoRow = {
+  id: string
+  batch_id: string
+  storage_path: string
+  employee_id: string | null
+  employee_name: string | null
+  company_id: string | null
+  company_name: string | null
+  note: string
+  created_at: string
+  processed_at: string | null
 }
 
 export type RecordRow = {
@@ -68,6 +95,8 @@ export type RecordRow = {
   cancel_id: string | null
   invoiced_at: string | null
   cancelled_at: string | null
+  created_by_employee_id: string | null
+  created_by_name: string | null
 }
 
 export type NumberingSettingsRow = {
@@ -142,6 +171,19 @@ export type Database = {
         Update: Partial<Omit<ConstructionSiteRow, 'id' | 'created_at'>>
         Relationships: []
       }
+      employees: {
+        Row: EmployeeRow
+        Insert: Pick<EmployeeRow, 'name' | 'pin_hash'> & Partial<Pick<EmployeeRow, 'active' | 'pin_changed_at'>>
+        Update: Partial<Omit<EmployeeRow, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
+      }
+      delivery_note_photos: {
+        Row: DeliveryNotePhotoRow
+        Insert: Omit<DeliveryNotePhotoRow, 'id' | 'created_at' | 'processed_at' | 'note'> &
+          Partial<Pick<DeliveryNotePhotoRow, 'note' | 'processed_at'>>
+        Update: Partial<Omit<DeliveryNotePhotoRow, 'id' | 'created_at'>>
+        Relationships: []
+      }
       records: {
         Row: RecordRow
         Insert: Omit<
@@ -155,11 +197,20 @@ export type Database = {
           | 'cancel_id'
           | 'invoiced_at'
           | 'cancelled_at'
+          | 'created_by_employee_id'
+          | 'created_by_name'
         > &
           Partial<
             Pick<
               RecordRow,
-              'id' | 'construction_site_id' | 'delivery_note_id' | 'invoice_id' | 'invoice_reverse_charge' | 'cancel_id'
+              | 'id'
+              | 'construction_site_id'
+              | 'delivery_note_id'
+              | 'invoice_id'
+              | 'invoice_reverse_charge'
+              | 'cancel_id'
+              | 'created_by_employee_id'
+              | 'created_by_name'
             >
           >
         Update: Partial<Omit<RecordRow, 'id' | 'created_at'>>
@@ -213,9 +264,9 @@ export type Database = {
         Args: Record<string, never>
         Returns: number
       }
-      company_construction_sites: {
-        Args: { p_company_id: string }
-        Returns: { id: string; name: string }[]
+      claim_employee_pin_attempt: {
+        Args: { p_employee_id: string; p_max_attempts: number; p_lock_minutes: number }
+        Returns: boolean
       }
       cancel_records: {
         Args: { p_record_ids: number[] }

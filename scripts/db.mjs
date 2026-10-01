@@ -31,7 +31,9 @@ const PRODUCT_IMAGE_BUCKET = 'product-images'
 const DEV_ADMIN = { email: 'admin@gaiser.local', password: 'entwicklung' }
 
 const ENV_FILE = path.join(ROOT, '.env')
-const PROD_ENV_FILE = path.join(ROOT, '.env.prod')
+// DB_CLONE_PROD_ENV_FILE only exists to rehearse the clone against a local
+// stand-in for production in tests.
+const PROD_ENV_FILE = process.env.DB_CLONE_PROD_ENV_FILE ?? path.join(ROOT, '.env.prod')
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -129,10 +131,11 @@ function psqlLocal(sql) {
   return { ok: result.status === 0, error: (result.stderr ?? '').trim() }
 }
 
-// pg_dump against production, in a throwaway container using the same
-// Postgres image as the local database. Read-only: pg_dump only SELECTs.
-// The password goes through an env file, not the command line.
-function pgDumpProduction(prodDbUrl, args) {
+// A Postgres client tool (pg_dump / psql) against production, in a throwaway
+// container using the same Postgres image as the local database. Only ever
+// used for reading. The password goes through an env file, not the command
+// line.
+function runAgainstProduction(prodDbUrl, tool, args, what) {
   const url = new URL(prodDbUrl)
   const password = decodeURIComponent(url.password)
   url.password = ''
@@ -149,14 +152,37 @@ function pgDumpProduction(prodDbUrl, args) {
   try {
     const result = spawnSync(
       CONTAINER_RUNTIME,
-      ['run', '--rm', '--network', 'host', '--env-file', envFile, image, 'pg_dump', `--dbname=${url.toString()}`, '--no-owner', '--no-privileges', ...args],
+      ['run', '--rm', '--network', 'host', '--env-file', envFile, image, tool, `--dbname=${url.toString()}`, ...args],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 2 * 1024 * 1024 * 1024 },
     )
-    if (result.status !== 0) fail(`pg_dump gegen die Produktion ist fehlgeschlagen:\n${result.stderr}`)
+    if (result.status !== 0) fail(`${what} ist fehlgeschlagen:\n${result.stderr}`)
     return result.stdout
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }
+}
+
+function pgDumpProduction(prodDbUrl, args) {
+  return runAgainstProduction(prodDbUrl, 'pg_dump', ['--no-owner', '--no-privileges', ...args], 'pg_dump gegen die Produktion')
+}
+
+// Which migrations production already has (read-only query).
+function productionMigrationVersions(prodDbUrl) {
+  const out = runAgainstProduction(
+    prodDbUrl,
+    'psql',
+    ['-X', '-tA', '-v', 'ON_ERROR_STOP=1', '-c', 'select version from supabase_migrations.schema_migrations order by version'],
+    'Abfrage der Migrationen in der Produktion',
+  )
+  return out.split('\n').map((line) => line.trim()).filter(Boolean)
+}
+
+function localMigrationVersions() {
+  return fs
+    .readdirSync(path.join(ROOT, 'supabase/migrations'))
+    .map((file) => /^(\d+)_.*\.sql$/.exec(file)?.[1])
+    .filter(Boolean)
+    .sort()
 }
 
 function readProductionConfig() {
@@ -258,12 +284,26 @@ async function clone() {
   const prod = readProductionConfig()
   const local = localStatus()
 
+  // Rehearsal of the next deploy: rebuild the local schema exactly as far as
+  // production is, load production's data, then apply the migrations that
+  // aren't in production yet — so their data changes run against real data.
+  step('Lese Migrationsstand der Produktion (nur lesend) …')
+  const prodVersions = productionMigrationVersions(prod.dbUrl)
+  const localVersions = localMigrationVersions()
+  const unknown = prodVersions.filter((version) => !localVersions.includes(version))
+  if (unknown.length) {
+    fail(`Die Produktion hat Migrationen, die lokal fehlen: ${unknown.join(', ')}. Bitte zuerst den Code aktualisieren (git pull).`)
+  }
+  const prodHead = prodVersions.at(-1)
+  const pending = localVersions.filter((version) => !prodVersions.includes(version))
+  console.log(`  Produktion steht auf ${prodHead ?? '—'}; noch nicht eingespielt: ${pending.length ? pending.join(', ') : 'keine'}`)
+
   step('Lese Produktionsdaten (nur lesend, pg_dump) …')
   const publicData = pgDumpProduction(prod.dbUrl, ['--data-only', '--schema=public'])
   const authData = pgDumpProduction(prod.dbUrl, ['--data-only', '--table=auth.users', '--table=auth.identities'])
 
-  step('Setze lokale Datenbank zurück (Schema aus supabase/migrations) …')
-  supabase(['db', 'reset', '--local'])
+  step(`Setze lokale Datenbank auf den Stand der Produktion zurück (bis ${prodHead}) …`)
+  supabase(prodHead ? ['db', 'reset', '--local', '--version', prodHead] : ['db', 'reset', '--local'])
 
   step('Spiele Daten lokal ein …')
   // One transaction: if anything fails, the local DB stays freshly reset
@@ -295,6 +335,12 @@ async function clone() {
   `)
   if (!restoreAuth.ok) {
     console.warn(`  ⚠ Admin-Logins aus der Produktion konnten nicht übernommen werden:\n    ${restoreAuth.error.split('\n')[0]}`)
+  }
+
+  if (pending.length) {
+    step(`Generalprobe: spiele die ${pending.length} neuen Migration(en) auf die Produktionsdaten ein …`)
+    supabase(['migration', 'up', '--local'])
+    console.log('  ✔ Neue Migrationen laufen fehlerfrei auf dem aktuellen Datenstand.')
   }
 
   await ensureDevAdmin(local)

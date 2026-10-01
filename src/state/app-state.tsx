@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { employeeSessionStatusQueryOptions, employeeSignIn, employeeSignOut } from '../server/employee-auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminSessionStatusQueryOptions, adminSignIn, adminSignOut } from '../server/admin-auth'
 import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut, customerSignUp } from '../server/customer-auth'
@@ -83,12 +84,16 @@ export type Truck = {
 export type ConstructionSite = {
   id: string
   name: string
+  /** null only for legacy sites nobody used (listed for admins as "ohne Firma"). */
+  companyId: string | null
 }
 
 export type RecordItem = {
   id: number
   companyId: string
   company: string
+  /** Employee who booked it (truck driver); undefined if booked by the customer or an admin. */
+  createdByName?: string
   constructionSiteId: string
   constructionSiteName: string
   type: RecordType
@@ -236,11 +241,13 @@ type DeleteTruckInput = {
 
 type CreateConstructionSiteInput = {
   name: string
+  companyId: string
 }
 
 type UpdateConstructionSiteInput = {
   id: string
   name: string
+  companyId: string
 }
 
 type DeleteConstructionSiteInput = {
@@ -304,6 +311,11 @@ type AppState = {
   adminLogin: (email: string, password: string) => Promise<LoginResult>
   isAdminLoggingIn: boolean
   adminLogout: () => Promise<void>
+  /** Logged-in employee (truck driver), see /mitarbeiter. */
+  employee: { id: string; name: string } | null
+  employeeLogin: (employeeId: string, pin: string) => Promise<LoginResult>
+  isEmployeeLoggingIn: boolean
+  employeeLogout: () => Promise<void>
   createRecord: (input: CreateRecordInput) => Promise<RecordItem | null>
   isCreatingRecord: boolean
   createTruckRecord: (input: CreateTruckRecordInput) => Promise<RecordItem | null>
@@ -365,9 +377,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const adminSessionQuery = useQuery(adminSessionStatusQueryOptions())
   const customerSessionQuery = useQuery(customerSessionStatusQueryOptions())
+  const employeeSessionQuery = useQuery(employeeSessionStatusQueryOptions())
   const isAdminLoggedIn = adminSessionQuery.data?.isAdminLoggedIn ?? false
   const selectedCompany = customerSessionQuery.data?.company ?? null
-  const hasSession = isAdminLoggedIn || selectedCompany !== null
+  const employee = employeeSessionQuery.data?.employee ?? null
+  const hasSession = isAdminLoggedIn || selectedCompany !== null || employee !== null
 
   // The full customer list is admin-only; the customer login searches
   // server-side instead (searchCompanies), so it can't be browsed.
@@ -391,15 +405,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const hydrated =
     adminSessionQuery.isFetched &&
     customerSessionQuery.isFetched &&
+    employeeSessionQuery.isFetched &&
     (!isAdminLoggedIn || companiesQuery.isFetched) &&
     (!hasSession || (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched))
 
   const invalidate = (queryKey: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey })
 
+  // After a successful login the session query is refetched *before* the
+  // login call resolves, so the next page doesn't briefly see "logged out"
+  // and send the user back to the start page.
+  const refreshSession = (queryKey: readonly unknown[]) => queryClient.invalidateQueries({ queryKey })
+
   const adminSignInMutation = useMutation({
     mutationFn: adminSignIn,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'admin'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'admin'])
     },
   })
   const adminSignOutMutation = useMutation({
@@ -411,18 +431,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   })
   const customerSignInMutation = useMutation({
     mutationFn: customerSignIn,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'customer'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'customer'])
     },
   })
   const customerSignOutMutation = useMutation({
     mutationFn: customerSignOut,
     onSuccess: () => invalidate(['auth', 'customer']),
   })
+  const employeeSignInMutation = useMutation({
+    mutationFn: employeeSignIn,
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'employee'])
+    },
+  })
+  const employeeSignOutMutation = useMutation({ mutationFn: employeeSignOut })
   const customerSignUpMutation = useMutation({
     mutationFn: customerSignUp,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'customer'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'customer'])
     },
   })
   const setMasterPinMutation = useMutation({ mutationFn: adminSetMasterPin })
@@ -604,7 +631,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           window.location.assign('/')
         }
       },
-      isLoggingOut: customerSignOutMutation.isPending || adminSignOutMutation.isPending,
+      isLoggingOut: customerSignOutMutation.isPending || adminSignOutMutation.isPending || employeeSignOutMutation.isPending,
+      employee,
+      employeeLogin: async (employeeId, pin) => employeeSignInMutation.mutateAsync({ data: { employeeId, pin } }),
+      isEmployeeLoggingIn: employeeSignInMutation.isPending,
+      employeeLogout: async () => {
+        try {
+          await employeeSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
       signUp: async (input) => customerSignUpMutation.mutateAsync({ data: input }),
       isSigningUp: customerSignUpMutation.isPending,
       verifyMasterPin: async (input) => verifyMasterPinMutation.mutateAsync({ data: input }),
@@ -701,6 +738,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateInactivityTimeoutMutation,
       adminSignInMutation,
       adminSignOutMutation,
+      employee,
+      employeeSignInMutation,
+      employeeSignOutMutation,
       createRecordMutation,
       createTruckRecordMutation,
       createCompanyMutation,

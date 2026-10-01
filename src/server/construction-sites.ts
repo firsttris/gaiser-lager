@@ -4,44 +4,64 @@ import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
-import type { ConstructionSiteRow } from '#/lib/supabase/types'
 import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
+import type { ConstructionSiteRow } from '#/lib/supabase/types'
 
-const createSiteSchema = z.object({ name: z.string() })
-const updateSiteSchema = z.object({ id: z.string().uuid(), name: z.string() })
+// Every construction site belongs to exactly one company (P3). The same
+// address may exist for several companies, as separate sites.
+
+const listSitesSchema = z.object({ companyId: z.string().uuid().optional() }).optional()
+const createSiteSchema = z.object({ name: z.string(), companyId: z.string().uuid() })
+const updateSiteSchema = z.object({ id: z.string().uuid(), name: z.string(), companyId: z.string().uuid() })
 const deleteSiteSchema = z.object({ id: z.string().uuid() })
 
-function toSite(row: Pick<ConstructionSiteRow, 'id' | 'name'>) {
-  return { id: row.id, name: row.name }
+function toSite(row: Pick<ConstructionSiteRow, 'id' | 'name' | 'company_id'>) {
+  return { id: row.id, name: row.name, companyId: row.company_id }
 }
 
 function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, ' ')
 }
 
-const listSitesSchema = z.object({ companyId: z.string().uuid().optional() }).optional()
+// LIKE treats % and _ as wildcards; site names are matched literally.
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
 
-// Customers only ever see the sites used in their own Vorgänge (never other
-// customers' addresses). Admins get the sites of one company when a
-// companyId is given (suggestions in "Neuer Vorgang"), otherwise all of them
-// (Admin → Baustellen).
+// Customers only ever get their own company's sites. Employees and admins get
+// the sites of the company given (suggestions in "Neuer Vorgang"); only admins
+// may list all sites (Admin → Baustellen), including legacy ones without a
+// company.
 export const listConstructionSites = createServerFn({ method: 'GET' })
   .validator((data: unknown) => listSitesSchema.parse(data))
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
     const companyId = caller.role === 'customer' ? caller.companyId : data?.companyId
-    const supabase = getServiceSupabaseClient()
+    if (!companyId && caller.role !== 'admin') return []
 
-    if (companyId) {
-      const { data: rows, error } = await supabase.rpc('company_construction_sites', { p_company_id: companyId })
-      if (error || !rows) return []
-      return rows.map(toSite)
-    }
+    let query = getServiceSupabaseClient().from('construction_sites').select('id, name, company_id').order('name')
+    if (companyId) query = query.eq('company_id', companyId)
 
-    const { data: rows, error } = await supabase.from('construction_sites').select('*').order('name', { ascending: true })
+    const { data: rows, error } = await query
     if (error || !rows) return []
     return rows.map(toSite)
   })
+
+async function nameTakenForCompany(
+  supabase: ReturnType<typeof getServiceSupabaseClient>,
+  companyId: string,
+  name: string,
+  excludeId?: string,
+) {
+  let query = supabase
+    .from('construction_sites')
+    .select('id')
+    .eq('company_id', companyId)
+    .ilike('name', escapeLikePattern(name))
+  if (excludeId) query = query.neq('id', excludeId)
+  const { data } = await query.limit(1)
+  return Boolean(data?.length)
+}
 
 export const adminCreateConstructionSite = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
@@ -52,17 +72,11 @@ export const adminCreateConstructionSite = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte Baustellenname ausfüllen.' } as const
     }
 
-    const { data: existing } = await context.supabase
-      .from('construction_sites')
-      .select('id')
-      .ilike('name', cleanedName)
-      .maybeSingle()
-
-    if (existing) {
-      return { ok: false, message: 'Diese Baustelle existiert bereits.' } as const
+    if (await nameTakenForCompany(getServiceSupabaseClient(), data.companyId, cleanedName)) {
+      return { ok: false, message: 'Diese Baustelle gibt es für diesen Kunden bereits.' } as const
     }
 
-    const { error } = await context.supabase.from('construction_sites').insert({ name: cleanedName })
+    const { error } = await context.supabase.from('construction_sites').insert({ name: cleanedName, company_id: data.companyId })
     if (error) {
       return { ok: false, message: 'Die Baustelle konnte nicht angelegt werden.' } as const
     }
@@ -76,7 +90,7 @@ export const adminUpdateConstructionSite = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const { data: currentSite } = await context.supabase
       .from('construction_sites')
-      .select('name')
+      .select('name, company_id')
       .eq('id', data.id)
       .maybeSingle()
 
@@ -89,18 +103,27 @@ export const adminUpdateConstructionSite = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte Baustellenname ausfüllen.' } as const
     }
 
-    const { data: existing } = await context.supabase
-      .from('construction_sites')
-      .select('id')
-      .ilike('name', cleanedName)
-      .neq('id', data.id)
-      .maybeSingle()
-
-    if (existing) {
-      return { ok: false, message: 'Diese Baustelle existiert bereits.' } as const
+    const supabase = getServiceSupabaseClient()
+    // A site that already has Vorgänge stays with its company (assigning a
+    // legacy site without a company is fine).
+    if (currentSite.company_id && currentSite.company_id !== data.companyId) {
+      const { count } = await supabase
+        .from('records')
+        .select('id', { count: 'exact', head: true })
+        .eq('construction_site_id', data.id)
+      if (count) {
+        return { ok: false, message: 'Eine Baustelle mit Vorgängen kann keinem anderen Kunden zugeordnet werden.' } as const
+      }
     }
 
-    const { error } = await context.supabase.from('construction_sites').update({ name: cleanedName }).eq('id', data.id)
+    if (await nameTakenForCompany(supabase, data.companyId, cleanedName, data.id)) {
+      return { ok: false, message: 'Diese Baustelle gibt es für diesen Kunden bereits.' } as const
+    }
+
+    const { error } = await context.supabase
+      .from('construction_sites')
+      .update({ name: cleanedName, company_id: data.companyId })
+      .eq('id', data.id)
     if (error) {
       return { ok: false, message: 'Die Baustelle konnte nicht aktualisiert werden.' } as const
     }
@@ -146,30 +169,38 @@ export const constructionSitesQueryOptions = (companyId?: string) =>
     queryFn: () => listConstructionSites({ data: companyId ? { companyId } : undefined }),
   })
 
-// Internal helper for record creation (src/server/records.ts) — atomic
-// find-or-create by case-insensitive name, backed by the unique index on
-// lower(name). Not exposed as a server function; only called service-role-side
-// from within another server function's handler.
+// Internal helper for record creation (src/server/records.ts): find the
+// company's site by case-insensitive name or create it. Backed by the unique
+// index on (company_id, lower(name)). Not exposed as a server function.
 export async function findOrCreateConstructionSite(
   supabase: ReturnType<typeof getServiceSupabaseClient>,
+  companyId: string,
   rawName: string,
 ) {
   const name = normalizeName(rawName)
   if (!name) return null
 
-  const { data: existing } = await supabase.from('construction_sites').select('id, name').ilike('name', name).maybeSingle()
+  const find = () =>
+    supabase
+      .from('construction_sites')
+      .select('id, name')
+      .eq('company_id', companyId)
+      .ilike('name', escapeLikePattern(name))
+      .limit(1)
+      .maybeSingle()
+
+  const { data: existing } = await find()
   if (existing) return existing
 
   const { data: created, error } = await supabase
     .from('construction_sites')
-    .insert({ name })
+    .insert({ name, company_id: companyId })
     .select('id, name')
     .single()
 
   if (error || !created) {
-    // Lost a race to another concurrent request inserting the same name —
-    // the unique index on lower(name) rejected our insert. Re-read.
-    const { data: raceWinner } = await supabase.from('construction_sites').select('id, name').ilike('name', name).maybeSingle()
+    // Lost a race to a concurrent request creating the same site — re-read.
+    const { data: raceWinner } = await find()
     return raceWinner ?? null
   }
 

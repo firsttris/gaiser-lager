@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { generateCustomerNumber } from './customer-number.server'
+import { requireAnySession } from './auth-context'
 
 export const PIN_HASH_ROUNDS = 12
 
@@ -200,4 +201,18 @@ export const searchCompanies = createServerFn({ method: 'GET' })
 
     if (error || !rows) return []
     return rows
+  })
+
+const companyForBookingSchema = z.object({ id: z.string().uuid() })
+
+// Full details of the one customer an employee is booking for (needed for
+// the delivery note address). Employees never get the whole customer list.
+export const getCompanyForBooking = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => companyForBookingSchema.parse(data))
+  .handler(async ({ data }) => {
+    const caller = await requireAnySession()
+    if (caller.role === 'customer') throw new Error('FORBIDDEN')
+
+    const { data: row } = await getServiceSupabaseClient().from('companies').select(COMPANY_COLUMNS).eq('id', data.id).maybeSingle()
+    return row ? toCompany(row) : null
   })

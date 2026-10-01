@@ -130,6 +130,13 @@ function App() {
             >
               Neu hier? Jetzt registrieren
             </Link>
+
+            <Link
+              to="/mitarbeiter"
+              className="block text-center font-semibold text-slate-700 no-underline hover:text-slate-900"
+            >
+              Mitarbeiter-Anmeldung (Fahrer)
+            </Link>
           </form>
         </div>
       </section>

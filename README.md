@@ -25,7 +25,7 @@ npm run dev        # http://localhost:3000
 | --- | --- |
 | `npm run db:start` / `db:stop` | lokale Supabase starten/stoppen |
 | `npm run db:reset` | lokale DB leer aus `supabase/migrations/` neu aufbauen |
-| `npm run db:clone` | Produktion **nur lesend** per `pg_dump` auslesen, lokale DB zurücksetzen und die Daten einspielen (inkl. Admin-Logins und Materialbilder) |
+| `npm run db:clone` | Produktion **nur lesend** auslesen und lokal einspielen (inkl. Admin-Logins und Materialbilder). Gleichzeitig **Generalprobe fürs Deployment**: lokal wird nur der Migrationsstand der Produktion aufgebaut, die Daten geladen und danach die noch nicht eingespielten Migrationen darüber ausgeführt |
 | `npm test`, `npx tsc --noEmit`, `npm run build` | Tests, Typecheck, Build |
 
 Nach `db:clone` gelten dieselben Logins wie in der Produktion (Kunden-PINs,
@@ -77,8 +77,9 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 
 Das Schema liegt vollständig in `supabase/migrations/`. Ablauf für Änderungen:
 
-1. Migration anlegen und lokal testen (`npm run db:reset`, besser
-   `npm run db:clone`, dann läuft sie gegen echte Daten).
+1. Migration anlegen und lokal testen: `npm run db:clone` spielt sie auf den
+   aktuellen Produktionsdaten ein (Generalprobe), `npm run db:reset` auf
+   einer leeren Datenbank.
 2. In der Produktion ein Backup ziehen (Admin → Einstellungen → SQL-Backup).
 3. Migration in die Produktion einspielen (`npx supabase db push`),
    **danach** den Code deployen.

@@ -28,6 +28,8 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
   .validator((data: unknown) => listInvoiceGroupsPageSchema.parse(data))
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
+    // Invoices are for the office and the customer, not for drivers.
+    if (caller.role === 'employee') return { groups: [], totalCount: 0 }
     const supabase = getServiceSupabaseClient()
 
     let query = supabase.from('invoice_groups').select('*', { count: 'exact' })
@@ -67,6 +69,7 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
 
 export const countAllInvoiceGroups = createServerFn({ method: 'GET' }).handler(async () => {
   const caller = await requireAnySession()
+  if (caller.role === 'employee') return 0
   const supabase = getServiceSupabaseClient()
 
   let query = supabase.from('invoice_groups').select('invoice_id', { count: 'exact', head: true })

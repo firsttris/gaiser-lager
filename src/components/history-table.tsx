@@ -14,6 +14,8 @@ interface Props {
   onInvoiceClick?: (invoiceId: string) => void
   onCancelClick?: (cancelId: string) => void
   downloadingDocId?: string | null
+  /** false hides the checkboxes (e.g. the drivers' own booking list). */
+  selectable?: boolean
 }
 
 export function HistoryTable({
@@ -28,6 +30,7 @@ export function HistoryTable({
   onInvoiceClick,
   onCancelClick,
   downloadingDocId = null,
+  selectable = true,
 }: Props) {
   return (
     // Cards or table depending on the space the list actually has (container
@@ -52,6 +55,9 @@ export function HistoryTable({
                   )}
                   <p className="mt-1 text-sm text-slate-700">{record.productName}</p>
                   <p className="mt-1 text-xs text-slate-600">Baustelle: {record.constructionSiteName || '-'}</p>
+                  {record.createdByName && (
+                    <p className="mt-1 text-xs text-slate-600">Gebucht von: {record.createdByName}</p>
+                  )}
                   <div className="mt-1 flex flex-wrap gap-1">
                     {record.deliveryNoteId && (
                       <DocLinkButton
@@ -83,13 +89,15 @@ export function HistoryTable({
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                     {flowLabel(record.type)}
                   </span>
-                  <input
-                    type="checkbox"
-                    checked={selectedSet.has(record.id)}
-                    onChange={() => onToggle(record)}
-                    className="h-6 w-6 rounded border-slate-300"
-                    aria-label={`Eintrag ${record.id} markieren`}
-                  />
+                  {selectable && (
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(record.id)}
+                      onChange={() => onToggle(record)}
+                      className="h-6 w-6 rounded border-slate-300"
+                      aria-label={`Eintrag ${record.id} markieren`}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -138,15 +146,17 @@ export function HistoryTable({
         <table className="w-full table-fixed border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-600">
-              <th className="w-8 px-2 py-2">
-                <input
-                  type="checkbox"
-                  checked={areAllVisibleSelected}
-                  onChange={(event) => onSelectAll(event.target.checked)}
-                  className="h-6 w-6 rounded border-slate-300"
-                  aria-label="Alle sichtbaren Einträge markieren"
-                />
-              </th>
+              {selectable && (
+                <th className="w-8 px-2 py-2">
+                  <input
+                    type="checkbox"
+                    checked={areAllVisibleSelected}
+                    onChange={(event) => onSelectAll(event.target.checked)}
+                    className="h-6 w-6 rounded border-slate-300"
+                    aria-label="Alle sichtbaren Einträge markieren"
+                  />
+                </th>
+              )}
               <th className="w-28 px-2 py-2">Zeit</th>
               <th className="w-20 px-2 py-2">Typ</th>
               {showCompanyColumn && <th className="hidden w-32 px-2 py-2 @5xl:table-cell">Firma</th>}
@@ -168,20 +178,29 @@ export function HistoryTable({
                   key={record.id}
                   className={`border-b border-slate-100 align-top ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}
                 >
-                  <td className="px-2 pb-2 pt-2.5">
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(record.id)}
-                      onChange={() => onToggle(record)}
-                      className="h-6 w-6 rounded border-slate-300"
-                      aria-label={`Eintrag ${record.id} markieren`}
-                    />
-                  </td>
+                  {selectable && (
+                    <td className="px-2 pb-2 pt-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedSet.has(record.id)}
+                        onChange={() => onToggle(record)}
+                        className="h-6 w-6 rounded border-slate-300"
+                        aria-label={`Eintrag ${record.id} markieren`}
+                      />
+                    </td>
+                  )}
                   <td className="px-2 py-2 text-xs">
                     <span className="block text-slate-600">{record.createdAt.split(', ')[0]}</span>
                     <span className="block text-slate-600">{record.createdAt.split(', ')[1]}</span>
                   </td>
-                  <td className="px-2 py-2">{flowLabel(record.type)}</td>
+                  <td className="px-2 py-2">
+                    {flowLabel(record.type)}
+                    {record.createdByName && (
+                      <span className="block text-xs text-slate-600" title="Gebucht von">
+                        {record.createdByName}
+                      </span>
+                    )}
+                  </td>
                   {showCompanyColumn && (
                     <td className="hidden px-2 py-2 font-semibold text-slate-900 @5xl:table-cell">{record.company}</td>
                   )}

@@ -36,3 +36,19 @@ export const getCustomerSession = () => getSession<CustomerSessionData>(customer
 export const setCustomerSession = (data: CustomerSessionData) =>
   updateSession<CustomerSessionData>(customerSessionConfig(), data)
 export const clearCustomerSession = () => clearSession(customerSessionConfig())
+
+export type EmployeeSessionData = {
+  employeeId: string
+  loggedInAt: number
+}
+
+// Drivers share the kiosk tablet: a work day at most, plus the inactivity
+// logout on the client.
+function employeeSessionConfig(): SessionConfig {
+  return { name: 'gaiser_employee', password: requireSessionSecret(), maxAge: 60 * 60 * 12 }
+}
+
+export const getEmployeeSession = () => getSession<EmployeeSessionData>(employeeSessionConfig())
+export const setEmployeeSession = (data: EmployeeSessionData) =>
+  updateSession<EmployeeSessionData>(employeeSessionConfig(), data)
+export const clearEmployeeSession = () => clearSession(employeeSessionConfig())

@@ -1,6 +1,8 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
+import { Blocks, Building2, Camera, Clock, HardHat, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
@@ -21,6 +23,7 @@ const settingsNavItems = [
   { to: '/admin/lkw', label: 'LKW', icon: <Clock className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/kunden', label: 'Kunden', icon: <Building2 className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/baustellen', label: 'Baustellen', icon: <MapPinned className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: <HardHat className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: <Settings className="h-4 w-4" strokeWidth={2.25} /> },
 ]
 
@@ -28,6 +31,7 @@ function AdminPage() {
   const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout, isLoggingOut, signupSettings } = useAppState()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const isLoginPage = pathname === '/admin' || pathname === '/admin/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -49,9 +53,11 @@ function AdminPage() {
 
   // Session gone on an admin sub-page (expired, logged out elsewhere): back to
   // the customer login, never to the admin login (the kiosk would get stuck).
+  // Reads the query cache directly (see kunde.tsx).
   useEffect(() => {
-    if (!isAdminLoggedIn && !isLoginPage && !isLoggingOut) window.location.assign('/')
-  }, [isAdminLoggedIn, isLoginPage, isLoggingOut])
+    const session = queryClient.getQueryData(adminSessionStatusQueryOptions().queryKey)
+    if (!session?.isAdminLoggedIn && !isLoginPage && !isLoggingOut) window.location.assign('/')
+  }, [isAdminLoggedIn, isLoginPage, isLoggingOut, queryClient])
 
   useEffect(() => {
     if (isAdminLoggedIn || !isLoginPage) return
@@ -200,6 +206,15 @@ function AdminPage() {
                 Rechnungen
               </NavLink>
 
+              <NavLink
+                to="/admin/lieferscheine"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Lieferscheine
+              </NavLink>
+
               <NavDropdown
                 label="Einstellungen"
                 icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
@@ -242,6 +257,12 @@ function AdminPage() {
               icon={<Receipt className="h-4 w-4" strokeWidth={2.25} />}
             >
               Rechnungen
+            </NavLink>
+            <NavLink
+              to="/admin/lieferscheine"
+              icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Lieferscheine
             </NavLink>
             <NavDropdown
               label="Einstellungen"
