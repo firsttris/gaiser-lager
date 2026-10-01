@@ -4,7 +4,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { getCustomerSession, setCustomerSession, clearCustomerSession } from './session'
-import { priceCategorySchema, PIN_HASH_ROUNDS } from './companies'
+import { COMPANY_COLUMNS, companyEmailSchema, PIN_HASH_ROUNDS, toCompany } from './companies'
 import { verifyMasterPin } from './master-pin.server'
 import { generateCustomerNumber } from './customer-number.server'
 import { isSessionOlderThanPinChange } from './auth-context'
@@ -25,7 +25,7 @@ const signUpSchema = z
     street: z.string(),
     postalCode: z.string(),
     city: z.string(),
-    priceCategory: priceCategorySchema,
+    email: companyEmailSchema,
     pin: z.string().regex(/^\d{4}$/),
     pinConfirmation: z.string().regex(/^\d{4}$/),
   })
@@ -34,33 +34,13 @@ const signUpSchema = z
     path: ['pinConfirmation'],
   })
 
-function toPublicCompany(company: {
-  id: string
-  name: string
-  customer_number: string
-  street: string
-  postal_code: string
-  city: string
-  price_category: 'private' | 'business'
-}) {
-  return {
-    id: company.id,
-    name: company.name,
-    customerNumber: company.customer_number,
-    street: company.street,
-    postalCode: company.postal_code,
-    city: company.city,
-    priceCategory: company.price_category,
-  }
-}
-
 export const customerSignIn = createServerFn({ method: 'POST' })
   .validator((data: unknown) => signInSchema.parse(data))
   .handler(async ({ data }) => {
     const supabase = getServiceSupabaseClient()
     const { data: company } = await supabase
       .from('companies')
-      .select('id, name, customer_number, street, postal_code, city, price_category, pin_hash')
+      .select(`${COMPANY_COLUMNS}, pin_hash`)
       .eq('id', data.companyId)
       .maybeSingle()
 
@@ -87,7 +67,7 @@ export const customerSignIn = createServerFn({ method: 'POST' })
     await supabase.from('companies').update({ failed_pin_attempts: 0, pin_locked_until: null }).eq('id', company.id)
     await setCustomerSession({ companyId: company.id, loggedInAt: Date.now() })
 
-    return { ok: true, company: toPublicCompany(company) } as const
+    return { ok: true, company: toCompany(company) } as const
   })
 
 export const customerSignUp = createServerFn({ method: 'POST' })
@@ -110,10 +90,10 @@ export const customerSignUp = createServerFn({ method: 'POST' })
         street: data.street.trim(),
         postal_code: data.postalCode.trim(),
         city: data.city.trim(),
-        price_category: data.priceCategory,
+        email: data.email,
         pin_hash: pinHash,
       })
-      .select('id, name, customer_number, street, postal_code, city, price_category')
+      .select(COMPANY_COLUMNS)
       .single()
 
     if (error || !company) {
@@ -122,7 +102,7 @@ export const customerSignUp = createServerFn({ method: 'POST' })
 
     await setCustomerSession({ companyId: company.id, loggedInAt: Date.now() })
 
-    return { ok: true, company: toPublicCompany(company) } as const
+    return { ok: true, company: toCompany(company) } as const
   })
 
 export const customerSignOut = createServerFn({ method: 'POST' }).handler(async () => {
@@ -139,7 +119,7 @@ export const getCustomerSessionStatus = createServerFn({ method: 'GET' }).handle
   const supabase = getServiceSupabaseClient()
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, customer_number, street, postal_code, city, price_category, pin_changed_at')
+    .select(`${COMPANY_COLUMNS}, pin_changed_at`)
     .eq('id', session.data.companyId)
     .maybeSingle()
 
@@ -147,7 +127,7 @@ export const getCustomerSessionStatus = createServerFn({ method: 'GET' }).handle
     return { isLoggedIn: false, company: null } as const
   }
 
-  return { isLoggedIn: true, company: toPublicCompany(company) } as const
+  return { isLoggedIn: true, company: toCompany(company) } as const
 })
 
 export const customerSessionStatusQueryOptions = () =>

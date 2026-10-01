@@ -1,5 +1,3 @@
-export type PriceCategory = 'private' | 'business'
-
 export type CompanyRow = {
   id: string
   name: string
@@ -7,7 +5,7 @@ export type CompanyRow = {
   street: string
   postal_code: string
   city: string
-  price_category: PriceCategory
+  email: string | null
   pin_hash: string
   failed_pin_attempts: number
   pin_locked_until: string | null
@@ -30,10 +28,9 @@ export type ProductRow = {
   name: string
   unit: string
   flow: FlowType
-  pickup_private_price: number
-  pickup_business_price: number
-  dropoff_private_price: number
-  dropoff_business_price: number
+  // Net price per unit. (The former private/business price columns are
+  // removed by a follow-up migration and no longer used.)
+  price: number
   image_path: string | null
   created_at: string
 }
@@ -41,8 +38,7 @@ export type ProductRow = {
 export type TruckRow = {
   id: number
   name: string
-  private_price: number
-  business_price: number
+  price: number
   created_at: string
 }
 
@@ -82,6 +78,7 @@ export type NumberingSettingsRow = {
   next_delivery_note_number: number
   number_padding: number
   next_customer_number: number
+  customer_number_template: string
 }
 
 export type SignupSettingsRow = {
@@ -116,8 +113,8 @@ export type Database = {
     Tables: {
       companies: {
         Row: CompanyRow
-        Insert: Omit<CompanyRow, 'id' | 'created_at' | 'updated_at' | 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at'> &
-          Partial<Pick<CompanyRow, 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at'>>
+        Insert: Omit<CompanyRow, 'id' | 'created_at' | 'updated_at' | 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at' | 'email'> &
+          Partial<Pick<CompanyRow, 'failed_pin_attempts' | 'pin_locked_until' | 'pin_changed_at' | 'email'>>
         Update: Partial<Omit<CompanyRow, 'id' | 'created_at' | 'updated_at'>>
         Relationships: []
       }
@@ -203,6 +200,14 @@ export type Database = {
       create_invoice: {
         Args: { p_record_ids: number[] }
         Returns: IssuedDocumentResult
+      }
+      next_free_customer_number: {
+        Args: Record<string, never>
+        Returns: string
+      }
+      highest_customer_number: {
+        Args: Record<string, never>
+        Returns: number | null
       }
       keepalive: {
         Args: Record<string, never>

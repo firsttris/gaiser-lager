@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parsePriceInput, parsePrices, roundCents } from './money'
+import { parsePriceInput, roundCents } from './money'
 
 describe('roundCents', () => {
   it('removes floating point noise', () => {
@@ -28,10 +28,5 @@ describe('parsePriceInput', () => {
     expect(parsePriceInput('abc')).toBeNull()
     expect(parsePriceInput('-5')).toBeNull()
     expect(parsePriceInput('1,2,3')).toBeNull()
-  })
-
-  it('parses a price pair', () => {
-    expect(parsePrices('12,5', '8,50')).toEqual({ parsedPrivatePrice: 12.5, parsedBusinessPrice: 8.5 })
-    expect(parsePrices('x', '1')).toBeNull()
   })
 })

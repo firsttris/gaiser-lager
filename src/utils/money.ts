@@ -14,10 +14,3 @@ export function parsePriceInput(value: string) {
   if (!/^\d+(\.\d+)?$/.test(normalized)) return null
   return roundCents(Number(normalized))
 }
-
-export function parsePrices(privatePrice: string, businessPrice: string) {
-  const parsedPrivatePrice = parsePriceInput(privatePrice)
-  const parsedBusinessPrice = parsePriceInput(businessPrice)
-  if (parsedPrivatePrice === null || parsedBusinessPrice === null) return null
-  return { parsedPrivatePrice, parsedBusinessPrice }
-}

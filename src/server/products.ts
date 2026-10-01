@@ -5,7 +5,7 @@ import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import type { ProductRow } from '#/lib/supabase/types'
-import { parsePrices } from '#/utils/money'
+import { parsePriceInput } from '#/utils/money'
 import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
 
 const flowSchema = z.enum(['pickup', 'dropoff'])
@@ -14,8 +14,7 @@ const createProductSchema = z.object({
   name: z.string(),
   unit: z.string(),
   flow: flowSchema,
-  privatePrice: z.string(),
-  businessPrice: z.string(),
+  price: z.string(),
 })
 
 const updateProductSchema = createProductSchema.extend({ id: z.number() })
@@ -54,10 +53,7 @@ function toProduct(row: ProductRow) {
     name: row.name,
     unit: row.unit,
     flow: row.flow,
-    pickupPrivatePrice: row.pickup_private_price,
-    pickupBusinessPrice: row.pickup_business_price,
-    dropoffPrivatePrice: row.dropoff_private_price,
-    dropoffBusinessPrice: row.dropoff_business_price,
+    price: row.price,
     imageUrl: productImageUrl(row.image_path),
   }
 }
@@ -82,19 +78,16 @@ export const adminCreateProduct = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase.from('products').insert({
       name: cleanedName,
       unit: cleanedUnit,
       flow: data.flow,
-      pickup_private_price: data.flow === 'pickup' ? prices.parsedPrivatePrice : 0,
-      pickup_business_price: data.flow === 'pickup' ? prices.parsedBusinessPrice : 0,
-      dropoff_private_price: data.flow === 'dropoff' ? prices.parsedPrivatePrice : 0,
-      dropoff_business_price: data.flow === 'dropoff' ? prices.parsedBusinessPrice : 0,
+      price,
     })
 
     if (error) {
@@ -124,9 +117,9 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase
@@ -135,10 +128,7 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
         name: cleanedName,
         unit: cleanedUnit,
         flow: data.flow,
-        pickup_private_price: data.flow === 'pickup' ? prices.parsedPrivatePrice : 0,
-        pickup_business_price: data.flow === 'pickup' ? prices.parsedBusinessPrice : 0,
-        dropoff_private_price: data.flow === 'dropoff' ? prices.parsedPrivatePrice : 0,
-        dropoff_business_price: data.flow === 'dropoff' ? prices.parsedBusinessPrice : 0,
+        price,
       })
       .eq('id', data.id)
 

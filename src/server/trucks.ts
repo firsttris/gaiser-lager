@@ -5,13 +5,12 @@ import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import type { TruckRow } from '#/lib/supabase/types'
-import { parsePrices } from '#/utils/money'
+import { parsePriceInput } from '#/utils/money'
 import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
 
 const createTruckSchema = z.object({
   name: z.string(),
-  privatePrice: z.string(),
-  businessPrice: z.string(),
+  price: z.string(),
 })
 
 const updateTruckSchema = createTruckSchema.extend({ id: z.number() })
@@ -21,8 +20,7 @@ function toTruck(row: TruckRow) {
   return {
     id: row.id,
     name: row.name,
-    privatePrice: row.private_price,
-    businessPrice: row.business_price,
+    price: row.price,
   }
 }
 
@@ -44,16 +42,12 @@ export const adminCreateTruck = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
-    const { error } = await context.supabase.from('trucks').insert({
-      name: cleanedName,
-      private_price: prices.parsedPrivatePrice,
-      business_price: prices.parsedBusinessPrice,
-    })
+    const { error } = await context.supabase.from('trucks').insert({ name: cleanedName, price })
 
     if (error) {
       return { ok: false, message: 'Der LKW konnte nicht angelegt werden.' } as const
@@ -76,14 +70,14 @@ export const adminUpdateTruck = createServerFn({ method: 'POST' })
       return { ok: false, message: 'Bitte LKW-Bezeichnung ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise müssen gültige positive Zahlen sein (z. B. 12,50).' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase
       .from('trucks')
-      .update({ name: cleanedName, private_price: prices.parsedPrivatePrice, business_price: prices.parsedBusinessPrice })
+      .update({ name: cleanedName, price })
       .eq('id', data.id)
 
     if (error) {

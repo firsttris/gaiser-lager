@@ -39,6 +39,8 @@ function AdminEinstellungenPage() {
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState(String(numberingSettings.nextInvoiceNumber))
   const [nextDeliveryNoteNumber, setNextDeliveryNoteNumber] = useState(String(numberingSettings.nextDeliveryNoteNumber))
   const [numberPadding, setNumberPadding] = useState(String(numberingSettings.numberPadding))
+  const [customerNumberTemplate, setCustomerNumberTemplate] = useState(numberingSettings.customerNumberTemplate)
+  const [nextCustomerNumber, setNextCustomerNumber] = useState(String(numberingSettings.nextCustomerNumber))
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const [newMasterPin, setNewMasterPin] = useState('')
@@ -64,6 +66,8 @@ function AdminEinstellungenPage() {
     setNextInvoiceNumber(String(numberingSettings.nextInvoiceNumber))
     setNextDeliveryNoteNumber(String(numberingSettings.nextDeliveryNoteNumber))
     setNumberPadding(String(numberingSettings.numberPadding))
+    setCustomerNumberTemplate(numberingSettings.customerNumberTemplate)
+    setNextCustomerNumber(String(numberingSettings.nextCustomerNumber))
   }, [numberingSettings])
 
   useEffect(() => {
@@ -74,6 +78,10 @@ function AdminEinstellungenPage() {
   const paddingValue = Math.max(Number(numberPadding) || 1, 1)
   const invoicePreview = formatGeneratedNumber(invoiceTemplate, Number(nextInvoiceNumber) || 0, paddingValue)
   const deliveryNotePreview = formatGeneratedNumber(deliveryNoteTemplate, Number(nextDeliveryNoteNumber) || 0, paddingValue)
+  const customerNumberPreview = formatGeneratedNumber(customerNumberTemplate, Number(nextCustomerNumber) || 0, 1)
+  const highestCustomerNumber = numberingSettings.highestCustomerNumber
+  const nextCustomerNumberIsBelowHighest =
+    highestCustomerNumber !== null && (Number(nextCustomerNumber) || 0) <= highestCustomerNumber
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -84,6 +92,8 @@ function AdminEinstellungenPage() {
       nextInvoiceNumber: Math.max(Number(nextInvoiceNumber) || 1, 1),
       nextDeliveryNoteNumber: Math.max(Number(nextDeliveryNoteNumber) || 1, 1),
       numberPadding: paddingValue,
+      customerNumberTemplate,
+      nextCustomerNumber: Math.max(Number(nextCustomerNumber) || 1, 1),
     })
 
     if (!result.ok) {
@@ -212,7 +222,39 @@ function AdminEinstellungenPage() {
             onChange={(e) => setNumberPadding(e.target.value)}
             className="mt-2 w-32 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
           />
-          <p className="mt-1 text-xs text-slate-500">Z.B. 4 ergibt 0001, 0002, ...</p>
+          <p className="mt-1 text-xs text-slate-600">Z.B. 4 ergibt 0001, 0002, ...</p>
+        </div>
+
+        <div className="space-y-4 md:col-span-2 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Format Kundennummer</label>
+            <input
+              value={customerNumberTemplate}
+              onChange={(e) => setCustomerNumberTemplate(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
+            />
+            <p className="mt-1 text-xs text-slate-600">
+              Vorschau: {customerNumberPreview}. Gilt, wenn beim Anlegen keine Kundennummer eingetragen wird, und bei
+              der Selbstregistrierung. Bereits vergebene Nummern werden übersprungen.
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Nächste Kundennummer</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={nextCustomerNumber}
+              onChange={(e) => setNextCustomerNumber(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            />
+            {highestCustomerNumber !== null && (
+              <p className={`mt-1 text-xs ${nextCustomerNumberIsBelowHighest ? 'font-semibold text-amber-800' : 'text-slate-600'}`}>
+                Höchste vergebene Kundennummer: {highestCustomerNumber}.
+                {nextCustomerNumberIsBelowHighest && ' Die nächste Nummer liegt darunter – belegte Nummern werden übersprungen.'}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="md:col-span-2">

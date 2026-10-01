@@ -49,8 +49,6 @@ export { formatGeneratedNumber } from '../utils/numbering-format'
 export type FlowType = 'pickup' | 'dropoff'
 export type RecordType = FlowType | 'lkw'
 export type RecordStatus = 'offen' | 'lieferschein' | 'rechnung' | 'bezahlt' | 'storniert'
-export type PriceCategory = 'private' | 'business'
-
 // Every domain entity below lives in Supabase — see src/server/*.ts. Nothing
 // in this file touches localStorage; AppStateProvider is a thin TanStack
 // Query wrapper, not a data store.
@@ -61,7 +59,8 @@ export type Company = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  /** Where invoices are sent; empty for customers who don't have one yet. */
+  email: string
 }
 
 export type Product = {
@@ -69,18 +68,16 @@ export type Product = {
   name: string
   unit: string
   flow: FlowType
-  pickupPrivatePrice: number
-  pickupBusinessPrice: number
-  dropoffPrivatePrice: number
-  dropoffBusinessPrice: number
+  /** Net price per unit. */
+  price: number
   imageUrl: string | null
 }
 
 export type Truck = {
   id: number
   name: string
-  privatePrice: number
-  businessPrice: number
+  /** Net price per hour. */
+  price: number
 }
 
 export type ConstructionSite = {
@@ -124,6 +121,9 @@ export type NumberingSettings = {
   nextInvoiceNumber: number
   nextDeliveryNoteNumber: number
   numberPadding: number
+  customerNumberTemplate: string
+  nextCustomerNumber: number
+  highestCustomerNumber: number | null
 }
 
 export type SignupSettings = {
@@ -137,6 +137,9 @@ const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
   nextInvoiceNumber: 1,
   nextDeliveryNoteNumber: 1,
   numberPadding: 4,
+  customerNumberTemplate: '{NUMMER}',
+  nextCustomerNumber: 10600,
+  highestCustomerNumber: null,
 }
 
 const DEFAULT_SIGNUP_SETTINGS: SignupSettings = {
@@ -168,15 +171,14 @@ type CreateCompanyInput = {
   postalCode: string
   city: string
   pin: string
-  priceCategory: PriceCategory
+  email: string
 }
 
 type CreateProductInput = {
   name: string
   unit: string
   flow: FlowType
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type UpdateCompanyInput = {
@@ -186,7 +188,7 @@ type UpdateCompanyInput = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  email: string
 }
 
 type UpdateProductInput = {
@@ -194,8 +196,7 @@ type UpdateProductInput = {
   name: string
   unit: string
   flow: FlowType
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type DeleteCompanyInput = {
@@ -220,15 +221,13 @@ type RemoveProductImageInput = {
 
 type CreateTruckInput = {
   name: string
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type UpdateTruckInput = {
   id: number
   name: string
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type DeleteTruckInput = {
@@ -259,7 +258,7 @@ type SignUpInput = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  email: string
   pin: string
   pinConfirmation: string
 }

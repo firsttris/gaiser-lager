@@ -8,7 +8,12 @@ import { generateCustomerNumber } from './customer-number.server'
 
 export const PIN_HASH_ROUNDS = 12
 
-export const priceCategorySchema = z.enum(['private', 'business'])
+// Invoices will be e-mailed to this address. Required for new customers;
+// existing customers without one can still be edited (empty = none yet).
+export const companyEmailSchema = z.string().trim().pipe(z.email('Bitte eine gültige E-Mail-Adresse eingeben.'))
+const optionalCompanyEmailSchema = z.union([z.literal(''), companyEmailSchema])
+
+export const COMPANY_COLUMNS = 'id, name, customer_number, street, postal_code, city, email'
 
 // Postgres unique_violation — the only unique constraint on companies that a
 // user can hit is the customer number.
@@ -20,8 +25,8 @@ const createCompanySchema = z.object({
   street: z.string(),
   postalCode: z.string(),
   city: z.string(),
+  email: companyEmailSchema,
   pin: z.string().regex(/^\d{4}$/),
-  priceCategory: priceCategorySchema,
 })
 
 const updateCompanySchema = z.object({
@@ -31,7 +36,7 @@ const updateCompanySchema = z.object({
   street: z.string(),
   postalCode: z.string(),
   city: z.string(),
-  priceCategory: priceCategorySchema,
+  email: optionalCompanyEmailSchema,
 })
 
 const setCompanyPinSchema = z.object({
@@ -41,14 +46,14 @@ const setCompanyPinSchema = z.object({
 
 const deleteCompanySchema = z.object({ id: z.string().uuid() })
 
-function toCompany(row: {
+export function toCompany(row: {
   id: string
   name: string
   customer_number: string
   street: string
   postal_code: string
   city: string
-  price_category: 'private' | 'business'
+  email: string | null
 }) {
   return {
     id: row.id,
@@ -57,7 +62,7 @@ function toCompany(row: {
     street: row.street,
     postalCode: row.postal_code,
     city: row.city,
-    priceCategory: row.price_category,
+    email: row.email ?? '',
   }
 }
 
@@ -66,7 +71,7 @@ export const adminListCompanies = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('companies')
-      .select('id, name, customer_number, street, postal_code, city, price_category')
+      .select(COMPANY_COLUMNS)
       .order('name', { ascending: true })
 
     if (error || !data) return []
@@ -88,7 +93,7 @@ export const adminCreateCompany = createServerFn({ method: 'POST' })
       street: data.street.trim(),
       postal_code: data.postalCode.trim(),
       city: data.city.trim(),
-      price_category: data.priceCategory,
+      email: data.email,
       pin_hash: pinHash,
     })
 
@@ -116,7 +121,7 @@ export const adminUpdateCompany = createServerFn({ method: 'POST' })
         street: data.street.trim(),
         postal_code: data.postalCode.trim(),
         city: data.city.trim(),
-        price_category: data.priceCategory,
+        email: data.email || null,
       })
       .eq('id', data.id)
 

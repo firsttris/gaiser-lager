@@ -7,7 +7,7 @@ import { findOrCreateConstructionSite } from './construction-sites'
 import { formatGeneratedNumber } from '#/utils/numbering-format'
 import { berlinDayEndExclusive, berlinDayStart, formatBerlinDateTime } from '#/utils/berlin-time'
 import { roundCents } from '#/utils/money'
-import type { PriceCategory, RecordRow } from '#/lib/supabase/types'
+import type { RecordRow } from '#/lib/supabase/types'
 import type { RecordItem } from '../state/app-state'
 
 const createRecordSchema = z.object({
@@ -64,17 +64,6 @@ export function toRecord(row: RecordRow): RecordItem {
   }
 }
 
-function productUnitPrice(
-  product: { pickup_private_price: number; pickup_business_price: number; dropoff_private_price: number; dropoff_business_price: number },
-  type: 'pickup' | 'dropoff',
-  priceCategory: PriceCategory,
-) {
-  if (type === 'pickup') {
-    return priceCategory === 'private' ? product.pickup_private_price : product.pickup_business_price
-  }
-  return priceCategory === 'private' ? product.dropoff_private_price : product.dropoff_business_price
-}
-
 // Resolves which company a dual-mode call may act on. Customers can only
 // ever create records for their own company — any companyId they send is
 // ignored. Admins must explicitly say which company the record is for.
@@ -93,15 +82,16 @@ export const createRecord = createServerFn({ method: 'POST' })
     const supabase = getServiceSupabaseClient()
 
     const [{ data: company }, { data: product }] = await Promise.all([
-      supabase.from('companies').select('id, name, price_category').eq('id', companyId).maybeSingle(),
+      supabase.from('companies').select('id, name').eq('id', companyId).maybeSingle(),
       supabase.from('products').select('*').eq('id', data.productId).maybeSingle(),
     ])
-    if (!company || !product) return null
+    // A product belongs to exactly one flow (Abholung or Anlieferung).
+    if (!company || !product || product.flow !== data.type) return null
 
     const site = await findOrCreateConstructionSite(supabase, data.constructionSiteName)
     if (!site) return null
 
-    const unitPrice = productUnitPrice(product, data.type, company.price_category)
+    const unitPrice = product.price
     const total = roundCents(unitPrice * data.amount)
 
     const { data: numbering, error: numberingError } = await supabase.rpc('next_delivery_note_number')
@@ -142,7 +132,7 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
     const supabase = getServiceSupabaseClient()
 
     const [{ data: company }, { data: truck }] = await Promise.all([
-      supabase.from('companies').select('id, name, price_category').eq('id', companyId).maybeSingle(),
+      supabase.from('companies').select('id, name').eq('id', companyId).maybeSingle(),
       supabase.from('trucks').select('*').eq('id', data.truckId).maybeSingle(),
     ])
     if (!company || !truck) return null
@@ -150,7 +140,7 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
     const site = await findOrCreateConstructionSite(supabase, data.constructionSiteName)
     if (!site) return null
 
-    const unitPrice = company.price_category === 'private' ? truck.private_price : truck.business_price
+    const unitPrice = truck.price
     const total = roundCents(unitPrice * data.hours)
 
     const { data: numbering, error: numberingError } = await supabase.rpc('next_delivery_note_number')

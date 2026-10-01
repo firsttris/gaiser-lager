@@ -101,16 +101,7 @@ export function WizardFlow({
   const parsedAmount = Number(amount)
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0
   const validConstructionSiteName = constructionSiteName.trim().length > 0
-  const currentUnitPrice = selectedProduct
-    ? flowType === 'pickup'
-      ? selectedCompany?.priceCategory === 'private'
-        ? selectedProduct.pickupPrivatePrice
-        : selectedProduct.pickupBusinessPrice
-      : selectedCompany?.priceCategory === 'private'
-        ? selectedProduct.dropoffPrivatePrice
-        : selectedProduct.dropoffBusinessPrice
-    : 0
-  const priceCategoryLabel = selectedCompany?.priceCategory === 'private' ? 'Privat' : 'Unternehmen'
+  const currentUnitPrice = selectedProduct?.price ?? 0
   const total = validAmount ? parsedAmount * currentUnitPrice : 0
 
   async function submitRecord() {
@@ -238,9 +229,7 @@ export function WizardFlow({
         </div>
 
         <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-          Tarif: <strong>{priceCategoryLabel}</strong>
-          <br />
-          Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {selectedProduct?.unit}
+          Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {selectedProduct?.unit} (netto)
         </div>
 
         <div className="flex gap-2">
@@ -312,7 +301,7 @@ export function WizardFlow({
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Einzelpreis</dt>
             <dd className="font-semibold">
-              {money(currentUnitPrice)} ({priceCategoryLabel})
+              {money(currentUnitPrice)} (netto)
             </dd>
           </div>
           <div className="rounded-xl bg-amber-50 p-4">

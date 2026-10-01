@@ -15,7 +15,7 @@ gehen.
 | --- | --- | --- | --- | --- |
 | **0** ✅ | Sicherheit + offene Review-Fixes live bringen | P0, P3 (Sofortmaßnahme), P16 (teilweise) | ja (klein) | S |
 | **1** ✅ | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
-| **2** | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
+| **2** ✅ | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
 | **3** | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
 | **4** | Baustellen pro Firma + Mitarbeiter-Login + Lieferschein-Fotos | P3, P19 | ja | L |
 | **5** | E-Mail-Versand + Admin-Passwort | P10, P11 | ja | L |
@@ -140,6 +140,19 @@ sind nicht mehr auflistbar; der Admin-Bereich ist versteckt.
 ---
 
 ## Paket 2 – Datenmodell aufräumen
+
+> **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
+> Migration `20261002020000_package2_data_model.sql` **vor** dem Deploy
+> einspielen (alte Spalten bleiben, der alte Code läuft weiter). Die
+> Folge-Migration „alte Preisspalten + Tarifgruppe entfernen“ (Migration B)
+> wird erst nach dem Deploy und einer Kontrolle angelegt.
+> Zusätzlich erledigt: P12 für **Kunden, Material und LKW** (Bearbeiten im
+> Dialog, Tabellen ohne Breitenproblem); Baustellen folgen in Paket 3.
+> Gefunden und behoben: Die öffentliche Preisliste hatte die Überschriften
+> vertauscht (Verkaufsware stand unter „Anlieferungen“) und zeigte Preise im
+> englischen Format („€ 8.00“).
+> PLZ-Daten: GeoNames (CC BY 4.0, Quellenangabe unter den PLZ-Feldern),
+> aktualisierbar mit `node scripts/update-postal-codes.mjs`.
 
 **Ziel:** ein Preis, keine Tarifgruppe, E-Mail und konfigurierbare
 Kundennummern; Ort aus PLZ.

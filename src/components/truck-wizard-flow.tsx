@@ -44,12 +44,7 @@ export function TruckWizardFlow({
   const parsedHours = Number(hours)
   const validHours = Number.isFinite(parsedHours) && parsedHours > 0
   const validConstructionSiteName = constructionSiteName.trim().length > 0
-  const currentHourlyPrice = selectedTruck
-    ? company.priceCategory === 'private'
-      ? selectedTruck.privatePrice
-      : selectedTruck.businessPrice
-    : 0
-  const priceCategoryLabel = company.priceCategory === 'private' ? 'Privat' : 'Unternehmen'
+  const currentHourlyPrice = selectedTruck?.price ?? 0
   const total = validHours ? parsedHours * currentHourlyPrice : 0
 
   async function submitRecord() {
@@ -135,9 +130,7 @@ export function TruckWizardFlow({
         </div>
 
         <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-          Tarif: <strong>{priceCategoryLabel}</strong>
-          <br />
-          Stundenpreis: <strong>{money(currentHourlyPrice)}</strong> / Std.
+          Stundenpreis: <strong>{money(currentHourlyPrice)}</strong> / Std. (netto)
         </div>
 
         <div className="flex gap-2">
@@ -185,7 +178,7 @@ export function TruckWizardFlow({
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-500">Stundenpreis</dt>
             <dd className="font-semibold">
-              {money(currentHourlyPrice)} ({priceCategoryLabel})
+              {money(currentHourlyPrice)} (netto)
             </dd>
           </div>
           <div className="rounded-xl bg-amber-50 p-4">
