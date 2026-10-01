@@ -21,6 +21,8 @@ const TABLES_IN_DEPENDENCY_ORDER = [
   'records',
   // Only the metadata; the photo files themselves live in Supabase Storage.
   'delivery_note_photos',
+  'email_settings',
+  'invoice_emails',
 ] as const satisfies ReadonlyArray<TableName>
 
 // Tables with a serial/bigserial id column — after inserting explicit ids,
@@ -45,6 +47,8 @@ const ORDER_COLUMN: Record<(typeof TABLES_IN_DEPENDENCY_ORDER)[number], string> 
   admin_users: 'user_id',
   employees: 'id',
   delivery_note_photos: 'id',
+  email_settings: 'id',
+  invoice_emails: 'id',
   products: 'id',
   trucks: 'id',
   numbering_settings: 'id',
@@ -67,11 +71,20 @@ async function fetchAllRows(supabase: SupabaseClient<Database>, table: (typeof T
   }
 }
 
+// Left out of the dump: the SMTP password (encrypted with this installation's
+// key, must be entered again after a restore) and the log's identity column
+// (GENERATED ALWAYS, the restore assigns new ids).
+const OMITTED_COLUMNS: Partial<Record<(typeof TABLES_IN_DEPENDENCY_ORDER)[number], string[]>> = {
+  email_settings: ['smtp_password_encrypted'],
+  invoice_emails: ['id'],
+}
+
 async function dumpTable(supabase: SupabaseClient<Database>, table: (typeof TABLES_IN_DEPENDENCY_ORDER)[number]) {
   const rows = await fetchAllRows(supabase, table)
   if (rows.length === 0) return `-- Tabelle "${table}": keine Zeilen\n`
 
-  const columns = Object.keys(rows[0])
+  const omitted = OMITTED_COLUMNS[table] ?? []
+  const columns = Object.keys(rows[0]).filter((column) => !omitted.includes(column))
   const columnList = columns.map((c) => `"${c}"`).join(', ')
   const inserts = rows.map((row) => {
     const values = columns.map((col) => sqlLiteral(row[col]))

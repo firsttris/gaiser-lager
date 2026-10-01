@@ -25,7 +25,7 @@ const ROOT = path.resolve(import.meta.dirname, '..')
 const PROJECT_ID = /^project_id\s*=\s*"([^"]+)"/m.exec(fs.readFileSync(path.join(ROOT, 'supabase/config.toml'), 'utf8'))[1]
 const LOCAL_DB_CONTAINER = `supabase_db_${PROJECT_ID}`
 // Not needed for this app; skipping them keeps `db:start` fast and light.
-const EXCLUDED_SERVICES = 'studio,imgproxy,vector,logflare,edge-runtime,realtime,supavisor,mailpit,postgres-meta'
+const EXCLUDED_SERVICES = 'studio,imgproxy,vector,logflare,edge-runtime,realtime,supavisor,postgres-meta'
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 const PRODUCT_IMAGE_BUCKET = 'product-images'
 const DEV_ADMIN = { email: 'admin@gaiser.local', password: 'entwicklung' }
@@ -342,6 +342,18 @@ async function clone() {
     supabase(['migration', 'up', '--local'])
     console.log('  ✔ Neue Migrationen laufen fehlerfrei auf dem aktuellen Datenstand.')
   }
+
+  // Production's SMTP password must not live on a dev machine. (The app
+  // sends to the local Mailpit anyway as long as it runs against the local
+  // database, and the password is encrypted with production's key.)
+  const wipeSmtp = psqlLocal(`
+    do $$ begin
+      if to_regclass('public.email_settings') is not null then
+        update public.email_settings set smtp_password_encrypted = null;
+      end if;
+    end $$;
+  `)
+  if (!wipeSmtp.ok) fail(`SMTP-Passwort konnte lokal nicht entfernt werden:\n${wipeSmtp.error}`)
 
   await ensureDevAdmin(local)
   await copyProductImages(local, prod.supabaseUrl)

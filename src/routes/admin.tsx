@@ -2,7 +2,7 @@ import { Outlet, createFileRoute, Link, useLocation, useNavigate } from '@tansta
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { Blocks, Building2, Camera, Clock, HardHat, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
+import { Blocks, Building2, Camera, Clock, HardHat, LogOut, Mail, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
@@ -24,6 +24,7 @@ const settingsNavItems = [
   { to: '/admin/kunden', label: 'Kunden', icon: <Building2 className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/baustellen', label: 'Baustellen', icon: <MapPinned className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: <HardHat className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/e-mail', label: 'E-Mail', icon: <Mail className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: <Settings className="h-4 w-4" strokeWidth={2.25} /> },
 ]
 

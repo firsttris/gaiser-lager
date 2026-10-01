@@ -74,6 +74,36 @@ export type DeliveryNotePhotoRow = {
   processed_at: string | null
 }
 
+export type EmailSettingsRow = {
+  id: boolean
+  smtp_host: string
+  smtp_port: number
+  smtp_security: 'starttls' | 'tls'
+  smtp_user: string
+  smtp_password_encrypted: string | null
+  from_name: string
+  from_address: string
+  reply_to: string
+  bcc: string
+  invoice_subject_template: string
+  invoice_body_template: string
+  updated_at: string
+}
+
+export type InvoiceEmailRow = {
+  id: number
+  invoice_id: string
+  company_id: string | null
+  recipient: string
+  bcc: string
+  subject: string
+  e_invoice: boolean
+  status: 'sent' | 'failed'
+  error: string | null
+  message_id: string | null
+  sent_at: string
+}
+
 export type RecordRow = {
   id: number
   company_id: string
@@ -181,6 +211,19 @@ export type Database = {
         Insert: Omit<DeliveryNotePhotoRow, 'id' | 'created_at' | 'processed_at' | 'note'> &
           Partial<Pick<DeliveryNotePhotoRow, 'note' | 'processed_at'>>
         Update: Partial<Omit<DeliveryNotePhotoRow, 'id' | 'created_at'>>
+        Relationships: []
+      }
+      email_settings: {
+        Row: EmailSettingsRow
+        Insert: Partial<EmailSettingsRow>
+        Update: Partial<Omit<EmailSettingsRow, 'id'>>
+        Relationships: []
+      }
+      invoice_emails: {
+        Row: InvoiceEmailRow
+        Insert: Omit<InvoiceEmailRow, 'id' | 'sent_at' | 'bcc' | 'error' | 'message_id' | 'company_id'> &
+          Partial<Pick<InvoiceEmailRow, 'bcc' | 'error' | 'message_id' | 'company_id'>>
+        Update: never
         Relationships: []
       }
       records: {

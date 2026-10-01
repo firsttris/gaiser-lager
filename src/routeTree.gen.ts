@@ -17,6 +17,7 @@ import { Route as PreislisteRouteImport } from './routes/preisliste'
 import { Route as RegistrierenRouteImport } from './routes/registrieren'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
+import { Route as AdminEMailRouteImport } from './routes/admin.e-mail'
 import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
 import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
@@ -75,6 +76,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
   id: '/baustellen',
   path: '/baustellen',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEMailRoute = AdminEMailRouteImport.update({
+  id: '/e-mail',
+  path: '/e-mail',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
   '/admin/lieferscheine': typeof AdminLieferscheineRoute
@@ -270,6 +279,7 @@ export interface FileRouteTypes {
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
     | '/admin/lieferscheine'
@@ -412,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/baustellen'
       fullPath: '/admin/baustellen'
       preLoaderRoute: typeof AdminBaustellenRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/e-mail': {
+      id: '/admin/e-mail'
+      path: '/e-mail'
+      fullPath: '/admin/e-mail'
+      preLoaderRoute: typeof AdminEMailRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/einstellungen': {
@@ -552,6 +571,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBaustellenRoute: typeof AdminBaustellenRoute
+  AdminEMailRoute: typeof AdminEMailRoute
   AdminEinstellungenRoute: typeof AdminEinstellungenRoute
   AdminKundenRoute: typeof AdminKundenRoute
   AdminLieferscheineRoute: typeof AdminLieferscheineRoute
@@ -566,6 +586,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBaustellenRoute: AdminBaustellenRoute,
+  AdminEMailRoute: AdminEMailRoute,
   AdminEinstellungenRoute: AdminEinstellungenRoute,
   AdminKundenRoute: AdminKundenRoute,
   AdminLieferscheineRoute: AdminLieferscheineRoute,
