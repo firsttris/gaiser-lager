@@ -45,8 +45,7 @@ export type TruckRow = {
 export type ConstructionSiteRow = {
   id: string
   name: string
-  /** NULL only for legacy sites nobody used; see the package 4 migration. */
-  company_id: string | null
+  company_id: string
   created_at: string
 }
 

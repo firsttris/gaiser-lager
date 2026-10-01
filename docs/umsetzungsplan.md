@@ -144,8 +144,9 @@ sind nicht mehr auflistbar; der Admin-Bereich ist versteckt.
 > **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
 > Migration `20261002020000_package2_data_model.sql` **vor** dem Deploy
 > einspielen (alte Spalten bleiben, der alte Code läuft weiter). Die
-> Folge-Migration „alte Preisspalten + Tarifgruppe entfernen“ (Migration B)
-> wird erst nach dem Deploy und einer Kontrolle angelegt.
+> Folge-Migration `20261003010000_package2_drop_old_prices.sql` (alte
+> Preisspalten + Tarifgruppe weg) **nach** dem Deploy einspielen – nach
+> Absprache sofort, da noch kaum echte Daten vorhanden sind.
 > Zusätzlich erledigt: P12 für **Kunden, Material und LKW** (Bearbeiten im
 > Dialog, Tabellen ohne Breitenproblem); Baustellen folgen in Paket 3.
 > Gefunden und behoben: Die öffentliche Preisliste hatte die Überschriften
@@ -163,8 +164,8 @@ Kundennummern; Ort aus PLZ.
    - Code: nur noch `price`; Admin-Masken, Preisliste, Registrierung,
      Preisberechnung, Typen.
    - Deploy, kontrollieren.
-   - Migration B (später): alte Preisspalten und `companies.price_category`
-     entfernen.
+   - Migration B (`20261003010000`, nach dem Deploy): alte Preisspalten und
+     `companies.price_category` entfernen.
    - Vorher Liste der betroffenen bisherigen Privatkunden für Gaiser.
 2. **P9 E-Mail:** `companies.email`; Pflichtfeld bei Registrierung und im
    Admin; Kunden ohne E-Mail in der Liste markieren.
@@ -219,8 +220,9 @@ Kundennummern; Ort aus PLZ.
 > **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
 > Migration `20261003000000_package4_sites_employees_photos.sql` **vor** dem
 > Deploy einspielen, vorher `npm run db:clone` als Generalprobe.
-> Gewählte Standards (änderbar): Unbenutzte Altbaustellen bleiben „ohne
-> Kunde“ (nur Admin sieht sie, zuordnen oder löschen); Fotos werden vorerst
+> Entschieden: Nie benutzte Altbaustellen werden von der Migration gelöscht
+> (Kunden tragen sie einfach neu ein), jede Baustelle hat danach zwingend
+> einen Kunden. Gewählte Standards (änderbar): Fotos werden vorerst
 > unbegrenzt aufbewahrt; Fahrer-Login sichtbar auf der Startseite
 > („Mitarbeiter-Anmeldung (Fahrer)“), Name antippen + PIN, Inaktivitäts-Logout
 > wie bei Kunden. Abweichung vom Plan: Fotos werden auf dem Gerät auf

@@ -17,7 +17,6 @@ export const Route = createFileRoute('/admin/baustellen')({
 
 const INPUT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800'
 const SELECT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-800'
-const WITHOUT_COMPANY = 'none'
 
 function AdminSitesPage() {
   const {
@@ -42,14 +41,11 @@ function AdminSitesPage() {
 
   const sortedCompanies = useMemo(() => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')), [companies])
   const companyName = useMemo(() => new Map(companies.map((company) => [company.id, company.name])), [companies])
-  const sitesWithoutCompany = constructionSites.filter((site) => !site.companyId).length
   const visibleSites = constructionSites
-    .filter((site) =>
-      companyFilter === 'all' ? true : companyFilter === WITHOUT_COMPANY ? !site.companyId : site.companyId === companyFilter,
-    )
+    .filter((site) => companyFilter === 'all' || site.companyId === companyFilter)
     .sort(
       (a, b) =>
-        (companyName.get(a.companyId ?? '') ?? '~').localeCompare(companyName.get(b.companyId ?? '') ?? '~', 'de') ||
+        (companyName.get(a.companyId) ?? '').localeCompare(companyName.get(b.companyId) ?? '', 'de') ||
         a.name.localeCompare(b.name, 'de'),
     )
 
@@ -83,7 +79,7 @@ function AdminSitesPage() {
 
   function startEdit(site: ConstructionSite) {
     setEditName(site.name)
-    setEditCompanyId(site.companyId ?? '')
+    setEditCompanyId(site.companyId)
     setEditError('')
     setEditingSite(site)
   }
@@ -172,7 +168,6 @@ function AdminSitesPage() {
         Kunde
         <select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)} className={SELECT_CLASS}>
           <option value="all">Alle Kunden</option>
-          {sitesWithoutCompany > 0 && <option value={WITHOUT_COMPANY}>Ohne Kunde ({sitesWithoutCompany})</option>}
           {sortedCompanies.map((company) => (
             <option key={company.id} value={company.id}>
               {company.name}
@@ -180,13 +175,6 @@ function AdminSitesPage() {
           ))}
         </select>
       </label>
-
-      {sitesWithoutCompany > 0 && (
-        <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-900">
-          {sitesWithoutCompany} alte {sitesWithoutCompany === 1 ? 'Baustelle ist' : 'Baustellen sind'} noch keinem Kunden
-          zugeordnet und werden niemandem vorgeschlagen. Bitte zuordnen oder löschen.
-        </p>
-      )}
 
       <div className="mt-4 space-y-3">
         {visibleSites.map((site) => (
@@ -196,9 +184,7 @@ function AdminSitesPage() {
           >
             <div className="min-w-0">
               <p className="font-semibold wrap-break-word text-slate-900">{site.name}</p>
-              <p className={`text-sm ${site.companyId ? 'text-slate-700' : 'font-semibold text-amber-800'}`}>
-                {site.companyId ? (companyName.get(site.companyId) ?? '—') : 'ohne Kunde'}
-              </p>
+              <p className="text-sm text-slate-700">{companyName.get(site.companyId) ?? '—'}</p>
             </div>
             <div className="flex shrink-0 gap-2">
               <button

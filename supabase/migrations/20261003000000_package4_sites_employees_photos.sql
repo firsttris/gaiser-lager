@@ -63,13 +63,15 @@ begin
 end;
 $$;
 
--- 3. Sites nobody used (e.g. the examples from the initial setup) keep
---    company_id = NULL: invisible to customers, listed as "ohne Firma" for
---    the admin to assign or delete. Nothing is deleted automatically.
+-- 3. Sites nobody ever used (e.g. the examples from the initial setup) are
+--    deleted (decided with Gaiser: customers simply enter them again and
+--    they get assigned). No record references them, see steps 1 and 2.
+delete from public.construction_sites where company_id is null;
+
+alter table public.construction_sites alter column company_id set not null;
 
 create unique index construction_sites_company_name_idx
-  on public.construction_sites (company_id, lower(name))
-  where company_id is not null;
+  on public.construction_sites (company_id, lower(name));
 create index construction_sites_company_id_idx on public.construction_sites (company_id);
 
 -- The interim lookup from package 0 is replaced by the company_id column.

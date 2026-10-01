@@ -84,8 +84,7 @@ export type Truck = {
 export type ConstructionSite = {
   id: string
   name: string
-  /** null only for legacy sites nobody used (listed for admins as "ohne Firma"). */
-  companyId: string | null
+  companyId: string
 }
 
 export type RecordItem = {

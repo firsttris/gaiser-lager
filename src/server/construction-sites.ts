@@ -104,9 +104,8 @@ export const adminUpdateConstructionSite = createServerFn({ method: 'POST' })
     }
 
     const supabase = getServiceSupabaseClient()
-    // A site that already has Vorgänge stays with its company (assigning a
-    // legacy site without a company is fine).
-    if (currentSite.company_id && currentSite.company_id !== data.companyId) {
+    // A site that already has Vorgänge stays with its company.
+    if (currentSite.company_id !== data.companyId) {
       const { count } = await supabase
         .from('records')
         .select('id', { count: 'exact', head: true })
