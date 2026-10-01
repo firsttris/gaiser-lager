@@ -271,6 +271,18 @@ sind sauber pro Firma getrennt.
 
 ## Paket 5 – E-Mail-Versand und Admin-Passwort
 
+> **Stand:** umgesetzt und getestet (Branch `kundentermin`). SMTP-Daten trägt
+> Gaiser selbst unter Einstellungen → E-Mail ein (Testmail-Knopf dort).
+> Migration `20261004000000_package5_email.sql` **vor** dem Deploy.
+> Gewählte Standards (änderbar): ZUGFeRD-Profil EN 16931; eine Mail pro
+> Rechnung; BCC-Kopie optional in den Einstellungen; reiner Text; „Kunden-
+> objekt“ = Bauvorhaben (`{BAUVORHABEN}`); Stornorechnungen werden (noch)
+> nicht per Mail verschickt und sind noch keine E-Rechnung.
+> Getestet: Mustang-Validator (PDF/A-3b konform, EN-16931-Regeln 0 Fehler),
+> XSD-Prüfung im Unit-Test, Versand über Mailpit inkl. BCC, Anhang,
+> Versandprotokoll und „bereits gesendet“-Warnung.
+> Offen: „Passwort vergessen“ für Admins (braucht SMTP in Supabase Auth).
+
 **Voraussetzungen:** SMTP-Zugangsdaten von Gaiser; Entscheidung
 E-Rechnung (ZUGFeRD ja/nein); E-Mail-Adressen der Kunden gepflegt (P9).
 
@@ -312,7 +324,7 @@ Backup:
 | 8 | 2 | ein Preis: alte Spalten + Tarifgruppe entfernen (nach Kontrolle) | mittel, nicht umkehrbar → Backup |
 | 9 | 4 | Baustellen pro Firma inkl. Datenumzug | **hoch**, mehrfach gegen `db:clone` testen |
 | 10 | 4 | Mitarbeiter, `created_by_employee_id`, Lieferschein-Fotos | gering |
-| 11 | 5 | E-Mail-Einstellungen, Versandprotokoll | gering |
+| 11 | 5 | `20261004000000` E-Mail-Einstellungen, Versandprotokoll | gering |
 
 ## Testvorgehen (für alle Pakete)
 

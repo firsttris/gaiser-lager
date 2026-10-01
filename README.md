@@ -47,6 +47,9 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 - Gegen die lokale DB zeigt die App einen gelben Banner „Entwicklung“,
   `[DEV]` im Tab-Titel, und alle PDFs tragen das Wasserzeichen
   „ENTWICKLUNG – kein gültiger Beleg“.
+- E-Mails (Rechnungsversand, Testmail) gehen gegen die lokale DB **immer**
+  an das lokale Mailpit (http://127.0.0.1:54324), nie an einen echten
+  Server. `db:clone` löscht zusätzlich das SMTP-Passwort aus der Kopie.
 
 ### Hinweise
 
@@ -69,6 +72,14 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 - **Datumsangaben** werden immer in deutscher Zeit (`Europe/Berlin`)
   angezeigt, gefiltert und in Belegnummern eingesetzt, unabhängig von der
   Zeitzone des Servers (`src/utils/berlin-time.ts`).
+- **Rechnungs-PDFs** entstehen auf dem Server (`src/server/e-invoice.ts`) als
+  ZUGFeRD-E-Rechnung (Profil EN 16931, PDF/A-3 mit eingebetteter Schrift).
+  Geprüft mit dem Mustang-Validator; ohne vollständige Kundenanschrift gibt
+  es ein normales PDF. Lieferscheine und Stornos erzeugt weiter der Browser.
+- **E-Mail-Versand:** SMTP-Daten und Vorlage unter Einstellungen → E-Mail.
+  Das SMTP-Passwort liegt AES-verschlüsselt in der Datenbank, der Schlüssel
+  wird aus `SESSION_SECRET` abgeleitet (wer `SESSION_SECRET` ändert, muss das
+  Passwort neu eingeben). Jeder Versuch steht in `invoice_emails`.
 - **Vorgänge** speichern Produkt-, Baustellen- und Firmennamen als Kopie.
   Umbenennungen in den Stammdaten wirken nur auf noch nicht abgerechnete
   Vorgänge, gestellte Rechnungen bleiben unverändert.

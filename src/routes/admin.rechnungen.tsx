@@ -1,10 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
-import { Ban, CheckCircle2, FileSpreadsheet, Receipt } from 'lucide-react'
+import { Ban, CheckCircle2, FileSpreadsheet, Mail, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
+import { InvoiceEmailDialog } from '../components/invoice-email-dialog'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
@@ -18,7 +19,7 @@ import { downloadInvoicePdf } from '../utils/invoice-download'
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
-import { berlinIsoDate } from '../utils/berlin-time'
+import { berlinIsoDate, formatBerlinDate } from '../utils/berlin-time'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -41,6 +42,8 @@ function AdminRechnungenPage() {
   const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
+  const [emailInvoiceIds, setEmailInvoiceIds] = useState<string[] | null>(null)
+  const queryClient = useQueryClient()
 
   const companyOptions = useMemo(
     () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
@@ -73,6 +76,15 @@ function AdminRechnungenPage() {
   const totalCountQuery = useQuery({ queryKey: ['invoice-groups', 'count'] as const, queryFn: () => countAllInvoiceGroups() })
 
   const pageGroups = groupsQuery.data?.groups ?? []
+  const emailedAt = groupsQuery.data?.emailedAt ?? {}
+
+  function extraBadges(items: RecordItem[]) {
+    const sentAt = items[0].invoiceId ? emailedAt[items[0].invoiceId] : undefined
+    return [
+      ...reverseChargeExtraBadges(items),
+      ...(sentAt ? [{ label: `✉ ${formatBerlinDate(sentAt)}`, className: 'bg-sky-100 text-sky-800' }] : []),
+    ]
+  }
   const filteredCount = groupsQuery.data?.totalCount ?? 0
   const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize))
 
@@ -248,6 +260,11 @@ function AdminRechnungenPage() {
               onClick: () => void downloadSelectedInvoices(),
             },
             {
+              label: 'Per E-Mail senden',
+              icon: <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              onClick: () => setEmailInvoiceIds(selectedGroups.map((g) => g.id)),
+            },
+            {
               label: 'Stornieren',
               icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
               onClick: () => setPendingAction({
@@ -286,7 +303,7 @@ function AdminRechnungenPage() {
               groups={pageGroups}
               showCompanyColumn
               getBadge={invoiceBadge}
-              getExtraBadges={reverseChargeExtraBadges}
+              getExtraBadges={extraBadges}
               renderDateien={renderDateien}
               selectedIds={selectedIds}
               onSelectionChange={toggleSelection}
@@ -307,6 +324,17 @@ function AdminRechnungenPage() {
         onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
+
+      {emailInvoiceIds && (
+        <InvoiceEmailDialog
+          invoiceIds={emailInvoiceIds}
+          onClose={() => setEmailInvoiceIds(null)}
+          onSent={() => {
+            clearSelection()
+            void queryClient.invalidateQueries({ queryKey: ['invoice-groups'] })
+          }}
+        />
+      )}
     </section>
   )
 }

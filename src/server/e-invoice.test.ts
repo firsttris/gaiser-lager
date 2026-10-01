@@ -76,3 +76,15 @@ describe('ZUGFeRD e-invoice', () => {
     expect(rendered.eInvoice).toBe(false)
   })
 })
+
+describe('invoice e-mail', () => {
+  it('fills subject and text from the invoice', async () => {
+    const { buildInvoiceEmail } = await import('./invoice-email-content')
+    const mail = buildInvoiceEmail(buildInvoiceDocument('RG-1', records, company), {
+      invoice_subject_template: 'Rechnung {RECHNUNGSNUMMER}\n({KUNDE})',
+      invoice_body_template: '{BETRAG} bis {FAELLIG_AM}, {BAUVORHABEN}, {LIEFERSCHEINE}, Datum {RECHNUNGSDATUM}',
+    })
+    expect(mail.subject).toBe('Rechnung RG-1 (Muster Bau GmbH)')
+    expect(mail.text).toBe('909,04 € bis 15.10.2026, Nordring 12, LS-1, LS-2, Datum 1.10.2026')
+  })
+})

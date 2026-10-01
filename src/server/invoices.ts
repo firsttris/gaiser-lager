@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAnySession } from './auth-context'
 import { toRecord } from './records'
+import { lastSentAtByInvoice } from './invoice-email'
 import { berlinDayEndExclusive, berlinDayStart } from '#/utils/berlin-time'
 
 const listInvoiceGroupsPageSchema = z.object({
@@ -29,7 +30,7 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
     // Invoices are for the office and the customer, not for drivers.
-    if (caller.role === 'employee') return { groups: [], totalCount: 0 }
+    if (caller.role === 'employee') return { groups: [], totalCount: 0, emailedAt: {} as Record<string, string> }
     const supabase = getServiceSupabaseClient()
 
     let query = supabase.from('invoice_groups').select('*', { count: 'exact' })
@@ -46,7 +47,7 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
       .range(from, from + data.pageSize - 1)
 
     if (error || !groupRows || groupRows.length === 0) {
-      return { groups: [], totalCount: count ?? 0 }
+      return { groups: [], totalCount: count ?? 0, emailedAt: {} as Record<string, string> }
     }
 
     const invoiceIds = groupRows.map((g) => g.invoice_id)
@@ -63,8 +64,10 @@ export const listInvoiceGroupsPage = createServerFn({ method: 'GET' })
       itemsByInvoice.set(row.invoice_id!, list)
     }
 
+    // When the invoice was last e-mailed (only the office sees that).
+    const sentAt = caller.role === 'admin' ? await lastSentAtByInvoice(supabase, invoiceIds) : new Map<string, string>()
     const groups = groupRows.map((g) => ({ id: g.invoice_id, items: itemsByInvoice.get(g.invoice_id) ?? [] }))
-    return { groups, totalCount: count ?? 0 }
+    return { groups, totalCount: count ?? 0, emailedAt: Object.fromEntries(sentAt) as Record<string, string> }
   })
 
 export const countAllInvoiceGroups = createServerFn({ method: 'GET' }).handler(async () => {
