@@ -13,7 +13,8 @@ import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadInvoicePdf } from '../utils/invoice-download'
 import { berlinIsoDate } from '../utils/berlin-time'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
@@ -70,10 +71,10 @@ function RechnungenPage() {
     downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
   }
 
-  async function handleInvoiceDownload(id: string, items: RecordItem[], deliveryNoteRefs: string) {
+  async function handleInvoiceDownload(id: string) {
     setDownloadingDocId(id)
     try {
-      await downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+      await downloadInvoicePdf(id)
     } finally {
       setDownloadingDocId(null)
     }
@@ -81,20 +82,18 @@ function RechnungenPage() {
 
   async function downloadSelectedInvoices() {
     for (const group of selectedGroups) {
-      const deliveryNoteRefs = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
-      await handleInvoiceDownload(group.id, group.items, deliveryNoteRefs)
+      await handleInvoiceDownload(group.id)
     }
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const deliveryNoteRefs = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => void handleInvoiceDownload(id, items, deliveryNoteRefs)}
+          onClick={() => void handleInvoiceDownload(id)}
           loading={downloadingDocId === id}
         />
         {cancelId && (

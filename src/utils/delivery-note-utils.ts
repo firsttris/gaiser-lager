@@ -8,7 +8,18 @@ import { isDevelopmentDatabase } from './environment'
 const LOGO_URL = `${import.meta.env.BASE_URL}assets/Logo.jpeg`
 const LOGO_ASPECT_RATIO = 303 / 873
 
-const COMPANY_INFO = {
+// Invoices are rendered on the server with an embedded font (PDF/A-3 for
+// ZUGFeRD forbids non-embedded fonts); every other document keeps jsPDF's
+// built-in Helvetica. Liberation Sans has the same metrics, so the layout is
+// identical either way.
+export const EMBEDDED_FONT_FAMILY = 'LiberationSans'
+
+function setFont(pdf: jsPDF, style: 'normal' | 'bold' | 'italic' | 'bolditalic') {
+  const family = EMBEDDED_FONT_FAMILY in pdf.getFontList() ? EMBEDDED_FONT_FAMILY : 'helvetica'
+  pdf.setFont(family, style)
+}
+
+export const COMPANY_INFO = {
   name: 'Gaiser GmbH Erdbau und Abbruch',
   street: 'Hansjakobweg 14',
   city: '77830 Bühlertal',
@@ -46,7 +57,7 @@ function formatQty(value: number) {
   return value.toLocaleString('de-DE', { maximumFractionDigits: 2 })
 }
 
-type InvoiceLineItem = {
+export type InvoiceLineItem = {
   type: RecordItem['type']
   productName: string
   unit: string
@@ -91,7 +102,7 @@ function drawLetterhead(pdf: jsPDF, left: number, right: number, logoDataUrl: st
   pdf.addImage(logoDataUrl, 'JPEG', right - logoWidth, 12, logoWidth, logoHeight)
 
   let y = 12 + logoHeight + 4
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(9)
   pdf.text(COMPANY_INFO.street, logoCenterX, y, { align: 'center' })
   y += 4.5
@@ -103,7 +114,7 @@ function drawLetterhead(pdf: jsPDF, left: number, right: number, logoDataUrl: st
   const addressBottom = y
 
   y = 38
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.setFontSize(7)
   pdf.setTextColor(120)
   pdf.text(`${COMPANY_INFO.name} | ${COMPANY_INFO.street} | ${COMPANY_INFO.city}`, left, y)
@@ -123,31 +134,31 @@ function drawCompanyFooter(pdf: jsPDF) {
   pdf.line(left, y, right, y)
 
   let fy = y + 5
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(7.5)
   pdf.text(COMPANY_INFO.name, left, fy)
   pdf.text(COMPANY_INFO.taxOffice, col2, fy)
   pdf.text('Bankverbindungen:', col3, fy)
 
   fy += 4
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.text(COMPANY_INFO.street, left, fy)
   pdf.text(`Umsatzsteuer-ID: ${COMPANY_INFO.vatId}`, col2, fy)
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.text(COMPANY_INFO.banks[0].name, col3, fy)
 
   fy += 4
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.text(COMPANY_INFO.city, left, fy)
   pdf.text(`SWIFT-BIC: ${COMPANY_INFO.banks[0].bic} | IBAN: ${COMPANY_INFO.banks[0].iban}`, col3, fy)
 
   fy += 4
   pdf.text(`Tel: ${COMPANY_INFO.phone}`, left, fy)
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.text(`${COMPANY_INFO.banks[1].name}:`, col3, fy)
 
   fy += 4
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.text(COMPANY_INFO.email, left, fy)
   pdf.text(`SWIFT-BIC: ${COMPANY_INFO.banks[1].bic} | IBAN: ${COMPANY_INFO.banks[1].iban}`, col3, fy)
 
@@ -198,7 +209,7 @@ function drawRecipientAndMeta(
   const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
 
   let y = 38 + 7
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.setFontSize(11)
   pdf.text(customerName, left, y)
 
@@ -214,16 +225,16 @@ function drawRecipientAndMeta(
   }
 
   const metaLabelX = 122
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(9)
   const metaValueX = metaLabelX + Math.max(...metaRows.map(([label]) => pdf.getTextWidth(label))) + 3
 
   let metaY = addressBottom + 8
   let seiteY = metaY
   for (const [label, value] of metaRows) {
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.text(label, metaLabelX, metaY)
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.text(value, metaValueX, metaY)
     if (label === 'Seite:') seiteY = metaY
     metaY += 5
@@ -236,12 +247,12 @@ function drawRecipientAndMeta(
 // note numbers) wrap instead of running off the page. Returns the next y.
 function drawDetailRows(pdf: jsPDF, left: number, right: number, y: number, rows: Array<[string, string]>) {
   pdf.setFontSize(9.5)
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   const valueX = left + Math.max(...rows.map(([label]) => pdf.getTextWidth(label))) + 3
   for (const [label, value] of rows) {
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.text(label, left, y)
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     const lines: string[] = pdf.splitTextToSize(value, right - valueX)
     pdf.text(lines, valueX, y)
     y += 5 * lines.length
@@ -255,7 +266,7 @@ function drawDevelopmentWatermark(pdf: jsPDF) {
   if (!isDevelopmentDatabase) return
   pdf.saveGraphicsState()
   pdf.setGState(new GState({ opacity: 0.18 }))
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(46)
   pdf.setTextColor(220, 38, 38)
   pdf.text('ENTWICKLUNG', 105, 150, { align: 'center', angle: 35 })
@@ -277,29 +288,47 @@ function finishPages(pdf: jsPDF, right: number, meta: { metaLabelX: number; meta
     pdf.setPage(1)
     pdf.setFillColor(255, 255, 255)
     pdf.rect(meta.metaLabelX, meta.seiteY - 3.5, right - meta.metaLabelX, 5, 'F')
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(9)
     pdf.text('Seite:', meta.metaLabelX, meta.seiteY)
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.text(`1 von ${totalPages}`, meta.metaValueX, meta.seiteY)
   }
 }
 
-export async function downloadInvoicePdf(
-  invoiceRecords: RecordItem[],
-  customer: InvoiceCustomer | undefined,
-  deliveryNoteId: string | undefined,
-  invoiceNo: string,
-  reverseCharge = false,
-): Promise<string> {
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' })
+// Line items and totals of an invoice — shared by the PDF and the ZUGFeRD
+// data embedded in it, so both always show the same amounts.
+export function computeInvoiceTotals(invoiceRecords: RecordItem[], reverseCharge: boolean) {
+  const lineItems = aggregateInvoiceLineItems(invoiceRecords).map((item) => ({ ...item, total: roundCents(item.total) }))
+  const subtotal = lineItems.reduce((sum, item) => roundCents(sum + item.total), 0)
+  const vat = reverseCharge ? 0 : roundCents(subtotal * VAT_RATE)
+  return { lineItems, subtotal, vat, gross: roundCents(subtotal + vat) }
+}
+
+export type InvoicePdfInput = {
+  records: RecordItem[]
+  customer: InvoiceCustomer | undefined
+  /** Delivery note numbers, comma separated. */
+  deliveryNoteRefs: string | undefined
+  invoiceNo: string
+  reverseCharge: boolean
+  logoDataUrl: string
+}
+
+export function invoicePdfFileName(invoiceNo: string) {
+  return `rechnung-${toSafeFileDate(invoiceNo)}.pdf`
+}
+
+// Draws the invoice into `pdf` (rendered on the server, see
+// src/server/invoice-documents.server.ts).
+export function drawInvoicePdf(pdf: jsPDF, input: InvoicePdfInput) {
+  const { records: invoiceRecords, customer, deliveryNoteRefs: deliveryNoteId, invoiceNo, reverseCharge, logoDataUrl } = input
   const left = 15
   const right = 195
 
   const customerName = invoiceRecords[0].company
   const invoiceDate = documentDate(invoiceRecords[0].invoicedAt)
 
-  const logoDataUrl = await loadLogoDataUrl()
   const metaRows: Array<[string, string]> = [
     ['Rechnungs-Nr.:', invoiceNo],
     ['Datum:', invoiceDate],
@@ -309,7 +338,7 @@ export async function downloadInvoicePdf(
 
   const meta = drawRecipientAndMeta(pdf, left, right, logoDataUrl, customerName, customer, metaRows)
   let y = meta.y
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(20)
   pdf.text(reverseCharge ? 'Rechnung §13b' : 'Rechnung', left, y)
 
@@ -327,7 +356,7 @@ export async function downloadInvoicePdf(
 
   y += 9
   pdf.setFontSize(9.5)
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.text('Wir bedanken uns für die gute Zusammenarbeit und stellen Ihnen folgende Leistungen in Rechnung:', left, y)
 
   y += 8
@@ -341,7 +370,7 @@ export async function downloadInvoicePdf(
     gesamtpreis: right,
   }
 
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(9)
   pdf.setFillColor(191, 191, 191)
   pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
@@ -357,14 +386,11 @@ export async function downloadInvoicePdf(
   pdf.line(left, y, right, y)
   y += 7
 
-  const lineItems = aggregateInvoiceLineItems(invoiceRecords)
-  let subtotal = 0
-  pdf.setFont('helvetica', 'normal')
+  const { lineItems, subtotal, vat, gross } = computeInvoiceTotals(invoiceRecords, reverseCharge)
+  setFont(pdf, 'normal')
   pdf.setFontSize(9)
 
   for (const [index, item] of lineItems.entries()) {
-    subtotal = roundCents(subtotal + item.total)
-
     if (y > 245) {
       pdf.addPage()
       y = 20
@@ -393,7 +419,7 @@ export async function downloadInvoicePdf(
   pdf.line(left, y, right, y)
   y += 7
 
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(11)
 
   if (reverseCharge) {
@@ -403,7 +429,7 @@ export async function downloadInvoicePdf(
     pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
 
     y += 10
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(9.5)
     pdf.text('Bei den oben genannten Leistungen handelt es sich um eine Bauleistung im Sinne von § 13b UStG', left, y)
     y += 5
@@ -411,18 +437,15 @@ export async function downloadInvoicePdf(
     y += 9
     pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
   } else {
-    const vat = roundCents(subtotal * VAT_RATE)
-    const gross = roundCents(subtotal + vat)
-
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.setFontSize(10)
     pdf.text('Zwischensumme (netto)', cols.pos, y)
     pdf.text(money(subtotal), cols.gesamtpreis, y, { align: 'right' })
     y += 6
-    pdf.text('zzgl. 19% USt.', cols.pos, y)
+    pdf.text(`zzgl. ${Math.round(VAT_RATE * 100)}% USt.`, cols.pos, y)
     pdf.text(money(vat), cols.gesamtpreis, y, { align: 'right' })
     y += 7
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(11)
     pdf.text('Gesamtbetrag', cols.pos, y)
     pdf.text(money(gross), cols.gesamtpreis, y, { align: 'right' })
@@ -430,16 +453,12 @@ export async function downloadInvoicePdf(
     pdf.line(cols.einzelpreis, y, cols.gesamtpreis, y)
 
     y += 10
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(9.5)
     pdf.text('Zahlbar innerhalb von 14 Tagen ab Rechnungsstellung', left, y)
   }
 
   finishPages(pdf, right, meta)
-
-  pdf.save(`rechnung-${toSafeFileDate(invoiceNo)}.pdf`)
-
-  return invoiceNo
 }
 
 // Cancellation document for either one invoice (Stornorechnung, mirrors the
@@ -467,7 +486,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
   const meta = drawRecipientAndMeta(pdf, left, right, logoDataUrl, records[0].company, customer, metaRows)
   let y = meta.y
 
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(20)
   pdf.text(isInvoiceCancellation ? (reverseCharge ? 'Stornorechnung §13b' : 'Stornorechnung') : 'Storno Lieferschein', left, y)
 
@@ -501,7 +520,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
   }
 
   function drawTableHeader() {
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(9)
     pdf.setFillColor(191, 191, 191)
     pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
@@ -516,7 +535,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
     pdf.setDrawColor(180)
     pdf.line(left, y, right, y)
     y += 7
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
   }
 
   drawTableHeader()
@@ -558,7 +577,7 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
     const vat = roundCents(subtotal * VAT_RATE)
     const gross = roundCents(subtotal + vat)
 
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.setFontSize(10)
     pdf.text('Zwischensumme (netto)', cols.pos, y)
     pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
@@ -566,12 +585,12 @@ export async function downloadStornoDoc(records: RecordItem[], customer?: Invoic
     pdf.text(`zzgl. ${Math.round(VAT_RATE * 100)}% USt.`, cols.pos, y)
     pdf.text(money(-vat), cols.gesamtpreis, y, { align: 'right' })
     y += 7
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(11)
     pdf.text('Gutschriftsbetrag', cols.pos, y)
     pdf.text(money(-gross), cols.gesamtpreis, y, { align: 'right' })
   } else {
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(11)
     pdf.text(isInvoiceCancellation ? 'Gutschriftsbetrag' : 'Gesamtbetrag (netto)', cols.pos, y)
     pdf.text(money(-subtotal), cols.gesamtpreis, y, { align: 'right' })
@@ -597,7 +616,7 @@ export function toSafeFileDate(value: string) {
 
 function drawDeliveryNoteSignatureBlock(pdf: jsPDF, left: number, right: number) {
   const y = 244
-  pdf.setFont('helvetica', 'italic')
+  setFont(pdf, 'italic')
   pdf.setFontSize(9.5)
   pdf.setTextColor(0)
   pdf.text('Ware ordnungsgemäß erhalten.', left, y)
@@ -611,7 +630,7 @@ function drawDeliveryNoteSignatureBlock(pdf: jsPDF, left: number, right: number)
   pdf.setFontSize(9)
   pdf.text('Datum', left, dashY + 5)
   pdf.text('Unterschrift', left + 70, dashY + 5)
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
 }
 
 export async function downloadCombinedDeliveryNote(
@@ -640,7 +659,7 @@ export async function downloadCombinedDeliveryNote(
 
   const metaLabelX = 122
   const metaLabels = ['Lieferschein-Nr.:', 'Datum:', 'Kunden-Nr.:', 'Seite:']
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(9)
   const metaValueX = metaLabelX + Math.max(...metaLabels.map((label) => pdf.getTextWidth(label))) + 3
 
@@ -648,7 +667,7 @@ export async function downloadCombinedDeliveryNote(
     const addressBottom = drawLetterhead(pdf, left, right, logoDataUrl)
 
     let addressY = 38 + 7
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.setFontSize(11)
     pdf.text(companyName, left, addressY)
 
@@ -667,10 +686,10 @@ export async function downloadCombinedDeliveryNote(
     let metaY = Math.max(addressBottom, addressY) + 8
     let seiteY = metaY
     for (const [index, label] of metaLabels.entries()) {
-      pdf.setFont('helvetica', 'bold')
+      setFont(pdf, 'bold')
       pdf.setFontSize(9)
       pdf.text(label, metaLabelX, metaY)
-      pdf.setFont('helvetica', 'normal')
+      setFont(pdf, 'normal')
       pdf.text(metaValues[index], metaValueX, metaY)
       if (label === 'Seite:') seiteY = metaY
       metaY += 5
@@ -678,23 +697,23 @@ export async function downloadCombinedDeliveryNote(
 
     let y = metaY + 3
     if (isFirstPage) {
-      pdf.setFont('helvetica', 'bold')
+      setFont(pdf, 'bold')
       pdf.setFontSize(20)
       pdf.text('Lieferschein', left, y)
       y += 9
       pdf.setFontSize(9.5)
       pdf.text('Kunde:', left, y)
-      pdf.setFont('helvetica', 'normal')
+      setFont(pdf, 'normal')
       pdf.text(companyName, left + pdf.getTextWidth('Bauvorhaben:') + 3, y)
       y += 5
-      pdf.setFont('helvetica', 'bold')
+      setFont(pdf, 'bold')
       pdf.text('Bauvorhaben:', left, y)
-      pdf.setFont('helvetica', 'normal')
+      setFont(pdf, 'normal')
       pdf.text(bauvorhaben, left + pdf.getTextWidth('Bauvorhaben:') + 3, y)
       y += 8
     }
 
-    pdf.setFont('helvetica', 'bold')
+    setFont(pdf, 'bold')
     pdf.setFontSize(9)
     pdf.setFillColor(191, 191, 191)
     pdf.rect(left, y - 4.5, right - left, 6.5, 'F')
@@ -713,7 +732,7 @@ export async function downloadCombinedDeliveryNote(
   const seiteYs = [seiteY]
 
   let total = 0
-  pdf.setFont('helvetica', 'normal')
+  setFont(pdf, 'normal')
   pdf.setFontSize(9)
 
   for (const [index, record] of records.entries()) {
@@ -722,7 +741,7 @@ export async function downloadCombinedDeliveryNote(
       const header = drawPageHeader(false)
       y = header.tableTop
       seiteYs.push(header.seiteY)
-      pdf.setFont('helvetica', 'normal')
+      setFont(pdf, 'normal')
       pdf.setFontSize(9)
     }
 
@@ -753,7 +772,7 @@ export async function downloadCombinedDeliveryNote(
   pdf.line(left, y, right, y)
   y += 7
 
-  pdf.setFont('helvetica', 'bold')
+  setFont(pdf, 'bold')
   pdf.setFontSize(11)
   pdf.text('Gesamtbetrag', cols.pos, y)
   pdf.text(money(total), cols.gesamtpreis, y, { align: 'right' })
@@ -772,7 +791,7 @@ export async function downloadCombinedDeliveryNote(
     pdf.setPage(page)
     pdf.setFillColor(255, 255, 255)
     pdf.rect(metaValueX - 1, seiteYs[page - 1] - 3.5, right - metaValueX + 1, 5, 'F')
-    pdf.setFont('helvetica', 'normal')
+    setFont(pdf, 'normal')
     pdf.setFontSize(9)
     pdf.text(`${page} von ${totalPages}`, metaValueX, seiteYs[page - 1])
   }

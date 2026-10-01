@@ -13,7 +13,8 @@ import { SelectionActionBar } from '../components/selection-action-bar'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadInvoicePdf } from '../utils/invoice-download'
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
@@ -124,16 +125,14 @@ function AdminRechnungenPage() {
 
   async function downloadSelectedInvoices() {
     for (const group of selectedGroups) {
-      const customer = companyById(group.items[0].companyId)
-      const deliveryNoteIds = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
-      await handleInvoiceDownload(group.id, group.items, customer, deliveryNoteIds.join(', '))
+      await handleInvoiceDownload(group.id)
     }
   }
 
-  async function handleInvoiceDownload(id: string, items: RecordItem[], customer: ReturnType<typeof companies.find>, deliveryNoteRefs: string) {
+  async function handleInvoiceDownload(id: string) {
     setDownloadingDocId(id)
     try {
-      await downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+      await downloadInvoicePdf(id)
     } finally {
       setDownloadingDocId(null)
     }
@@ -153,13 +152,12 @@ function AdminRechnungenPage() {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const customer = companyById(items[0].companyId)
     const deliveryNoteIds = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
-    const deliveryNoteRefs = deliveryNoteIds.join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => void handleInvoiceDownload(id, items, customer, deliveryNoteRefs)}
+          onClick={() => void handleInvoiceDownload(id)}
           loading={downloadingDocId === id}
         />
         {deliveryNoteIds.map((deliveryNoteId) => (

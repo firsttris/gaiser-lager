@@ -15,7 +15,8 @@ import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
 import { berlinIsoDate } from '../utils/berlin-time'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadInvoicePdf } from '../utils/invoice-download'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
 
@@ -160,10 +161,7 @@ function AdminVorgaengePage() {
   async function handleInvoiceClick(invoiceId: string) {
     setDownloadingDocId(invoiceId)
     try {
-      const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
-      if (!group.length) return
-      const deliveryNoteRefs = [...new Set(group.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
-      await downloadInvoicePdf(group, companyById(group[0].companyId), deliveryNoteRefs, invoiceId, group[0].invoiceReverseCharge)
+      await downloadInvoicePdf(invoiceId)
     } finally {
       setDownloadingDocId(null)
     }
