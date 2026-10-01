@@ -80,3 +80,17 @@ create index invoice_emails_invoice_id_idx on public.invoice_emails (invoice_id,
 alter table public.invoice_emails enable row level security;
 revoke all on public.invoice_emails from anon, authenticated;
 grant select, insert on public.invoice_emails to service_role;
+
+-- Admin "Passwort vergessen": every request, for the rate limit (rows older
+-- than a day are deleted on the next request).
+create table public.password_reset_requests (
+  id           bigint generated always as identity primary key,
+  email        text not null,
+  requested_at timestamptz not null default now()
+);
+
+create index password_reset_requests_email_idx on public.password_reset_requests (lower(email), requested_at desc);
+
+alter table public.password_reset_requests enable row level security;
+revoke all on public.password_reset_requests from anon, authenticated;
+grant select, insert, delete on public.password_reset_requests to service_role;

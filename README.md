@@ -81,6 +81,12 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
   Das SMTP-Passwort liegt AES-verschlüsselt in der Datenbank, der Schlüssel
   wird aus `SESSION_SECRET` abgeleitet (wer `SESSION_SECRET` ändert, muss das
   Passwort neu eingeben). Jeder Versuch steht in `invoice_emails`.
+- **Admin-Passwort vergessen** (`/passwort-vergessen`): Supabase erzeugt das
+  Einmal-Token, die Mail geht über die eigenen SMTP-Einstellungen. Der Link
+  wird nie aus dem Host-Header gebaut, sondern aus `APP_URL` bzw. auf Vercel
+  automatisch aus `VERCEL_PROJECT_PRODUCTION_URL` (Systemvariablen müssen im
+  Vercel-Projekt freigegeben sein, Standard). Eigene Domain? → `APP_URL`
+  setzen, z.B. `https://dashboard.gaiser-abbruch.de`.
 - **Vorgänge** speichern Produkt-, Baustellen- und Firmennamen als Kopie.
   Umbenennungen in den Stammdaten wirken nur auf noch nicht abgerechnete
   Vorgänge, gestellte Rechnungen bleiben unverändert.

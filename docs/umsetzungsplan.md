@@ -287,7 +287,11 @@ sind sauber pro Firma getrennt.
 > Getestet: Mustang-Validator (PDF/A-3b konform, EN-16931-Regeln 0 Fehler),
 > XSD-Prüfung im Unit-Test, Versand über Mailpit inkl. BCC, Anhang,
 > Versandprotokoll und „bereits gesendet“-Warnung.
-> Offen: „Passwort vergessen“ für Admins (braucht SMTP in Supabase Auth).
+> „Passwort vergessen“ für Admins: Link im Admin-Login → `/passwort-vergessen`;
+> Supabase erzeugt das Einmal-Token (1 Stunde gültig), die Mail geht über die
+> eigenen SMTP-Einstellungen (kein SMTP im Supabase-Projekt nötig). Neutrale
+> Antwort, max. 3 Anfragen pro Adresse und Stunde, danach alle Sitzungen
+> beendet. Notfall ohne SMTP: Passwort im Supabase-Dashboard zurücksetzen.
 
 **Voraussetzungen:** SMTP-Zugangsdaten von Gaiser; Entscheidung
 E-Rechnung (ZUGFeRD ja/nein); E-Mail-Adressen der Kunden gepflegt (P9).

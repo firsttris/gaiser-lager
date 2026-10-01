@@ -229,6 +229,12 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      password_reset_requests: {
+        Row: { id: number; email: string; requested_at: string }
+        Insert: { email: string }
+        Update: never
+        Relationships: []
+      }
       records: {
         Row: RecordRow
         Insert: Omit<

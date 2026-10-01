@@ -55,10 +55,13 @@ function AdminPage() {
   // Session gone on an admin sub-page (expired, logged out elsewhere): back to
   // the customer login, never to the admin login (the kiosk would get stuck).
   // Reads the query cache directly (see kunde.tsx).
+  // Only on /admin pages: while leaving the admin area (e.g. to "Passwort
+  // vergessen") this layout briefly sees the new path and must not redirect.
+  const isAdminSubPage = pathname.startsWith('/admin/') && !isLoginPage
   useEffect(() => {
     const session = queryClient.getQueryData(adminSessionStatusQueryOptions().queryKey)
-    if (!session?.isAdminLoggedIn && !isLoginPage && !isLoggingOut) window.location.assign('/')
-  }, [isAdminLoggedIn, isLoginPage, isLoggingOut, queryClient])
+    if (!session?.isAdminLoggedIn && isAdminSubPage && !isLoggingOut) window.location.assign('/')
+  }, [isAdminLoggedIn, isAdminSubPage, isLoggingOut, queryClient])
 
   useEffect(() => {
     if (isAdminLoggedIn || !isLoginPage) return
@@ -132,6 +135,13 @@ function AdminPage() {
                 className="mt-3 inline-flex w-full justify-center rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
               >
                 Zurück zur Kunden-Anmeldung
+              </Link>
+
+              <Link
+                to="/passwort-vergessen"
+                className="mt-3 block text-center text-sm font-semibold text-slate-700 no-underline hover:text-slate-900"
+              >
+                Passwort vergessen?
               </Link>
             </form>
           </div>

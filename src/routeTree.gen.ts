@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as KundeRouteImport } from './routes/kunde'
 import { Route as MitarbeiterRouteImport } from './routes/mitarbeiter'
+import { Route as PasswortNeuRouteImport } from './routes/passwort-neu'
+import { Route as PasswortVergessenRouteImport } from './routes/passwort-vergessen'
 import { Route as PreislisteRouteImport } from './routes/preisliste'
 import { Route as RegistrierenRouteImport } from './routes/registrieren'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -56,6 +58,16 @@ const KundeRoute = KundeRouteImport.update({
 const MitarbeiterRoute = MitarbeiterRouteImport.update({
   id: '/mitarbeiter',
   path: '/mitarbeiter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortNeuRoute = PasswortNeuRouteImport.update({
+  id: '/passwort-neu',
+  path: '/passwort-neu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortVergessenRoute = PasswortVergessenRouteImport.update({
+  id: '/passwort-vergessen',
+  path: '/passwort-vergessen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreislisteRoute = PreislisteRouteImport.update({
@@ -186,6 +198,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/mitarbeiter': typeof MitarbeiterRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
@@ -214,6 +228,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
@@ -244,6 +260,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
   '/mitarbeiter': typeof MitarbeiterRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
@@ -276,6 +294,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/mitarbeiter'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
@@ -304,6 +324,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kunde'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
@@ -333,6 +355,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kunde'
     | '/mitarbeiter'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
@@ -364,6 +388,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   KundeRoute: typeof KundeRouteWithChildren
   MitarbeiterRoute: typeof MitarbeiterRouteWithChildren
+  PasswortNeuRoute: typeof PasswortNeuRoute
+  PasswortVergessenRoute: typeof PasswortVergessenRoute
   PreislisteRoute: typeof PreislisteRoute
   RegistrierenRoute: typeof RegistrierenRoute
 }
@@ -396,6 +422,20 @@ declare module '@tanstack/react-router' {
       path: '/mitarbeiter'
       fullPath: '/mitarbeiter'
       preLoaderRoute: typeof MitarbeiterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-neu': {
+      id: '/passwort-neu'
+      path: '/passwort-neu'
+      fullPath: '/passwort-neu'
+      preLoaderRoute: typeof PasswortNeuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-vergessen': {
+      id: '/passwort-vergessen'
+      path: '/passwort-vergessen'
+      fullPath: '/passwort-vergessen'
+      preLoaderRoute: typeof PasswortVergessenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/preisliste': {
@@ -653,6 +693,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   KundeRoute: KundeRouteWithChildren,
   MitarbeiterRoute: MitarbeiterRouteWithChildren,
+  PasswortNeuRoute: PasswortNeuRoute,
+  PasswortVergessenRoute: PasswortVergessenRoute,
   PreislisteRoute: PreislisteRoute,
   RegistrierenRoute: RegistrierenRoute,
 }
