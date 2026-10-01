@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { supabaseBrowser } from '#/lib/supabase/browser-client'
+import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { generateCustomerNumber } from './customer-number.server'
 
@@ -167,23 +167,32 @@ export const adminCompaniesQueryOptions = () =>
     queryFn: () => adminListCompanies(),
   })
 
-// Pre-login search box only ever needs id/name — the other Company
-// fields are filled with empty placeholders so this still matches the shape
-// consumed elsewhere in the app.
-export const publicCompaniesQueryOptions = () =>
-  queryOptions({
-    queryKey: ['companies', 'public'] as const,
-    queryFn: async () => {
-      const { data, error } = await supabaseBrowser.from('companies_public').select('id, name')
-      if (error || !data) return []
-      return data.map((row) => ({
-        id: row.id,
-        name: row.name,
-        customerNumber: '',
-        street: '',
-        postalCode: '',
-        city: '',
-        priceCategory: 'business' as const,
-      }))
-    },
+export const COMPANY_SEARCH_MIN_CHARS = 2
+const COMPANY_SEARCH_MAX_RESULTS = 8
+
+const searchCompaniesSchema = z.object({ query: z.string().max(100) })
+
+// LIKE treats % and _ as wildcards; a customer typing them should match them literally.
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
+
+// Company search for the customer login (no session required). Deliberately
+// narrow so the customer list can't be browsed: nothing below the minimum
+// length, few results, only id + name.
+export const searchCompanies = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => searchCompaniesSchema.parse(data))
+  .handler(async ({ data }) => {
+    const query = data.query.trim()
+    if (query.length < COMPANY_SEARCH_MIN_CHARS) return []
+
+    const { data: rows, error } = await getServiceSupabaseClient()
+      .from('companies')
+      .select('id, name')
+      .ilike('name', `%${escapeLikePattern(query)}%`)
+      .order('name', { ascending: true })
+      .limit(COMPANY_SEARCH_MAX_RESULTS)
+
+    if (error || !rows) return []
+    return rows
   })

@@ -16,8 +16,6 @@ export type CompanyRow = {
   updated_at: string
 }
 
-export type CompanyPublicRow = Pick<CompanyRow, 'id' | 'name'>
-
 export type AdminUserRow = {
   user_id: string
   created_at: string
@@ -92,6 +90,7 @@ export type SignupSettingsRow = {
   failed_pin_attempts: number
   pin_locked_until: string | null
   inactivity_timeout_minutes: number
+  admin_inactivity_timeout_minutes: number
   updated_at: string
 }
 
@@ -183,10 +182,6 @@ export type Database = {
       }
     }
     Views: {
-      companies_public: {
-        Row: CompanyPublicRow
-        Relationships: []
-      }
       invoice_groups: {
         Row: InvoiceGroupRow
         Relationships: []
@@ -208,6 +203,10 @@ export type Database = {
       create_invoice: {
         Args: { p_record_ids: number[] }
         Returns: IssuedDocumentResult
+      }
+      keepalive: {
+        Args: Record<string, never>
+        Returns: number
       }
       company_construction_sites: {
         Args: { p_company_id: string }

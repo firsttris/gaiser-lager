@@ -16,7 +16,8 @@ const verifyMasterPinSchema = z.object({
 })
 
 const updateInactivityTimeoutSchema = z.object({
-  minutes: z.number().int().min(0).max(240),
+  customerMinutes: z.number().int().min(0).max(240),
+  adminMinutes: z.number().int().min(0).max(240),
 })
 
 // Public step-1 gate on /registrieren: verifies the master PIN on its own,
@@ -27,10 +28,15 @@ export const verifySignupMasterPin = createServerFn({ method: 'POST' })
 
 export const getSignupSettings = createServerFn({ method: 'GET' }).handler(async () => {
   const supabase = getServiceSupabaseClient()
-  const { data } = await supabase.from('signup_settings').select('inactivity_timeout_minutes').eq('id', true).maybeSingle()
+  const { data } = await supabase
+    .from('signup_settings')
+    .select('inactivity_timeout_minutes, admin_inactivity_timeout_minutes')
+    .eq('id', true)
+    .maybeSingle()
 
   return {
     inactivityTimeoutMinutes: data?.inactivity_timeout_minutes ?? 5,
+    adminInactivityTimeoutMinutes: data?.admin_inactivity_timeout_minutes ?? 10,
   }
 })
 
@@ -65,7 +71,7 @@ export const adminUpdateInactivityTimeout = createServerFn({ method: 'POST' })
 
     const { error } = await supabase
       .from('signup_settings')
-      .update({ inactivity_timeout_minutes: data.minutes })
+      .update({ inactivity_timeout_minutes: data.customerMinutes, admin_inactivity_timeout_minutes: data.adminMinutes })
       .eq('id', true)
 
     if (error) {

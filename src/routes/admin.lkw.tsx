@@ -11,7 +11,7 @@ import type { Truck } from '../state/app-state'
 export const Route = createFileRoute('/admin/lkw')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminTrucksPage,
 })

@@ -14,7 +14,7 @@ gehen.
 | Paket | Inhalt | Punkte | Datenbank? | Größe |
 | --- | --- | --- | --- | --- |
 | **0** ✅ | Sicherheit + offene Review-Fixes live bringen | P0, P3 (Sofortmaßnahme), P16 (teilweise) | ja (klein) | S |
-| **1** | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
+| **1** ✅ | Kiosk-Abläufe: Login, Abmelden, Admin-Zugang, aktuelle Daten | P1, P2, P4, P5, P13, P17, P20 | ja (klein) | M |
 | **2** | Datenmodell aufräumen | P8, P9, P14, P15, P16 | ja | M |
 | **3** | Kiosk-Oberfläche: Lesbarkeit, Tabellen, Login-Seite | P6, P7, P12, P18 | nein | L |
 | **4** | Baustellen pro Firma + Mitarbeiter-Login + Lieferschein-Fotos | P3, P19 | ja | L |
@@ -97,6 +97,16 @@ Diese Grundlagen werden einmal gebaut und dann überall verwendet:
 ---
 
 ## Paket 1 – Kiosk-Abläufe
+
+> **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
+> Migration `20261002010000_package1_kiosk.sql` **direkt nach** dem Deploy
+> des Codes einspielen (sie entfernt die öffentliche Firmenliste, die der
+> alte Login noch liest). Die geänderte Keepalive-Action braucht die
+> Funktion `keepalive()` aus dieser Migration.
+> Standardwerte (änderbar): Suche ab 2 Zeichen, Treffer irgendwo im Namen,
+> max. 8 Treffer; unbenutzter Admin-Login 60 s; Admin-Inaktivität 10 min
+> (Einstellungen); Nachladen 60 s, Listen 30 s; Versionsprüfung alle
+> 5 min, Neuladen nach 30 s Leerlauf auf der Login-Seite.
 
 **Ziel:** Am Kiosk landet man immer auf der Kunden-Login-Seite; Firmen
 sind nicht mehr auflistbar; der Admin-Bereich ist versteckt.

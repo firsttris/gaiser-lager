@@ -1,4 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
@@ -23,7 +24,7 @@ const DEFAULT_PAGE_SIZE = 25
 export const Route = createFileRoute('/admin/vorgaenge')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminVorgaengePage,
 })
@@ -67,6 +68,7 @@ function AdminVorgaengePage() {
   }
 
   const recordsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['records', filters, page, pageSize] as const,
     queryFn: () => listRecordsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,

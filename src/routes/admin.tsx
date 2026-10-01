@@ -1,5 +1,5 @@
-import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { Outlet, createFileRoute, Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
@@ -7,6 +7,12 @@ import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
+import { InactivityGuard } from '../components/inactivity-guard'
+
+// An untouched admin login on the kiosk must not block the customers: after
+// this long without input it returns to the customer login.
+const ADMIN_LOGIN_IDLE_MS = 60_000
+const IDLE_RESET_EVENTS: (keyof WindowEventMap)[] = ['mousedown', 'keydown', 'touchstart']
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
 
@@ -19,7 +25,10 @@ const settingsNavItems = [
 ]
 
 function AdminPage() {
-  const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout } = useAppState()
+  const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout, isLoggingOut, signupSettings } = useAppState()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const isLoginPage = pathname === '/admin' || pathname === '/admin/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
@@ -37,6 +46,28 @@ function AdminPage() {
     setAuthError('')
     setPassword('')
   }
+
+  // Session gone on an admin sub-page (expired, logged out elsewhere): back to
+  // the customer login, never to the admin login (the kiosk would get stuck).
+  useEffect(() => {
+    if (!isAdminLoggedIn && !isLoginPage && !isLoggingOut) window.location.assign('/')
+  }, [isAdminLoggedIn, isLoginPage, isLoggingOut])
+
+  useEffect(() => {
+    if (isAdminLoggedIn || !isLoginPage) return
+    let timer = setTimeout(() => void navigate({ to: '/' }), ADMIN_LOGIN_IDLE_MS)
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void navigate({ to: '/' }), ADMIN_LOGIN_IDLE_MS)
+    }
+    for (const eventName of IDLE_RESET_EVENTS) window.addEventListener(eventName, reset, { passive: true })
+    return () => {
+      clearTimeout(timer)
+      for (const eventName of IDLE_RESET_EVENTS) window.removeEventListener(eventName, reset)
+    }
+  }, [isAdminLoggedIn, isLoginPage, navigate])
+
+  if (!isAdminLoggedIn && !isLoginPage) return null
 
   if (!isAdminLoggedIn) {
     return (
@@ -93,7 +124,7 @@ function AdminPage() {
                 to="/"
                 className="mt-3 inline-flex w-full justify-center rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
               >
-                Zum Kundenportal
+                Zurück zur Kunden-Anmeldung
               </Link>
             </form>
           </div>
@@ -182,7 +213,7 @@ function AdminPage() {
                   type="button"
                   onClick={() => {
                     setIsMenuOpen(false)
-                    adminLogout()
+                    void adminLogout()
                   }}
                   className="inline-flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
                 >
@@ -221,7 +252,7 @@ function AdminPage() {
             <div className="ml-auto flex items-center gap-4">
               <button
                 type="button"
-                onClick={adminLogout}
+                onClick={() => void adminLogout()}
                 className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2.2} />
@@ -233,6 +264,11 @@ function AdminPage() {
       </header>
 
       <Outlet />
+      <InactivityGuard
+        timeoutMinutes={signupSettings.adminInactivityTimeoutMinutes}
+        onLogout={adminLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </PageShell>
   )
 }

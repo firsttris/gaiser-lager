@@ -1,19 +1,24 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PageShell } from '../components/page-shell'
 import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
+import { CompanySearchInput } from '../components/company-search-input'
+
+// Hidden way into the admin area (no visible link on the kiosk): tap the logo
+// this many times within the time window.
+const ADMIN_GESTURE_TAPS = 5
+const ADMIN_GESTURE_WINDOW_MS = 3000
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
-  const { companies, login, isLoggingIn, isLoggedIn } = useAppState()
-  const [query, setQuery] = useState('')
+  const { login, isLoggingIn, isLoggedIn } = useAppState()
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
-  const [isCompanyFieldFocused, setIsCompanyFieldFocused] = useState(false)
   const [pin, setPin] = useState('')
+  const logoTapsRef = useRef<number[]>([])
   const [error, setError] = useState('')
 
   const navigate = Route.useNavigate()
@@ -22,14 +27,14 @@ function App() {
     if (isLoggedIn) void navigate({ to: '/kunde/neuer-vorgang' })
   }, [isLoggedIn, navigate])
 
-  const results = useMemo(() => {
-    const value = query.trim().toLowerCase()
-    if (!value) return companies
-
-    return companies.filter((company) => company.name.toLowerCase().includes(value))
-  }, [companies, query])
-
-  const showCompanyResults = selectedCompanyId === null && isCompanyFieldFocused && results.length > 0
+  function handleLogoTap() {
+    const now = Date.now()
+    logoTapsRef.current = [...logoTapsRef.current.filter((t) => now - t < ADMIN_GESTURE_WINDOW_MS), now]
+    if (logoTapsRef.current.length >= ADMIN_GESTURE_TAPS) {
+      logoTapsRef.current = []
+      void navigate({ to: '/admin' })
+    }
+  }
 
   async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -76,7 +81,10 @@ function App() {
 
         <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
-            <Logo className="mb-2 h-16" />
+            {/* Not a visible control on purpose: see ADMIN_GESTURE_TAPS. */}
+            <div onClick={handleLogoTap} className="inline-block select-none">
+              <Logo className="mb-2 h-16" />
+            </div>
             <h1 className="font-title text-5xl leading-none text-slate-900 sm:text-6xl">
               Material
               <br />
@@ -88,44 +96,7 @@ function App() {
           </div>
 
           <form onSubmit={submitLogin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="relative">
-              <label className="text-sm font-semibold text-slate-700">Firma</label>
-              <input
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                  setSelectedCompanyId(null)
-                }}
-                onFocus={() => setIsCompanyFieldFocused(true)}
-                onBlur={() => setIsCompanyFieldFocused(false)}
-                placeholder="z.B. Krampfert Wohnbau GmbH"
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-amber-500"
-              />
-
-              {showCompanyResults && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 space-y-1 overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                  {results.map((company) => (
-                    <button
-                      type="button"
-                      key={company.id}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => {
-                        setSelectedCompanyId(company.id)
-                        setQuery(company.name)
-                        setIsCompanyFieldFocused(false)
-                      }}
-                      className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
-                        selectedCompanyId === company.id
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <span className="font-semibold">{company.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CompanySearchInput onSelect={(company) => setSelectedCompanyId(company?.id ?? null)} />
 
             <div>
               <label className="text-sm font-semibold text-slate-700">Firmen-PIN</label>
@@ -158,14 +129,6 @@ function App() {
               <p>
                 <Link to="/preisliste" className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900">
                   Preisliste anschauen
-                </Link>
-              </p>
-              <p>
-                <Link
-                  to="/admin"
-                  className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900"
-                >
-                  Zum Admin-Bereich
                 </Link>
               </p>
             </div>

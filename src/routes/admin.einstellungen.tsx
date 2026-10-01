@@ -8,7 +8,7 @@ import { PinInput } from '../components/company-form-inputs'
 export const Route = createFileRoute('/admin/einstellungen')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminEinstellungenPage,
 })
@@ -45,6 +45,9 @@ function AdminEinstellungenPage() {
   const [masterPinMessage, setMasterPinMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const [inactivityTimeoutMinutes, setInactivityTimeoutMinutes] = useState(String(signupSettings.inactivityTimeoutMinutes))
+  const [adminInactivityTimeoutMinutes, setAdminInactivityTimeoutMinutes] = useState(
+    String(signupSettings.adminInactivityTimeoutMinutes),
+  )
   const [inactivityTimeoutMessage, setInactivityTimeoutMessage] = useState<{
     kind: 'success' | 'error'
     text: string
@@ -65,7 +68,8 @@ function AdminEinstellungenPage() {
 
   useEffect(() => {
     setInactivityTimeoutMinutes(String(signupSettings.inactivityTimeoutMinutes))
-  }, [signupSettings.inactivityTimeoutMinutes])
+    setAdminInactivityTimeoutMinutes(String(signupSettings.adminInactivityTimeoutMinutes))
+  }, [signupSettings.inactivityTimeoutMinutes, signupSettings.adminInactivityTimeoutMinutes])
 
   const paddingValue = Math.max(Number(numberPadding) || 1, 1)
   const invoicePreview = formatGeneratedNumber(invoiceTemplate, Number(nextInvoiceNumber) || 0, paddingValue)
@@ -107,15 +111,18 @@ function AdminEinstellungenPage() {
     event.preventDefault()
     setInactivityTimeoutMessage(null)
 
-    const minutes = Math.max(0, Math.min(240, Number(inactivityTimeoutMinutes) || 0))
+    const clampMinutes = (value: string) => Math.max(0, Math.min(240, Number(value) || 0))
+    const minutes = clampMinutes(inactivityTimeoutMinutes)
+    const adminMinutes = clampMinutes(adminInactivityTimeoutMinutes)
 
-    const result = await updateInactivityTimeout({ minutes })
+    const result = await updateInactivityTimeout({ customerMinutes: minutes, adminMinutes })
     if (!result.ok) {
       setInactivityTimeoutMessage({ kind: 'error', text: result.message })
       return
     }
 
     setInactivityTimeoutMinutes(String(minutes))
+    setAdminInactivityTimeoutMinutes(String(adminMinutes))
     setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitäts-Timeout wurde gespeichert.' })
   }
 
@@ -264,21 +271,35 @@ function AdminEinstellungenPage() {
       </div>
 
       <div className="mt-8 border-t border-slate-200 pt-6">
-        <h3 className="font-title text-2xl text-slate-900">Automatischer Kunden-Logout bei Inaktivität</h3>
+        <h3 className="font-title text-2xl text-slate-900">Automatischer Logout bei Inaktivität</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Nach dieser Zeit ohne Eingaben wird der Kunde automatisch abgemeldet. Die letzten 30 Sekunden wird ein
-          Countdown als Hinweis angezeigt.
+          Nach dieser Zeit ohne Eingaben wird automatisch abgemeldet und die Kunden-Anmeldung angezeigt. Die letzten
+          30 Sekunden wird ein Countdown als Hinweis angezeigt. Wichtig am Kiosk-Tablet, das sich mehrere Personen
+          teilen.
         </p>
 
         <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Inaktivitätszeit (Minuten)</label>
+            <label className="text-sm font-semibold text-slate-700">Kunden (Minuten)</label>
             <input
               type="number"
+              inputMode="numeric"
               min={0}
               max={240}
               value={inactivityTimeoutMinutes}
               onChange={(e) => setInactivityTimeoutMinutes(e.target.value)}
+              className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Admin (Minuten)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={240}
+              value={adminInactivityTimeoutMinutes}
+              onChange={(e) => setAdminInactivityTimeoutMinutes(e.target.value)}
               className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>

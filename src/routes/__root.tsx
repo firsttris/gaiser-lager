@@ -6,6 +6,7 @@ import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
 import { Spinner } from '../components/spinner'
 import { EnvironmentBanner } from '../components/environment-banner'
+import { useReloadOnNewVersion } from '../hooks/use-reload-on-new-version'
 import { isDevelopmentDatabase, isDevServerOnRemoteDatabase } from '../utils/environment'
 
 import appCss from '../styles.css?url'
@@ -83,6 +84,8 @@ function HydrationGate({ children }: { children: React.ReactNode }) {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useReloadOnNewVersion()
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const base = import.meta.env.BASE_URL

@@ -4,7 +4,6 @@ import { adminSessionStatusQueryOptions, adminSignIn, adminSignOut } from '../se
 import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut, customerSignUp } from '../server/customer-auth'
 import {
   adminCompaniesQueryOptions,
-  publicCompaniesQueryOptions,
   adminCreateCompany,
   adminUpdateCompany,
   adminDeleteCompany,
@@ -129,6 +128,7 @@ export type NumberingSettings = {
 
 export type SignupSettings = {
   inactivityTimeoutMinutes: number
+  adminInactivityTimeoutMinutes: number
 }
 
 const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
@@ -141,6 +141,7 @@ const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
 
 const DEFAULT_SIGNUP_SETTINGS: SignupSettings = {
   inactivityTimeoutMinutes: 5,
+  adminInactivityTimeoutMinutes: 10,
 }
 
 type UpdateNumberingSettingsInput = Partial<NumberingSettings>
@@ -272,7 +273,8 @@ type VerifyMasterPinInput = {
 }
 
 type UpdateInactivityTimeoutInput = {
-  minutes: number
+  customerMinutes: number
+  adminMinutes: number
 }
 
 type AppState = {
@@ -288,7 +290,10 @@ type AppState = {
   signupSettings: SignupSettings
   login: (companyId: string, pin: string) => Promise<LoginResult>
   isLoggingIn: boolean
-  logout: () => void
+  // Both wait for the sign-out and then always load the customer login page
+  // (full reload: clears all cached data and picks up a new app version).
+  logout: () => Promise<void>
+  isLoggingOut: boolean
   signUp: (input: SignUpInput) => Promise<LoginResult>
   isSigningUp: boolean
   verifyMasterPin: (input: VerifyMasterPinInput) => Promise<LoginResult>
@@ -299,7 +304,7 @@ type AppState = {
   isUpdatingInactivityTimeout: boolean
   adminLogin: (email: string, password: string) => Promise<LoginResult>
   isAdminLoggingIn: boolean
-  adminLogout: () => void
+  adminLogout: () => Promise<void>
   createRecord: (input: CreateRecordInput) => Promise<RecordItem | null>
   isCreatingRecord: boolean
   createTruckRecord: (input: CreateTruckRecordInput) => Promise<RecordItem | null>
@@ -365,11 +370,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const selectedCompany = customerSessionQuery.data?.company ?? null
   const hasSession = isAdminLoggedIn || selectedCompany !== null
 
-  // Two separate queries (rather than one conditional queryOptions object) so
-  // each stays a single, stable shape — switching only which one is enabled.
-  const adminCompaniesQuery = useQuery({ ...adminCompaniesQueryOptions(), enabled: isAdminLoggedIn })
-  const publicCompaniesQuery = useQuery({ ...publicCompaniesQueryOptions(), enabled: !isAdminLoggedIn })
-  const companiesQuery = isAdminLoggedIn ? adminCompaniesQuery : publicCompaniesQuery
+  // The full customer list is admin-only; the customer login searches
+  // server-side instead (searchCompanies), so it can't be browsed.
+  const companiesQuery = useQuery({ ...adminCompaniesQueryOptions(), enabled: isAdminLoggedIn })
   const companies = companiesQuery.data ?? []
 
   // Dual-mode catalog/records data — only meaningful once some session exists,
@@ -389,7 +392,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const hydrated =
     adminSessionQuery.isFetched &&
     customerSessionQuery.isFetched &&
-    companiesQuery.isFetched &&
+    (!isAdminLoggedIn || companiesQuery.isFetched) &&
     (!hasSession || (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched))
 
   const invalidate = (queryKey: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey })
@@ -595,7 +598,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       signupSettings,
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
       isLoggingIn: customerSignInMutation.isPending,
-      logout: () => customerSignOutMutation.mutate({}),
+      logout: async () => {
+        try {
+          await customerSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
+      isLoggingOut: customerSignOutMutation.isPending || adminSignOutMutation.isPending,
       signUp: async (input) => customerSignUpMutation.mutateAsync({ data: input }),
       isSigningUp: customerSignUpMutation.isPending,
       verifyMasterPin: async (input) => verifyMasterPinMutation.mutateAsync({ data: input }),
@@ -606,7 +616,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingInactivityTimeout: updateInactivityTimeoutMutation.isPending,
       adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
       isAdminLoggingIn: adminSignInMutation.isPending,
-      adminLogout: () => adminSignOutMutation.mutate({}),
+      adminLogout: async () => {
+        try {
+          await adminSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
       createRecord: async ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
         return createRecordMutation.mutateAsync({
           data: { type, productId: product.id, amount, constructionSiteName, companyId: company?.id },

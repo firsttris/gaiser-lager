@@ -10,7 +10,7 @@ import { Spinner } from '../components/spinner'
 export const Route = createFileRoute('/admin/kunden')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminKundenPage,
 })

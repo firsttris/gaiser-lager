@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
@@ -20,6 +20,22 @@ function assertLocalDatabaseForDev(mode: string) {
   )
 }
 
+// Identifies this build. Baked into the client and also published as
+// /version.json, so an open kiosk page can notice that a newer version has
+// been deployed and reload itself (see useReloadOnNewVersion).
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? Date.now().toString(36)
+
+function versionFile(): Plugin {
+  return {
+    name: 'gaiser-version-file',
+    apply: 'build',
+    generateBundle() {
+      if (this.environment.name !== 'client') return
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ buildId: BUILD_ID }) })
+    },
+  }
+}
+
 const config = defineConfig(({ command, mode }) => {
   if (command === 'serve' && !process.env.VITEST) assertLocalDatabaseForDev(mode)
 
@@ -27,7 +43,9 @@ const config = defineConfig(({ command, mode }) => {
     // Served from the domain root on Vercel (no GitHub Pages subpath anymore).
     base: '/',
     resolve: { tsconfigPaths: true },
+    define: { __APP_BUILD_ID__: JSON.stringify(BUILD_ID) },
     plugins: [
+      versionFile(),
       devtools(),
       tailwindcss(),
       // Prerendering is off: /admin and /kunde routes are now guarded by

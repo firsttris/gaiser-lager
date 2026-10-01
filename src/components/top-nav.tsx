@@ -1,4 +1,3 @@
-import { useNavigate } from '@tanstack/react-router'
 import { Building2, ClipboardPlus, History, LogOut, Menu, Receipt, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from './nav-link'
@@ -6,7 +5,6 @@ import { useAppState } from '../state/app-state'
 import { Logo } from './logo'
 
 export function TopNav() {
-  const navigate = useNavigate()
   const { isLoggedIn, selectedCompany, logout } = useAppState()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -82,8 +80,7 @@ export function TopNav() {
               type="button"
               onClick={() => {
                 setIsMenuOpen(false)
-                logout()
-                void navigate({ to: '/' })
+                void logout()
               }}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-4 text-sm font-medium text-slate-400 transition hover:text-slate-700"
             >
@@ -117,8 +114,7 @@ export function TopNav() {
             <button
               type="button"
               onClick={() => {
-                logout()
-                void navigate({ to: '/' })
+                void logout()
               }}
               className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
             >

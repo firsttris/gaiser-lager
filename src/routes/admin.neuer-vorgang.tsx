@@ -9,7 +9,7 @@ import { useAppState, type FlowType } from '../state/app-state'
 export const Route = createFileRoute('/admin/neuer-vorgang')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminNeuerVorgangPage,
 })

@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FileSpreadsheet, Receipt } from 'lucide-react'
@@ -45,6 +46,7 @@ function RechnungenPage() {
   }
 
   const groupsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['invoice-groups', filters, page, pageSize] as const,
     queryFn: () => listInvoiceGroupsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
@@ -99,21 +101,6 @@ function RechnungenPage() {
           <DocLinkButton id={cancelId} color="red" onClick={() => void downloadStornoDoc(items, selectedCompany ?? undefined)} />
         )}
       </>
-    )
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <PageShell>
-        <TopNav />
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
-          <p className="mt-2 text-slate-600">Die Rechnungen sind nur nach Firmen-PIN verfügbar.</p>
-          <Link to="/" className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline">
-            Zum Login
-          </Link>
-        </section>
-      </PageShell>
     )
   }
 
