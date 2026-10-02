@@ -5,6 +5,8 @@ import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
+import { PinPad } from '../components/pin-pad'
+import { HardHat } from 'lucide-react'
 import { CompanySearchInput } from '../components/company-search-input'
 import { PriceListTables } from '../components/price-list-tables'
 import { publicPriceListQueryOptions } from '../server/price-list'
@@ -79,69 +81,72 @@ function App() {
     <PageShell>
       <TopNav />
 
-      {/* One column at full width: the kiosk tablet is used in portrait. */}
-      <section className="relative mx-auto mt-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-amber-100 blur-3xl"></div>
-        <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-100 blur-3xl"></div>
-
-        <div className="relative space-y-6 p-6 sm:p-10">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            {/* Not a visible control on purpose: see ADMIN_GESTURE_TAPS. */}
-            <div onClick={handleLogoTap} className="inline-block select-none">
-              <Logo className="h-16 sm:h-20" />
-            </div>
-            <h1 className="font-title text-4xl leading-none text-slate-900 sm:text-5xl">Material ohne Umwege.</h1>
+      {/* Two halves on the tablet: who we are and where to go on the left, the
+          login with an on-screen PIN pad on the right. The price list stays
+          below. */}
+      <section className="mx-auto mt-4 grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:grid-cols-2">
+        <div className="flex flex-col gap-6 p-6 sm:p-10 md:border-r md:border-slate-200">
+          {/* Not a visible control on purpose: see ADMIN_GESTURE_TAPS. */}
+          <div onClick={handleLogoTap} className="inline-block select-none self-start">
+            <Logo className="h-16 sm:h-20" />
           </div>
-          <p className="text-slate-700">Firma suchen, PIN eingeben, Vorgang anlegen, Lieferschein herunterladen.</p>
+          <div className="space-y-3">
+            <h1 className="font-title text-4xl text-slate-900">Material ohne Umwege.</h1>
+            <p className="text-lg text-slate-600">Firma suchen, PIN eingeben, Vorgang anlegen, Lieferschein herunterladen.</p>
+          </div>
 
-          <form onSubmit={submitLogin} className="space-y-5">
-            <CompanySearchInput onSelect={(company) => setSelectedCompanyId(company?.id ?? null)} />
-
-            <div>
-              <label className="text-sm font-semibold text-slate-700" htmlFor="login-pin">
-                Firmen-PIN
-              </label>
-              <input
-                id="login-pin"
-                type="password"
-                value={pin}
-                onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="4-stellig"
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest text-slate-900 outline-none transition focus:border-brand-600"
-              />
-            </div>
-
-            {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoggingIn}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          <div className="mt-auto grid gap-3">
+            <Link
+              to="/mitarbeiter"
+              className="flex min-h-16 items-center justify-center gap-3 rounded-xl border-2 border-brand-600 bg-white px-5 text-lg font-semibold text-brand-700 no-underline hover:bg-brand-50"
             >
-              {isLoggingIn && <Spinner className="h-5 w-5" />}
-              Anmelden
-            </button>
-
+              <HardHat className="h-6 w-6" strokeWidth={2.25} />
+              Mitarbeiter-Anmeldung (Fahrer)
+            </Link>
             <Link
               to="/registrieren"
-              className="flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 no-underline hover:bg-slate-50"
+              className="flex min-h-14 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 font-semibold text-slate-800 no-underline hover:bg-slate-50"
             >
               Neu hier? Jetzt registrieren
             </Link>
-
-            <Link
-              to="/mitarbeiter"
-              className="flex min-h-12 items-center justify-center font-semibold text-slate-700 no-underline hover:text-slate-900"
-            >
-              Mitarbeiter-Anmeldung (Fahrer)
-            </Link>
-          </form>
+          </div>
         </div>
+
+        <form onSubmit={submitLogin} className="space-y-5 bg-slate-50 p-6 sm:p-10">
+          <CompanySearchInput onSelect={(company) => setSelectedCompanyId(company?.id ?? null)} />
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700" htmlFor="login-pin">
+              Firmen-PIN
+            </label>
+            <input
+              id="login-pin"
+              type="password"
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="4-stellig"
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-center text-2xl tracking-[0.5em] placeholder:text-lg placeholder:tracking-normal text-slate-900 outline-none transition focus:border-brand-600"
+            />
+          </div>
+
+          <PinPad value={pin} onChange={setPin} disabled={isLoggingIn} />
+
+          {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isLoggingIn}
+            className="flex min-h-16 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 text-lg font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoggingIn && <Spinner className="h-5 w-5" />}
+            Anmelden
+          </button>
+        </form>
       </section>
 
-      <section className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
+      <section className="mx-auto mt-6 w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
         <h2 className="font-title mb-6 text-4xl text-slate-900">Preisliste</h2>
         {priceListQuery.isLoading ? (
           <div className="flex justify-center py-8">

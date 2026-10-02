@@ -136,7 +136,7 @@ export function HistoryTable({
                 <div>
                   <dt className="text-slate-600">Status</dt>
                   <dd className="mt-0.5">
-                    <span className={`pill ${statusBadge(record.status).className}`}>
+                    <span className={`pill pill-dot ${statusBadge(record.status).className}`}>
                       {statusBadge(record.status).label}
                     </span>
                   </dd>
@@ -248,7 +248,7 @@ export function HistoryTable({
                     </td>
                   ) : (
                     <td>
-                      <span className={`pill cell-badge ${badge.className}`}>{badge.label}</span>
+                      <span className={`pill pill-dot cell-badge ${badge.className}`}>{badge.label}</span>
                     </td>
                   )}
                   <td>

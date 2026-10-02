@@ -6,6 +6,7 @@ import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
 import { CompanyInput, PinInput } from '../components/company-form-inputs'
+import { PinPad } from '../components/pin-pad'
 import { PostalCodeCityFields } from '../components/postal-code-city-fields'
 import { isValidEmail } from '../utils/email'
 
@@ -109,8 +110,6 @@ function RegistrierenPage() {
       <TopNav />
 
       <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-amber-100 blur-3xl"></div>
-        <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-100 blur-3xl"></div>
 
         <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">
@@ -130,13 +129,14 @@ function RegistrierenPage() {
           {step === 'masterpin' ? (
             <form onSubmit={submitMasterPin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
               <PinInput label="Master-PIN" value={masterPin} onChange={setMasterPin} />
+              <PinPad value={masterPin} onChange={setMasterPin} disabled={isVerifyingMasterPin} />
 
               {masterPinError && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{masterPinError}</p>}
 
               <button
                 type="submit"
                 disabled={isVerifyingMasterPin}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-16 w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 text-lg font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isVerifyingMasterPin && <Spinner className="h-4 w-4" />}
                 Weiter

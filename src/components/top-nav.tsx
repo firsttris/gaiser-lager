@@ -12,11 +12,11 @@ export function TopNav() {
   if (!isLoggedIn) return null
 
   return (
-    <header className="mb-8">
-      <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-card backdrop-blur sm:p-8">
-        <div className="flex items-start justify-between gap-4 sm:gap-8">
+    <header className="sticky top-0 z-30 -mx-4 mb-6 sm:-mt-6 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:-mx-8 sm:px-8">
+      <div className="py-3">
+        <div className="flex items-center justify-between gap-4 sm:gap-8">
           <div className="flex min-w-0 items-center gap-4">
-            <Logo className="h-12 shrink-0 sm:h-16" />
+            <Logo className="h-10 shrink-0" />
           </div>
 
           <FontScaleSwitch className="header-font-switch ml-auto hidden sm:inline-flex" />
@@ -42,7 +42,7 @@ export function TopNav() {
           </div>
         </div>
 
-        <div className="mt-5 sm:hidden">
+        <div className="mt-3 pb-1 sm:hidden">
           <div className="mb-0.5 flex items-center gap-1.5">
             <Building2 className="h-3.5 w-3.5 text-brand-600" strokeWidth={2.5} />
             <p className="text-xs font-semibold tracking-wider text-brand-700 uppercase">Kunde</p>
@@ -51,7 +51,7 @@ export function TopNav() {
         </div>
 
         {isMenuOpen && (
-          <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
+          <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 pb-2 sm:hidden">
             <NavLink
               to="/kunde/neuer-vorgang"
               compact
@@ -93,7 +93,7 @@ export function TopNav() {
           </div>
         )}
 
-        <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-2">
+        <div className="-mx-3 mt-2 hidden sm:flex sm:items-center sm:gap-1">
           <NavLink
             to="/kunde/neuer-vorgang"
             icon={<ClipboardPlus className="h-4 w-4" strokeWidth={2.3} />}

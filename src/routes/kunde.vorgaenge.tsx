@@ -139,7 +139,7 @@ function HistoryPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-title text-5xl text-slate-900">Vorgänge</h1>
+            <h1 className="font-title text-4xl text-slate-900">Vorgänge</h1>
             <p className="mt-1 text-sm text-slate-600">Alle Annahme- und Verkaufsvorgänge für {selectedCompany?.name}.</p>
           </div>
           <p className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">
