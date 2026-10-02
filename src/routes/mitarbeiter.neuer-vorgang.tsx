@@ -35,7 +35,7 @@ function EmployeeNewRecordPage() {
         )}
       </article>
 
-      {company && <BookingForCompany key={company.id} company={company} vorgaengeTo="/mitarbeiter/buchungen" />}
+      {company && <BookingForCompany key={company.id} company={company} vorgaengeTo="/mitarbeiter/buchungen" withDeliveryNotePhotos />}
     </section>
   )
 }

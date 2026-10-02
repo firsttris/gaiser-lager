@@ -6,26 +6,31 @@ import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import { berlinDayEndExclusive, berlinDayStart, berlinIsoDate } from '#/utils/berlin-time'
 
-// Photos of paper delivery notes the drivers bring back (landfills etc.).
-// Private bucket; admins view them through short-lived signed URLs.
+// Photos of paper delivery notes (landfills etc.) a driver attaches while
+// booking LKW-Stunden — always tied to that Vorgang. Private bucket; admins
+// view them through short-lived signed URLs.
 const BUCKET = 'delivery-note-photos'
 // Photos are shrunk on the device to ~0.3–0.5 MB; this is the hard limit.
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024
 const SIGNED_URL_SECONDS = 60 * 60
 
 const uploadSchema = z.object({
-  batchId: z.string().uuid(),
+  recordId: z.number().int().positive(),
   fileBase64: z.string(),
   contentType: z.enum(['image/jpeg', 'image/webp']),
-  companyId: z.string().uuid().optional(),
-  note: z.string().max(500).optional(),
 })
+
+// All photos of one Vorgang share a batch id derived from the record, so the
+// inbox groups them even when they were sent in several attempts.
+function batchIdForRecord(recordId: number) {
+  return `00000000-0000-4000-8000-${recordId.toString(16).padStart(12, '0')}`
+}
 
 export const uploadDeliveryNotePhoto = createServerFn({ method: 'POST' })
   .validator((data: unknown) => uploadSchema.parse(data))
   .handler(async ({ data }) => {
     const caller = await requireAnySession()
-    if (caller.role === 'customer') throw new Error('FORBIDDEN')
+    if (caller.role !== 'employee') throw new Error('FORBIDDEN')
 
     const commaIndex = data.fileBase64.indexOf(',')
     const bytes = Buffer.from(commaIndex >= 0 ? data.fileBase64.slice(commaIndex + 1) : data.fileBase64, 'base64')
@@ -34,27 +39,32 @@ export const uploadDeliveryNotePhoto = createServerFn({ method: 'POST' })
     }
 
     const supabase = getServiceSupabaseClient()
-    let companyName: string | null = null
-    if (data.companyId) {
-      const { data: company } = await supabase.from('companies').select('name').eq('id', data.companyId).maybeSingle()
-      companyName = company?.name ?? null
+    // Only for an LKW Vorgang this driver booked.
+    const { data: record } = await supabase
+      .from('records')
+      .select('id, type, company_id, company_name, created_by_employee_id')
+      .eq('id', data.recordId)
+      .maybeSingle()
+    if (!record || record.type !== 'lkw' || record.created_by_employee_id !== caller.employeeId) {
+      return { ok: false, message: 'Lieferscheine können nur zu einem eigenen LKW-Vorgang hochgeladen werden.' } as const
     }
+    const batchId = batchIdForRecord(record.id)
 
     const [year, month] = berlinIsoDate().split('-')
     const extension = data.contentType === 'image/webp' ? 'webp' : 'jpg'
-    const path = `${year}/${month}/${data.batchId}/${crypto.randomUUID()}.${extension}`
+    const path = `${year}/${month}/${batchId}/${crypto.randomUUID()}.${extension}`
 
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, bytes, { contentType: data.contentType })
     if (uploadError) return { ok: false, message: 'Das Foto konnte nicht gespeichert werden.' } as const
 
     const { error } = await supabase.from('delivery_note_photos').insert({
-      batch_id: data.batchId,
+      batch_id: batchId,
+      record_id: record.id,
       storage_path: path,
-      employee_id: caller.role === 'employee' ? caller.employeeId : null,
-      employee_name: caller.role === 'employee' ? caller.employeeName : 'Büro',
-      company_id: data.companyId ?? null,
-      company_name: companyName,
-      note: data.note?.trim() ?? '',
+      employee_id: caller.employeeId,
+      employee_name: caller.employeeName,
+      company_id: record.company_id,
+      company_name: record.company_name,
     })
     if (error) {
       await supabase.storage.from(BUCKET).remove([path])
@@ -77,6 +87,8 @@ export type DeliveryNoteBatch = {
   companyName: string | null
   note: string
   processedAt: string | null
+  /** The LKW Vorgang (null for photos from before they were tied to one). */
+  record: { deliveryNoteId: string | null; constructionSiteName: string; truckName: string; hours: number } | null
   photos: Array<{ id: string; url: string | null }>
 }
 
@@ -101,6 +113,12 @@ export const adminListDeliveryNotePhotos = createServerFn({ method: 'GET' })
     )
     const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]))
 
+    const recordIds = [...new Set(rows.map((row) => row.record_id).filter((id): id is number => id !== null))]
+    const { data: records } = recordIds.length
+      ? await supabase.from('records').select('id, delivery_note_id, construction_site_name, product_name, amount').in('id', recordIds)
+      : { data: [] }
+    const recordById = new Map((records ?? []).map((record) => [record.id, record]))
+
     const batches = new Map<string, DeliveryNoteBatch>()
     for (const row of rows) {
       const batch =
@@ -112,6 +130,17 @@ export const adminListDeliveryNotePhotos = createServerFn({ method: 'GET' })
           companyName: row.company_name,
           note: row.note,
           processedAt: row.processed_at,
+          record: (() => {
+            const record = row.record_id !== null ? recordById.get(row.record_id) : undefined
+            return record
+              ? {
+                  deliveryNoteId: record.delivery_note_id,
+                  constructionSiteName: record.construction_site_name,
+                  truckName: record.product_name,
+                  hours: record.amount,
+                }
+              : null
+          })(),
           photos: [],
         } satisfies DeliveryNoteBatch)
       batch.photos.push({ id: row.id, url: urlByPath.get(row.storage_path) ?? null })

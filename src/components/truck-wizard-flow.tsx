@@ -1,12 +1,15 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { constructionSitesQueryOptions } from '../server/construction-sites'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { Spinner } from './spinner'
 import { SelectInput } from './select-input'
+import { DeliveryNotePhotoPicker, type PendingPhoto, releasePendingPhotos } from './delivery-note-photo-picker'
+import { uploadDeliveryNotePhoto } from '../server/delivery-note-photos'
+import { blobToDataUrl } from '../utils/shrink-image'
 
 function money(value: number) {
   return new Intl.NumberFormat('de-DE', {
@@ -20,10 +23,13 @@ export function TruckWizardFlow({
   company,
   onExit,
   vorgaengeTo,
+  withDeliveryNotePhotos = false,
 }: {
   company: Company
   onExit: () => void
   vorgaengeTo: string
+  /** Drivers attach photos of the paper delivery notes (landfill etc.). */
+  withDeliveryNotePhotos?: boolean
 }) {
   const { trucks, createTruckRecord, isCreatingTruckRecord } = useAppState()
   const { data: constructionSites = [] } = useQuery(constructionSitesQueryOptions(company.id))
@@ -40,6 +46,14 @@ export function TruckWizardFlow({
     total: number
     record: RecordItem
   } | null>(null)
+  const [photos, setPhotos] = useState<PendingPhoto[]>([])
+  const [photoUpload, setPhotoUpload] = useState<{ sent: number; failed: PendingPhoto[]; error: string } | null>(null)
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false)
+
+  // Free the preview images when the wizard closes.
+  const photosRef = useRef<PendingPhoto[]>([])
+  photosRef.current = [...photos, ...(photoUpload?.failed ?? [])]
+  useEffect(() => () => releasePendingPhotos(photosRef.current), [])
 
   const selectedTruck = trucks.find((t) => t.id === Number(selectedTruckId))
   const parsedHours = Number(hours)
@@ -59,6 +73,8 @@ export function TruckWizardFlow({
     })
     if (!record) return
 
+    const toUpload = photos
+    setPhotos([])
     setSuccessRecord({
       constructionSiteName: constructionSiteName.trim(),
       truckName: selectedTruck.name,
@@ -70,6 +86,33 @@ export function TruckWizardFlow({
     setSelectedTruckId(trucks[0]?.id ?? 0)
     setHours('')
     setConstructionSiteName('')
+    if (toUpload.length) await uploadPhotos(record.id, toUpload, 0)
+  }
+
+  // Photos go up one by one after the Vorgang exists; the ones that fail stay
+  // here and can be sent again from the success screen.
+  async function uploadPhotos(recordId: number, pending: PendingPhoto[], alreadySent: number) {
+    setIsUploadingPhotos(true)
+    setPhotoUpload({ sent: alreadySent, failed: pending, error: '' })
+    let sent = alreadySent
+    const failed: PendingPhoto[] = []
+    let error = ''
+    for (const photo of pending) {
+      try {
+        const result = await uploadDeliveryNotePhoto({
+          data: { recordId, fileBase64: await blobToDataUrl(photo.blob), contentType: 'image/jpeg' },
+        })
+        if (!result.ok) throw new Error(result.message)
+        URL.revokeObjectURL(photo.previewUrl)
+        sent++
+      } catch (uploadError) {
+        failed.push(photo)
+        error = uploadError instanceof Error ? uploadError.message : 'Übertragung fehlgeschlagen.'
+      }
+      setPhotoUpload({ sent, failed: [...failed, ...pending.slice(pending.indexOf(photo) + 1)], error: '' })
+    }
+    setPhotoUpload({ sent, failed, error })
+    setIsUploadingPhotos(false)
   }
 
   async function redownloadDeliveryNote() {
@@ -127,6 +170,17 @@ export function TruckWizardFlow({
           </div>
         </div>
 
+        {withDeliveryNotePhotos && (
+          <div className="rounded-xl border border-slate-200 p-4">
+            <p className="text-sm font-semibold text-slate-700">Lieferscheine (optional)</p>
+            <p className="mb-3 text-sm text-slate-600">
+              Lieferscheine von der Deponie usw. fotografieren. Mehrere Fotos möglich; sie werden mit dem Vorgang ans Büro
+              übertragen.
+            </p>
+            <DeliveryNotePhotoPicker photos={photos} onChange={setPhotos} />
+          </div>
+        )}
+
         <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
           Stundenpreis: <strong>{money(currentHourlyPrice)}</strong> / Std. (netto)
         </div>
@@ -179,6 +233,12 @@ export function TruckWizardFlow({
               {money(currentHourlyPrice)} (netto)
             </dd>
           </div>
+          {withDeliveryNotePhotos && (
+            <div className="rounded-xl bg-slate-50 p-4">
+              <dt className="text-slate-600">Lieferschein-Fotos</dt>
+              <dd className="font-semibold">{photos.length === 0 ? 'keine' : photos.length}</dd>
+            </div>
+          )}
           <div className="rounded-xl bg-amber-50 p-4">
             <dt className="text-amber-700">Gesamtsumme</dt>
             <dd className="text-lg font-bold text-amber-800">{money(total)}</dd>
@@ -225,6 +285,38 @@ export function TruckWizardFlow({
           </div>
         </div>
 
+        {photoUpload && (
+          <div
+            className={`rounded-xl p-4 ${
+              isUploadingPhotos ? 'bg-slate-50 text-slate-800' : photoUpload.failed.length ? 'bg-red-50 text-red-800' : 'bg-emerald-50 text-emerald-800'
+            }`}
+          >
+            {isUploadingPhotos ? (
+              <p className="flex items-center gap-2 font-semibold">
+                <Spinner className="h-5 w-5" /> Lieferschein-Fotos werden übertragen … ({photoUpload.sent} gesendet)
+              </p>
+            ) : photoUpload.failed.length ? (
+              <>
+                <p className="font-semibold">
+                  {photoUpload.sent} Foto(s) übertragen, {photoUpload.failed.length} nicht. {photoUpload.error}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void uploadPhotos(successRecord.record.id, photoUpload.failed, photoUpload.sent)}
+                  className="mt-3 inline-flex min-h-12 items-center rounded-xl bg-red-700 px-5 text-base font-semibold text-white hover:bg-red-800"
+                >
+                  Fotos erneut senden
+                </button>
+              </>
+            ) : (
+              <p className="font-semibold">
+                {photoUpload.sent} {photoUpload.sent === 1 ? 'Lieferschein-Foto wurde' : 'Lieferschein-Fotos wurden'} ans Büro
+                übertragen.
+              </p>
+            )}
+          </div>
+        )}
+
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
             <dt className="text-slate-600">LKW</dt>
@@ -257,7 +349,8 @@ export function TruckWizardFlow({
           <button
             type="button"
             onClick={onExit}
-            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800"
+            disabled={isUploadingPhotos}
+            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Neuen Vorgang anlegen
           </button>

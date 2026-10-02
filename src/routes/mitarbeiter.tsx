@@ -1,7 +1,7 @@
 import { Link, Outlet, createFileRoute, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Camera, ClipboardPlus, History, HardHat, LogOut } from 'lucide-react'
+import { ClipboardPlus, History, HardHat, LogOut } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
 import { Logo } from '../components/logo'
 import { NavLink } from '../components/nav-link'
@@ -48,9 +48,6 @@ function EmployeeLayout() {
         <nav className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
           <NavLink to="/mitarbeiter/neuer-vorgang" icon={<ClipboardPlus className="h-5 w-5" strokeWidth={2.25} />}>
             Neuer Vorgang
-          </NavLink>
-          <NavLink to="/mitarbeiter/lieferscheine" icon={<Camera className="h-5 w-5" strokeWidth={2.25} />}>
-            Lieferscheine fotografieren
           </NavLink>
           <NavLink to="/mitarbeiter/buchungen" icon={<History className="h-5 w-5" strokeWidth={2.25} />}>
             Meine Buchungen

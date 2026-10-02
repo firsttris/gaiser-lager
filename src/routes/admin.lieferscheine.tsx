@@ -6,6 +6,7 @@ import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { adminSetDeliveryNoteBatchProcessed, deliveryNotePhotosQueryOptions } from '../server/delivery-note-photos'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { formatBerlinDateTime } from '../utils/berlin-time'
+import { quantity } from '../utils/history-utils'
 import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { SelectInput } from '../components/select-input'
 
@@ -35,7 +36,8 @@ function AdminDeliveryNoteInboxPage() {
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Lieferschein-Eingang</h2>
       <p className="mt-1 text-sm text-slate-700">
-        Von den Fahrern fotografierte Lieferscheine (Deponie usw.). Foto antippen zum Vergrößern bzw. Herunterladen.
+        Lieferscheine (Deponie usw.), die Fahrer beim Anlegen von LKW-Stunden fotografiert haben. Foto antippen zum
+        Vergrößern bzw. Herunterladen.
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -75,6 +77,12 @@ function AdminDeliveryNoteInboxPage() {
                     {batch.photos.length} {batch.photos.length === 1 ? 'Foto' : 'Fotos'}
                     {batch.companyName && <> · Kunde: {batch.companyName}</>}
                   </p>
+                  {batch.record && (
+                    <p className="text-sm text-slate-700">
+                      Vorgang <span className="font-mono font-semibold">{batch.record.deliveryNoteId ?? '—'}</span> ·{' '}
+                      {batch.record.truckName}, {quantity(batch.record.hours)} Std. · Baustelle {batch.record.constructionSiteName}
+                    </p>
+                  )}
                   {batch.note && <p className="mt-1 text-sm text-slate-800">„{batch.note}“</p>}
                 </div>
                 <button

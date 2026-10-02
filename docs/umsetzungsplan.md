@@ -217,6 +217,13 @@ Kundennummern; Ort aus PLZ.
 
 ## Paket 4 – Baustellen pro Firma, Mitarbeiter, Lieferschein-Fotos
 
+> **Änderung nach dem ersten Einsatz (2.10.2026):** Lieferschein-Fotos gibt
+> es nur noch im Rahmen eines Vorgangs: Der Fahrer fotografiert sie beim
+> Anlegen von **LKW-Stunden** (ein oder mehrere, optional), sie hängen fest
+> am Vorgang (`delivery_note_photos.record_id`, Migration
+> `20261005000000`). Die eigene Seite „Lieferscheine fotografieren“ ist
+> entfallen. Der Admin-Eingang zeigt zu jedem Foto-Satz den Vorgang.
+
 > **Stand:** lokal umgesetzt und im Browser getestet (Branch `kundentermin`).
 > Migration `20261003000000_package4_sites_employees_photos.sql` **vor** dem
 > Deploy einspielen, vorher `npm run db:clone` als Generalprobe.

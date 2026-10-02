@@ -70,16 +70,24 @@ function FlowChoiceButton({
 export function BookingForCompany({
   company,
   vorgaengeTo,
+  withDeliveryNotePhotos = false,
 }: {
   company: Company
   vorgaengeTo: string
+  /** Drivers attach photos of the paper delivery notes to LKW-Stunden. */
+  withDeliveryNotePhotos?: boolean
 }) {
   const [flowType, setFlowType] = useState<VorgangVariant | null>(null)
 
   if (flowType === 'lkw') {
     return (
       <section className="space-y-4">
-        <TruckWizardFlow company={company} onExit={() => setFlowType(null)} vorgaengeTo={vorgaengeTo} />
+        <TruckWizardFlow
+          company={company}
+          onExit={() => setFlowType(null)}
+          vorgaengeTo={vorgaengeTo}
+          withDeliveryNotePhotos={withDeliveryNotePhotos}
+        />
       </section>
     )
   }

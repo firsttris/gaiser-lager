@@ -34,7 +34,6 @@ import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
 import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
 import { Route as MitarbeiterIndexRouteImport } from './routes/mitarbeiter.index'
 import { Route as MitarbeiterBuchungenRouteImport } from './routes/mitarbeiter.buchungen'
-import { Route as MitarbeiterLieferscheineRouteImport } from './routes/mitarbeiter.lieferscheine'
 import { Route as MitarbeiterNeuerVorgangRouteImport } from './routes/mitarbeiter.neuer-vorgang'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
 import { Route as KundeNeuerVorgangDropoffRouteImport } from './routes/kunde.neuer-vorgang.dropoff'
@@ -165,12 +164,6 @@ const MitarbeiterBuchungenRoute = MitarbeiterBuchungenRouteImport.update({
   path: '/buchungen',
   getParentRoute: () => MitarbeiterRoute,
 } as any)
-const MitarbeiterLieferscheineRoute =
-  MitarbeiterLieferscheineRouteImport.update({
-    id: '/lieferscheine',
-    path: '/lieferscheine',
-    getParentRoute: () => MitarbeiterRoute,
-  } as any)
 const MitarbeiterNeuerVorgangRoute = MitarbeiterNeuerVorgangRouteImport.update({
   id: '/neuer-vorgang',
   path: '/neuer-vorgang',
@@ -217,7 +210,6 @@ export interface FileRoutesByFullPath {
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
-  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
   '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin/': typeof AdminIndexRoute
   '/mitarbeiter/': typeof MitarbeiterIndexRoute
@@ -246,7 +238,6 @@ export interface FileRoutesByTo {
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
-  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
   '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin': typeof AdminIndexRoute
   '/mitarbeiter': typeof MitarbeiterIndexRoute
@@ -279,7 +270,6 @@ export interface FileRoutesById {
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
   '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
-  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
   '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin/': typeof AdminIndexRoute
   '/mitarbeiter/': typeof MitarbeiterIndexRoute
@@ -313,7 +303,6 @@ export interface FileRouteTypes {
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
     | '/mitarbeiter/buchungen'
-    | '/mitarbeiter/lieferscheine'
     | '/mitarbeiter/neuer-vorgang'
     | '/admin/'
     | '/mitarbeiter/'
@@ -342,7 +331,6 @@ export interface FileRouteTypes {
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
     | '/mitarbeiter/buchungen'
-    | '/mitarbeiter/lieferscheine'
     | '/mitarbeiter/neuer-vorgang'
     | '/admin'
     | '/mitarbeiter'
@@ -374,7 +362,6 @@ export interface FileRouteTypes {
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
     | '/mitarbeiter/buchungen'
-    | '/mitarbeiter/lieferscheine'
     | '/mitarbeiter/neuer-vorgang'
     | '/admin/'
     | '/mitarbeiter/'
@@ -571,13 +558,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MitarbeiterBuchungenRouteImport
       parentRoute: typeof MitarbeiterRoute
     }
-    '/mitarbeiter/lieferscheine': {
-      id: '/mitarbeiter/lieferscheine'
-      path: '/lieferscheine'
-      fullPath: '/mitarbeiter/lieferscheine'
-      preLoaderRoute: typeof MitarbeiterLieferscheineRouteImport
-      parentRoute: typeof MitarbeiterRoute
-    }
     '/mitarbeiter/neuer-vorgang': {
       id: '/mitarbeiter/neuer-vorgang'
       path: '/neuer-vorgang'
@@ -672,14 +652,12 @@ const KundeRouteWithChildren = KundeRoute._addFileChildren(KundeRouteChildren)
 
 interface MitarbeiterRouteChildren {
   MitarbeiterBuchungenRoute: typeof MitarbeiterBuchungenRoute
-  MitarbeiterLieferscheineRoute: typeof MitarbeiterLieferscheineRoute
   MitarbeiterNeuerVorgangRoute: typeof MitarbeiterNeuerVorgangRoute
   MitarbeiterIndexRoute: typeof MitarbeiterIndexRoute
 }
 
 const MitarbeiterRouteChildren: MitarbeiterRouteChildren = {
   MitarbeiterBuchungenRoute: MitarbeiterBuchungenRoute,
-  MitarbeiterLieferscheineRoute: MitarbeiterLieferscheineRoute,
   MitarbeiterNeuerVorgangRoute: MitarbeiterNeuerVorgangRoute,
   MitarbeiterIndexRoute: MitarbeiterIndexRoute,
 }

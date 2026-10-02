@@ -64,6 +64,8 @@ export type EmployeeRow = {
 export type DeliveryNotePhotoRow = {
   id: string
   batch_id: string
+  /** The LKW Vorgang the photo belongs to (NULL for photos from before 2026-10). */
+  record_id: number | null
   storage_path: string
   employee_id: string | null
   employee_name: string | null
@@ -211,8 +213,8 @@ export type Database = {
       }
       delivery_note_photos: {
         Row: DeliveryNotePhotoRow
-        Insert: Omit<DeliveryNotePhotoRow, 'id' | 'created_at' | 'processed_at' | 'note'> &
-          Partial<Pick<DeliveryNotePhotoRow, 'note' | 'processed_at'>>
+        Insert: Omit<DeliveryNotePhotoRow, 'id' | 'created_at' | 'processed_at' | 'note' | 'record_id'> &
+          Partial<Pick<DeliveryNotePhotoRow, 'note' | 'processed_at' | 'record_id'>>
         Update: Partial<Omit<DeliveryNotePhotoRow, 'id' | 'created_at'>>
         Relationships: []
       }
