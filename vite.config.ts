@@ -24,6 +24,10 @@ function assertLocalDatabaseForDev(mode: string) {
 // /version.json, so an open kiosk page can notice that a newer version has
 // been deployed and reload itself (see useReloadOnNewVersion).
 const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? Date.now().toString(36)
+// Shown at the bottom of every page (with the commit), so it's easy to check
+// which version a device is running.
+const BUILD_TIME = new Date().toISOString()
+const BUILD_COMMIT = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? ''
 
 function versionFile(): Plugin {
   return {
@@ -43,7 +47,11 @@ const config = defineConfig(({ command, mode }) => {
     // Served from the domain root on Vercel (no GitHub Pages subpath anymore).
     base: '/',
     resolve: { tsconfigPaths: true },
-    define: { __APP_BUILD_ID__: JSON.stringify(BUILD_ID) },
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
+      __APP_BUILD_TIME__: JSON.stringify(BUILD_TIME),
+      __APP_BUILD_COMMIT__: JSON.stringify(BUILD_COMMIT),
+    },
     plugins: [
       versionFile(),
       devtools(),

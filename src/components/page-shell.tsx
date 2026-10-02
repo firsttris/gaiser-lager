@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { FontScaleSwitch } from './font-scale-switch'
+import { AppVersion } from './app-version'
 
 type PageShellProps = {
   children: ReactNode
@@ -19,6 +20,7 @@ export function PageShell({ children, className = '', width = 'default' }: PageS
         <FontScaleSwitch />
       </div>
       {children}
+      <AppVersion />
     </main>
   )
 }
