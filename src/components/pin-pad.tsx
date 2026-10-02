@@ -70,7 +70,14 @@ export function PinEntry({
             {digit}
           </button>
         ))}
-        <span aria-hidden="true" />
+        <button
+          type="button"
+          className={`${key} text-base font-medium text-slate-600`}
+          disabled={disabled || value.length === 0}
+          onClick={() => onChange('')}
+        >
+          Löschen
+        </button>
         <button type="button" className={key} disabled={disabled} onClick={() => press('0')}>
           0
         </button>
