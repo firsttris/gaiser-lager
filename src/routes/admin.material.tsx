@@ -135,7 +135,7 @@ function ProductList({ items, onEdit, onDelete, imageActionProductId, onImageUpl
   return (
     <div className="@container">
       {/* Cards when the list has too little room for the table (container query). */}
-      <div className="mt-3 space-y-3 @2xl:hidden">
+      <div className="mt-3 space-y-3 md:hidden">
         {items.map((product) => (
           <article key={product.id} className="flex items-start gap-3 rounded-xl border border-slate-200 p-4">
             {image(product)}
@@ -150,7 +150,7 @@ function ProductList({ items, onEdit, onDelete, imageActionProductId, onImageUpl
         ))}
       </div>
 
-      <div className="mt-3 hidden @2xl:block">
+      <div className="mt-3 hidden md:block">
         <table className="data-table align-middle">
           <thead>
             <tr>

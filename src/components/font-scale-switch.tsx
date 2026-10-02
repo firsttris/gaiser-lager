@@ -32,8 +32,7 @@ function applyScale(scale: FontScale) {
 }
 
 // Text size per device: the kiosk tablet can be set to large once and keeps it.
-// "auto" (nothing selected) uses the default from styles.css (larger on big
-// portrait screens).
+// "auto" (nothing selected) uses the default from styles.css (100 %).
 export function FontScaleSwitch({ className = '' }: { className?: string }) {
   const [scale, setScale] = useState<FontScale>('auto')
 

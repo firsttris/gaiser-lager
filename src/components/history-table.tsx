@@ -75,12 +75,11 @@ export function HistoryTable({
   }
 
   return (
-    // Cards or table depending on the space the list actually has (container
-    // query). In rem, so the larger kiosk font needs proportionally more room;
-    // 44rem is chosen so the portrait kiosk tablet (125 % font, ~940px of
-    // list width) still gets the table.
+    // Cards only on phones; from 768px screen width (md, a media query: it
+    // ignores the A/A+/A++ font scale) always the table, so the kiosk tablet
+    // shows the table at every font size.
     <div className="@container">
-      <div className="mt-4 space-y-3 @min-[44rem]:hidden">
+      <div className="mt-4 space-y-3 md:hidden">
         {records.map((record) => {
           return (
             <article
@@ -160,7 +159,7 @@ export function HistoryTable({
         })}
       </div>
 
-      <div className="mt-4 hidden @min-[44rem]:block">
+      <div className="mt-4 hidden md:block">
         <table className="data-table table-fixed">
           <thead>
             <tr>
@@ -215,17 +214,19 @@ export function HistoryTable({
                     {showCompanyColumn ? (
                       <>
                         <span className="cell-primary">{record.company}</span>
-                        <span className="cell-secondary line-clamp-2">{record.constructionSiteName || '—'}</span>
+                        <span className="cell-secondary truncate" title={record.constructionSiteName}>
+                          {record.constructionSiteName || '—'}
+                        </span>
                       </>
                     ) : (
                       <span className="line-clamp-2">{record.constructionSiteName || '—'}</span>
                     )}
                   </td>
                   <td className="wrap-break-word">
-                    <span className="line-clamp-2" title={record.productName}>
+                    <span className="block truncate" title={record.productName}>
                       {record.productName}
                     </span>
-                    <span className="cell-secondary">
+                    <span className="cell-secondary truncate">
                       {flowLabel(record.type)}
                       {record.createdByName && <span title="Gebucht von"> · {record.createdByName}</span>}
                     </span>

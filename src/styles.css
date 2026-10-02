@@ -38,14 +38,9 @@ html {
   font-size: 100%;
 }
 
-/* Big portrait screens (the kiosk tablet at the yard) are read standing, from a
-   distance: larger by default. Any device can override this with the A/A+/A++
-   switch, stored per device (data-font-scale, see FontScaleSwitch). */
-@media (orientation: portrait) and (min-width: 1000px) {
-  html:not([data-font-scale]) {
-    font-size: 125%;
-  }
-}
+/* Default is 100 % everywhere, also on the portrait kiosk tablet: the tables
+   fit much better. Anyone who needs larger text picks A+/A++ (stored per
+   device, data-font-scale, see FontScaleSwitch). */
 
 html[data-font-scale='normal'] {
   font-size: 100%;
@@ -338,7 +333,7 @@ select:disabled {
   border-bottom: 1px solid var(--color-slate-200);
 }
 .data-table td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.625rem 0.5rem;
   vertical-align: top;
 }
 .data-table.align-middle td {

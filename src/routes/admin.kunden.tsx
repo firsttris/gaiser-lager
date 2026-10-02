@@ -231,7 +231,7 @@ function AdminKundenPage() {
 
       <div className="@container">
         {/* Cards when the list has too little room for the table (container query). */}
-        <div className="mt-5 space-y-3 @min-[40rem]:hidden">
+        <div className="mt-5 space-y-3 md:hidden">
           {companies.map((company) => (
             <article key={company.id} className="rounded-xl border border-slate-200 p-4">
               <div className="flex items-start justify-between gap-3">
@@ -253,7 +253,7 @@ function AdminKundenPage() {
           ))}
         </div>
 
-        <div className="mt-5 hidden @min-[40rem]:block">
+        <div className="mt-5 hidden md:block">
           <table className="data-table">
             <thead>
               <tr>

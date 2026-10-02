@@ -36,10 +36,9 @@ export function DocumentListTable({
 }: Props) {
   const selectable = selectedIds !== undefined && onSelectionChange !== undefined
   return (
-    // Cards or table depending on the space the list actually has (container
-    // query), see HistoryTable.
-    <div className="@container">
-      <div className="mt-4 space-y-3 @min-[44rem]:hidden">
+    // Cards only on phones, table from md at every font size (see HistoryTable).
+    <div>
+      <div className="mt-4 space-y-3 md:hidden">
         {groups.map(({ id, items }) => {
           const total = items.reduce((sum, r) => sum + r.total, 0)
           const badge = getBadge(items)
@@ -104,7 +103,7 @@ export function DocumentListTable({
         })}
       </div>
 
-      <div className="mt-4 hidden @min-[44rem]:block">
+      <div className="mt-4 hidden md:block">
         <table className="data-table table-fixed">
           <thead>
             <tr>
