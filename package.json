@@ -14,7 +14,9 @@
     "db:start": "node scripts/db.mjs start",
     "db:stop": "node scripts/db.mjs stop",
     "db:reset": "node scripts/db.mjs reset",
-    "db:clone": "node scripts/db.mjs clone"
+    "db:clone": "node scripts/db.mjs clone",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@stackforge-eu/factur-x": "^1.4.3",
@@ -38,6 +40,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/typography": "^0.5.20",
     "@tanstack/devtools-vite": "^0.8.5",
     "@tanstack/router-cli": "^1.167.40",

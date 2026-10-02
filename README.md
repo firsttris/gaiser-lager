@@ -27,10 +27,33 @@ npm run dev        # http://localhost:3000
 | `npm run db:reset` | lokale DB leer aus `supabase/migrations/` neu aufbauen |
 | `npm run db:clone` | Produktion **nur lesend** auslesen und lokal einspielen (inkl. Admin-Logins und Materialbilder). Gleichzeitig **Generalprobe fürs Deployment**: lokal wird nur der Migrationsstand der Produktion aufgebaut, die Daten geladen und danach die noch nicht eingespielten Migrationen darüber ausgeführt |
 | `npm test`, `npx tsc --noEmit`, `npm run build` | Tests, Typecheck, Build |
+| `npm run e2e` / `e2e:ui` | End-to-End-Tests im Browser (Playwright) gegen die lokale Supabase; `e2e:ui` mit Oberfläche zum Zuschauen und Debuggen |
 
 Nach `db:clone` gelten dieselben Logins wie in der Produktion (Kunden-PINs,
 Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 `admin@gaiser.local` / `entwicklung`.
+
+### End-to-End-Tests (Playwright)
+
+`npm run e2e` startet die App (`npm run dev`, oder nutzt einen schon laufenden
+Dev-Server) und spielt die wichtigsten Abläufe im Browser in Tablet-Größe
+durch: Kunden-Login per PIN-Pad, Material holen inkl. Lieferschein und
+„Wie zuletzt“, Fahrer bucht LKW-Stunden mit Foto, Büro lädt das Foto
+herunter, Registrierung mit Master-PIN. Voraussetzung ist `npm run db:start`.
+
+- **Echte Datenbank statt Mocks.** Die Tests laufen gegen die lokale
+  Supabase, also mit echten Server-Funktionen, Sessions und PDFs.
+  `e2e/global-setup.ts` verweigert jede nicht lokale Datenbank.
+- **Testdaten pro Lauf.** Vor jedem Lauf legt `e2e/global-setup.ts` eine
+  neue Testfirma (PIN `2468`), einen Testfahrer (PIN `1357`) und den Admin
+  `e2e-admin@gaiser.local` an und setzt die Master-PIN auf `1234`. So hängen
+  die Tests nicht vom vorhandenen Datenstand ab. Aufräumen: `npm run db:reset`.
+- **Login wie am Kiosk.** Jeder Test meldet sich über die echte Oberfläche an
+  (Firma suchen, PIN-Pad bzw. E-Mail/Passwort), Helfer in `e2e/support.ts`.
+- **CI.** `.github/workflows/ci.yml` führt bei jedem PR Typecheck,
+  Unit-Tests, Build und die E2E-Tests aus. Bei Fehlern liegt der
+  Playwright-Bericht mit Screenshots und Traces als Artefakt
+  `playwright-report` am Lauf.
 
 ### Schutz vor Verwechslungen
 
