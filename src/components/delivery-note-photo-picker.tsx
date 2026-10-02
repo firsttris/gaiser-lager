@@ -109,6 +109,24 @@ export function DeliveryNotePhotoPicker({
   )
 }
 
+function cameraErrorMessage(error: unknown) {
+  const name = error instanceof Error || error instanceof DOMException ? error.name : ''
+  const fallback = 'Alternativ „Foto auswählen“ nutzen.'
+  switch (name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return `Kamera-Zugriff wurde vom Browser blockiert. Bitte die Kamera-Freigabe für diese Seite und die Browser-App erlauben. ${fallback} (${name})`
+    case 'NotReadableError':
+    case 'AbortError':
+      return `Die Kamera wird gerade von einer anderen App oder Funktion benutzt (z. B. Bewegungserkennung im Kiosk-Browser). ${fallback} (${name})`
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return `Es wurde keine passende Kamera gefunden. ${fallback} (${name})`
+    default:
+      return `Kein Zugriff auf die Kamera. Bitte die Kamera-Freigabe erlauben. ${fallback}${name ? ` (${name})` : ''}`
+  }
+}
+
 // Full-screen live camera (kiosk tablet): hold the delivery note in front
 // of the camera, tap "Foto aufnehmen", repeat, then "Fertig".
 function LiveCamera({ onCapture, onClose, count }: { onCapture: (blob: Blob) => void; onClose: () => void; count: number }) {
@@ -119,14 +137,18 @@ function LiveCamera({ onCapture, onClose, count }: { onCapture: (blob: Blob) => 
   useEffect(() => {
     let stream: MediaStream | null = null
     let cancelled = false
-    navigator.mediaDevices
+    const mediaDevices = navigator.mediaDevices
+    mediaDevices
       ?.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
+      // Older Android WebViews (kiosk browsers) sometimes reject the detailed
+      // constraints – retry with the plainest possible request.
+      .catch((error) => (error?.name === 'NotAllowedError' ? Promise.reject(error) : mediaDevices.getUserMedia({ video: true, audio: false })))
       .then((mediaStream) => {
         if (cancelled) return mediaStream.getTracks().forEach((track) => track.stop())
         stream = mediaStream
         if (videoRef.current) videoRef.current.srcObject = mediaStream
       })
-      .catch(() => setError('Kein Zugriff auf die Kamera. Bitte die Kamera-Freigabe erlauben oder „Foto auswählen“ nutzen.'))
+      .catch((error) => setError(cameraErrorMessage(error)))
     if (!navigator.mediaDevices) setError('Dieses Gerät unterstützt die Kamera im Browser nicht. Bitte „Foto auswählen“ nutzen.')
     return () => {
       cancelled = true
