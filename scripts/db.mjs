@@ -56,6 +56,13 @@ const CONTAINER_RUNTIME = commandExists('docker') ? 'docker' : commandExists('po
 function runtimeEnv() {
   const env = { ...process.env }
   // The Supabase CLI talks to the Docker API; with Podman that's the user socket.
+  // A DOCKER_HOST pointing at a socket that doesn't exist (e.g. a shell
+  // variable set with an unexpanded "(id -u)") is ignored with a warning.
+  const configured = env.DOCKER_HOST?.startsWith('unix://') ? env.DOCKER_HOST.slice('unix://'.length) : null
+  if (configured && !fs.existsSync(configured)) {
+    console.warn(`  ⚠ DOCKER_HOST zeigt auf einen Socket, den es nicht gibt (${env.DOCKER_HOST}) – wird ignoriert.`)
+    delete env.DOCKER_HOST
+  }
   if (CONTAINER_RUNTIME === 'podman' && !env.DOCKER_HOST && env.XDG_RUNTIME_DIR) {
     const socket = path.join(env.XDG_RUNTIME_DIR, 'podman/podman.sock')
     if (fs.existsSync(socket)) env.DOCKER_HOST = `unix://${socket}`
