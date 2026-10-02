@@ -1,5 +1,6 @@
 import type { RecordItem, RecordStatus } from '../state/app-state'
 import { flowLabel, money, quantity, statusBadge, statusStages } from '../utils/history-utils'
+import { Camera } from 'lucide-react'
 import { DocLinkButton } from './doc-link-button'
 import { SelectInput } from './select-input'
 
@@ -15,6 +16,8 @@ interface Props {
   onInvoiceClick?: (invoiceId: string) => void
   onCancelClick?: (cancelId: string) => void
   downloadingDocId?: string | null
+  /** Shows a "Fotos" button for Vorgänge with delivery note photos. */
+  onPhotosClick?: (record: RecordItem) => void
   /** false hides the checkboxes (e.g. the drivers' own booking list). */
   selectable?: boolean
 }
@@ -31,6 +34,7 @@ export function HistoryTable({
   onInvoiceClick,
   onCancelClick,
   downloadingDocId = null,
+  onPhotosClick,
   selectable = true,
 }: Props) {
   return (
@@ -84,6 +88,7 @@ export function HistoryTable({
                         loading={downloadingDocId === record.cancelId}
                       />
                     )}
+                    {onPhotosClick && record.photoCount ? <PhotosButton record={record} onClick={onPhotosClick} /> : null}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -259,6 +264,7 @@ export function HistoryTable({
                           loading={downloadingDocId === record.cancelId}
                         />
                       )}
+                      {onPhotosClick && record.photoCount ? <PhotosButton record={record} onClick={onPhotosClick} /> : null}
                     </div>
                   </td>
                 </tr>
@@ -268,5 +274,20 @@ export function HistoryTable({
         </table>
       </div>
     </div>
+  )
+}
+
+function PhotosButton({ record, onClick }: { record: RecordItem; onClick: (record: RecordItem) => void }) {
+  const count = record.photoCount ?? 0
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(record)}
+      title="Lieferschein-Fotos des Fahrers ansehen"
+      className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1 text-sm whitespace-nowrap text-emerald-900 hover:opacity-75"
+    >
+      <Camera className="h-4 w-4" strokeWidth={2.25} />
+      {count} {count === 1 ? 'Foto' : 'Fotos'}
+    </button>
   )
 }

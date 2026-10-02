@@ -112,6 +112,8 @@ export type RecordItem = {
   invoicedAt?: string
   cancelId?: string
   cancelledAt?: string
+  /** Photos of paper delivery notes the driver attached (LKW-Stunden only). */
+  photoCount?: number
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }

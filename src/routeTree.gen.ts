@@ -22,7 +22,6 @@ import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
 import { Route as AdminEMailRouteImport } from './routes/admin.e-mail'
 import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
-import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
 import { Route as AdminMaterialRouteImport } from './routes/admin.material'
 import { Route as AdminMitarbeiterRouteImport } from './routes/admin.mitarbeiter'
@@ -102,11 +101,6 @@ const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
 const AdminKundenRoute = AdminKundenRouteImport.update({
   id: '/kunden',
   path: '/kunden',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
-  id: '/lieferscheine',
-  path: '/lieferscheine',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLkwRoute = AdminLkwRouteImport.update({
@@ -199,7 +193,6 @@ export interface FileRoutesByFullPath {
   '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
@@ -228,7 +221,6 @@ export interface FileRoutesByTo {
   '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
@@ -259,7 +251,6 @@ export interface FileRoutesById {
   '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
-  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
   '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
@@ -292,7 +283,6 @@ export interface FileRouteTypes {
     | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/mitarbeiter'
@@ -321,7 +311,6 @@ export interface FileRouteTypes {
     | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/mitarbeiter'
@@ -351,7 +340,6 @@ export interface FileRouteTypes {
     | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
-    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
     | '/admin/mitarbeiter'
@@ -474,13 +462,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKundenRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/lieferscheine': {
-      id: '/admin/lieferscheine'
-      path: '/lieferscheine'
-      fullPath: '/admin/lieferscheine'
-      preLoaderRoute: typeof AdminLieferscheineRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/lkw': {
       id: '/admin/lkw'
       path: '/lkw'
@@ -594,7 +575,6 @@ interface AdminRouteChildren {
   AdminEMailRoute: typeof AdminEMailRoute
   AdminEinstellungenRoute: typeof AdminEinstellungenRoute
   AdminKundenRoute: typeof AdminKundenRoute
-  AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminLkwRoute: typeof AdminLkwRoute
   AdminMaterialRoute: typeof AdminMaterialRoute
   AdminMitarbeiterRoute: typeof AdminMitarbeiterRoute
@@ -609,7 +589,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEMailRoute: AdminEMailRoute,
   AdminEinstellungenRoute: AdminEinstellungenRoute,
   AdminKundenRoute: AdminKundenRoute,
-  AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminLkwRoute: AdminLkwRoute,
   AdminMaterialRoute: AdminMaterialRoute,
   AdminMitarbeiterRoute: AdminMitarbeiterRoute,

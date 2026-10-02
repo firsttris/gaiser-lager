@@ -2,7 +2,7 @@ import { Outlet, createFileRoute, Link, useLocation, useNavigate } from '@tansta
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { Blocks, Building2, Camera, Clock, HardHat, LogOut, Mail, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
+import { Blocks, Building2, Clock, HardHat, LogOut, Mail, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
@@ -229,15 +229,6 @@ function AdminPage() {
                 Rechnungen
               </NavLink>
 
-              <NavLink
-                to="/admin/lieferscheine"
-                compact
-                onClick={() => setIsMenuOpen(false)}
-                icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
-              >
-                Lieferscheine
-              </NavLink>
-
               <NavDropdown
                 label="Einstellungen"
                 icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
@@ -280,12 +271,6 @@ function AdminPage() {
               icon={<Receipt className="h-4 w-4" strokeWidth={2.25} />}
             >
               Rechnungen
-            </NavLink>
-            <NavLink
-              to="/admin/lieferscheine"
-              icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
-            >
-              Lieferscheine
             </NavLink>
             <NavDropdown
               label="Einstellungen"

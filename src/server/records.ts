@@ -65,6 +65,19 @@ export function toRecord(row: RecordRow): RecordItem {
   }
 }
 
+// Adds how many delivery note photos each record has, for the "Fotos" file
+// button in the lists.
+async function withPhotoCounts(supabase: ReturnType<typeof getServiceSupabaseClient>, records: RecordItem[]) {
+  const ids = records.filter((record) => record.type === 'lkw').map((record) => record.id)
+  if (!ids.length) return records
+  const { data: photos } = await supabase.from('delivery_note_photos').select('record_id').in('record_id', ids)
+  const counts = new Map<number, number>()
+  for (const photo of photos ?? []) {
+    if (photo.record_id !== null) counts.set(photo.record_id, (counts.get(photo.record_id) ?? 0) + 1)
+  }
+  return records.map((record) => (counts.has(record.id) ? { ...record, photoCount: counts.get(record.id) } : record))
+}
+
 // Resolves which company a record is created for and who booked it.
 // Customers can only ever book for their own company (any companyId they send
 // is ignored); employees and admins must say which company it is for.
@@ -236,7 +249,7 @@ export const listRecordsPage = createServerFn({ method: 'GET' })
       .range(from, from + data.pageSize - 1)
 
     if (error || !rows) return { records: [], totalCount: 0 }
-    return { records: rows.map(toRecord), totalCount: count ?? 0 }
+    return { records: await withPhotoCounts(supabase, rows.map(toRecord)), totalCount: count ?? 0 }
   })
 
 const listRecordsByDocIdSchema = z.object({

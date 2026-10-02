@@ -3,13 +3,14 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FileDown, FileSpreadsheet } from 'lucide-react'
 import { HistoryTable } from '../components/history-table'
+import { RecordPhotosDialog } from '../components/record-photos-dialog'
 import { Pagination } from '../components/pagination'
 import { SelectionActionBar } from '../components/selection-action-bar'
 import { SelectInput } from '../components/select-input'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useRecordSelection } from '../hooks/use-record-selection'
-import { type RecordStatus } from '../state/app-state'
+import { type RecordItem, type RecordStatus } from '../state/app-state'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { getCompanyForBooking } from '../server/companies'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
@@ -38,6 +39,7 @@ function EmployeeBookingsPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
+  const [photosRecord, setPhotosRecord] = useState<RecordItem | null>(null)
 
   const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
   const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
@@ -179,6 +181,7 @@ function EmployeeBookingsPage() {
             showCompanyColumn
             onDeliveryNoteClick={(id) => void downloadDeliveryNote(id)}
             downloadingDocId={downloadingDocId}
+            onPhotosClick={setPhotosRecord}
           />
           <Pagination
             page={page}
@@ -190,6 +193,7 @@ function EmployeeBookingsPage() {
           />
         </>
       )}
+      <RecordPhotosDialog record={photosRecord} onClose={() => setPhotosRecord(null)} />
     </section>
   )
 }

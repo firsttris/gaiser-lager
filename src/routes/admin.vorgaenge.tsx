@@ -7,11 +7,12 @@ import { createPortal } from 'react-dom'
 import { Ban, FilePlus, FileDown, FileSpreadsheet, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { HistoryTable } from '../components/history-table'
+import { RecordPhotosDialog } from '../components/record-photos-dialog'
 import { Pagination } from '../components/pagination'
 import { SelectionActionBar } from '../components/selection-action-bar'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useRecordSelection } from '../hooks/use-record-selection'
-import { type RecordStatus, useAppState } from '../state/app-state'
+import { type RecordItem, type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
 import { berlinIsoDate } from '../utils/berlin-time'
@@ -52,6 +53,7 @@ function AdminVorgaengePage() {
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
+  const [photosRecord, setPhotosRecord] = useState<RecordItem | null>(null)
 
   const companyOptions = useMemo(
     () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
@@ -317,6 +319,7 @@ function AdminVorgaengePage() {
               onInvoiceClick={(id) => void handleInvoiceClick(id)}
               onCancelClick={(id) => void handleCancelClick(id)}
               downloadingDocId={downloadingDocId}
+              onPhotosClick={setPhotosRecord}
             />
             <Pagination page={page} pageCount={pageCount} onPageChange={setPage} totalCount={filteredCount} pageSize={pageSize} onPageSizeChange={setPageSize} />
           </>
@@ -376,6 +379,7 @@ function AdminVorgaengePage() {
         onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
+      <RecordPhotosDialog record={photosRecord} onClose={() => setPhotosRecord(null)} />
     </section>
   )
 }
