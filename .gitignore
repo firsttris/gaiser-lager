@@ -15,3 +15,8 @@ todos.json
 dev-dist
 # Production credentials for `npm run db:clone` (read-only use) — never commit
 .env.prod
+
+# Playwright
+/test-results/
+/playwright-report/
+/e2e/.data/
