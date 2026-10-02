@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { COMPANY_SEARCH_MIN_CHARS, searchCompanies } from '../server/companies'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { Spinner } from './spinner'
@@ -16,6 +16,7 @@ export function CompanySearchInput({
   onSelect: (company: CompanySearchResult | null) => void
 }) {
   const listId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -42,6 +43,8 @@ export function CompanySearchInput({
     setQuery(company.name)
     setIsOpen(false)
     onSelect(company)
+    // Drop focus so the tablet keyboard closes and the PIN pad below is visible.
+    inputRef.current?.blur()
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -66,6 +69,7 @@ export function CompanySearchInput({
         Firma
       </label>
       <input
+        ref={inputRef}
         id={`${listId}-input`}
         value={query}
         onChange={(event) => {

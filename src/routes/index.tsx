@@ -5,7 +5,7 @@ import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
-import { PinPad } from '../components/pin-pad'
+import { PinEntry } from '../components/pin-pad'
 import { HardHat } from 'lucide-react'
 import { CompanySearchInput } from '../components/company-search-input'
 import { PriceListTables } from '../components/price-list-tables'
@@ -42,23 +42,29 @@ function App() {
     }
   }
 
-  async function submitLogin(event: React.FormEvent<HTMLFormElement>) {
+  function submitLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    void attemptLogin(pin)
+  }
 
+  // Takes the PIN as an argument: the pad calls this with the fourth digit
+  // before React has re-rendered with the new state.
+  async function attemptLogin(enteredPin: string) {
     if (!selectedCompanyId) {
       setError('Bitte eine Firma auswählen.')
       return
     }
 
-    if (pin.length !== 4) {
+    if (enteredPin.length !== 4) {
       setError('Bitte eine 4-stellige PIN eingeben.')
       return
     }
 
     try {
-      const result = await login(selectedCompanyId, pin)
+      const result = await login(selectedCompanyId, enteredPin)
       if (!result.ok) {
         setError(result.message)
+        setPin('')
         return
       }
 
@@ -66,6 +72,7 @@ function App() {
       void navigate({ to: '/kunde/neuer-vorgang' })
     } catch {
       setError('Firma oder PIN ist ungültig.')
+      setPin('')
     }
   }
 
@@ -115,23 +122,17 @@ function App() {
         <form onSubmit={submitLogin} className="space-y-5 bg-slate-50 p-6 sm:p-10">
           <CompanySearchInput onSelect={(company) => setSelectedCompanyId(company?.id ?? null)} />
 
-          <div>
-            <label className="text-sm font-semibold text-slate-700" htmlFor="login-pin">
-              Firmen-PIN
-            </label>
-            <input
-              id="login-pin"
-              type="password"
-              value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="4-stellig"
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-center text-2xl tracking-[0.5em] placeholder:text-lg placeholder:tracking-normal text-slate-900 outline-none transition focus:border-brand-600"
-            />
-          </div>
-
-          <PinPad value={pin} onChange={setPin} disabled={isLoggingIn} />
+          <PinEntry
+            label="Firmen-PIN"
+            value={pin}
+            onChange={(next) => {
+              setPin(next)
+              setError('')
+            }}
+            onComplete={(full) => void attemptLogin(full)}
+            disabled={isLoggingIn}
+            hasError={Boolean(error)}
+          />
 
           {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
 
