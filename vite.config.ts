@@ -28,6 +28,8 @@ const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? Date.now().t
 // which version a device is running.
 const BUILD_TIME = new Date().toISOString()
 const BUILD_COMMIT = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? ''
+// Vercel's environment of this deployment: 'production' | 'preview' | '' (local).
+const BUILD_ENV = process.env.VERCEL_ENV ?? ''
 
 function versionFile(): Plugin {
   return {
@@ -51,6 +53,7 @@ const config = defineConfig(({ command, mode }) => {
       __APP_BUILD_ID__: JSON.stringify(BUILD_ID),
       __APP_BUILD_TIME__: JSON.stringify(BUILD_TIME),
       __APP_BUILD_COMMIT__: JSON.stringify(BUILD_COMMIT),
+      __APP_BUILD_ENV__: JSON.stringify(BUILD_ENV),
     },
     plugins: [
       versionFile(),
