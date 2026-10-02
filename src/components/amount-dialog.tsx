@@ -34,24 +34,45 @@ export function AmountPadDialog({
   onApply: (amount: string) => void
 }) {
   const [draft, setDraft] = useState(initialValue)
+  // The current amount is shown when the dialog opens, but like a calculator
+  // the first digit or comma replaces it instead of being appended.
+  const [isFresh, setIsFresh] = useState(true)
 
   useEffect(() => {
-    if (open) setDraft(initialValue)
+    if (open) {
+      setDraft(initialValue)
+      setIsFresh(true)
+    }
   }, [open, initialValue])
 
   const parsed = Number(draft)
   const isValid = draft !== '' && Number.isFinite(parsed) && parsed > 0
 
   const pressDigit = (digit: string) => {
-    setDraft((current) => {
+    setIsFresh(false)
+    setDraft((previous) => {
+      const current = isFresh ? '' : previous
       const [integerPart, decimalPart] = current.split('.')
       if (decimalPart !== undefined) return decimalPart.length >= MAX_DECIMALS ? current : current + digit
       if (integerPart === '0') return digit
       return integerPart.length >= MAX_INTEGER_DIGITS ? current : current + digit
     })
   }
-  const pressComma = () => setDraft((current) => (current.includes('.') ? current : current === '' ? '0.' : current + '.'))
-  const erase = () => setDraft((current) => current.slice(0, -1))
+  const pressComma = () => {
+    setIsFresh(false)
+    setDraft((previous) => {
+      const current = isFresh ? '' : previous
+      return current.includes('.') ? current : current === '' ? '0.' : current + '.'
+    })
+  }
+  const erase = () => {
+    setIsFresh(false)
+    setDraft((current) => current.slice(0, -1))
+  }
+  const clear = () => {
+    setIsFresh(false)
+    setDraft('')
+  }
   const apply = () => {
     if (isValid) onApply(draft.replace(/\.$/, ''))
   }
@@ -110,7 +131,7 @@ export function AmountPadDialog({
               {digit}
             </button>
           ))}
-          <button type="button" className={key} onClick={pressComma} disabled={draft.includes('.')} aria-label="Komma">
+          <button type="button" className={key} onClick={pressComma} disabled={!isFresh && draft.includes('.')} aria-label="Komma">
             ,
           </button>
           <button type="button" className={key} onClick={() => pressDigit('0')}>
@@ -130,7 +151,7 @@ export function AmountPadDialog({
         <div className="mt-4 grid grid-cols-3 gap-2.5">
           <button
             type="button"
-            onClick={() => setDraft('')}
+            onClick={clear}
             disabled={draft.length === 0}
             className="min-h-16 rounded-xl bg-slate-100 text-base font-semibold text-slate-800 hover:bg-slate-200 disabled:opacity-50"
           >

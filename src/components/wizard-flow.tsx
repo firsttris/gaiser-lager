@@ -331,8 +331,9 @@ export function WizardFlow({
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-slate-700">Baustelle</p>
             {siteChoices.length > 0 && (
+              <>
+              <p className="text-sm font-semibold text-slate-700">Baustelle</p>
               <div className="mt-2 grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Baustelle">
                 {siteChoices.map((name) => {
                   const isSelected = trimmedSiteName === name
@@ -367,9 +368,10 @@ export function WizardFlow({
                   Neue Baustelle
                 </button>
               </div>
+              </>
             )}
             {showSiteInput && (
-              <div className="mt-3">
+              <div className={siteChoices.length > 0 ? 'mt-3' : undefined}>
                 <AutocompleteInput
                   label={siteChoices.length > 0 ? 'Baustelle eingeben' : 'Baustelle'}
                   value={constructionSiteName}

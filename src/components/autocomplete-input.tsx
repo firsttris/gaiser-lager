@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 
 export type AutocompleteOption = {
   id: string
@@ -33,6 +33,7 @@ export function AutocompleteInput({
   autoFocus?: boolean
   inputClassName?: string
 }) {
+  const inputId = useId()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
 
@@ -64,8 +65,11 @@ export function AutocompleteInput({
 
   return (
     <div className="relative">
-      <label className="text-sm font-semibold text-slate-700">{label}</label>
+      <label className="text-sm font-semibold text-slate-700" htmlFor={inputId}>
+        {label}
+      </label>
       <input
+        id={inputId}
         value={value}
         onChange={(event) => {
           onChange(event.target.value)
