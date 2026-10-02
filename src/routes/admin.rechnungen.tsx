@@ -7,7 +7,7 @@ import { Ban, CheckCircle2, FileSpreadsheet, Mail, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { InvoiceEmailDialog } from '../components/invoice-email-dialog'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
-import { DocLinkButton } from '../components/doc-link-button'
+import { FileList, type FileEntry } from '../components/file-list'
 import { DocumentListTable } from '../components/document-list-table'
 import { Pagination } from '../components/pagination'
 import { SelectionActionBar } from '../components/selection-action-bar'
@@ -179,28 +179,21 @@ function AdminRechnungenPage() {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
     const customer = companyById(items[0].companyId)
     const deliveryNoteIds = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
-    return (
-      <>
-        <DocLinkButton
-          id={id}
-          color="blue"
-          onClick={() => void handleInvoiceDownload(id)}
-          loading={downloadingDocId === id}
-        />
-        {deliveryNoteIds.map((deliveryNoteId) => (
-          <DocLinkButton
-            key={deliveryNoteId}
-            id={deliveryNoteId}
-            color="amber"
-            onClick={() => void handleDeliveryNoteDownload(deliveryNoteId, items[0].company, customer)}
-            loading={downloadingDocId === deliveryNoteId}
-          />
-        ))}
-        {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, customer)} />
-        )}
-      </>
-    )
+    const files: FileEntry[] = [
+      { key: id, label: id, kind: 'Rechnung', color: 'blue', onClick: () => void handleInvoiceDownload(id), loading: downloadingDocId === id },
+      ...(cancelId
+        ? [{ key: cancelId, label: cancelId, kind: 'Storno', color: 'red' as const, onClick: () => void downloadCancellationPdf(items, customer) }]
+        : []),
+      ...deliveryNoteIds.map((deliveryNoteId) => ({
+        key: deliveryNoteId,
+        label: deliveryNoteId,
+        kind: 'Lieferschein',
+        color: 'amber' as const,
+        onClick: () => void handleDeliveryNoteDownload(deliveryNoteId, items[0].company, customer),
+        loading: downloadingDocId === deliveryNoteId,
+      })),
+    ]
+    return <FileList files={files} />
   }
 
   return (

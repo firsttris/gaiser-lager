@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FileSpreadsheet, Receipt } from 'lucide-react'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
-import { DocLinkButton } from '../components/doc-link-button'
+import { FileList, type FileEntry } from '../components/file-list'
 import { DocumentListTable } from '../components/document-list-table'
 import { PageShell } from '../components/page-shell'
 import { Pagination } from '../components/pagination'
@@ -95,19 +95,13 @@ function RechnungenPage() {
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    return (
-      <>
-        <DocLinkButton
-          id={id}
-          color="blue"
-          onClick={() => void handleInvoiceDownload(id)}
-          loading={downloadingDocId === id}
-        />
-        {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, selectedCompany ?? undefined)} />
-        )}
-      </>
-    )
+    const files: FileEntry[] = [
+      { key: id, label: id, kind: 'Rechnung', color: 'blue', onClick: () => void handleInvoiceDownload(id), loading: downloadingDocId === id },
+      ...(cancelId
+        ? [{ key: cancelId, label: cancelId, kind: 'Storno', color: 'red' as const, onClick: () => void downloadCancellationPdf(items, selectedCompany ?? undefined) }]
+        : []),
+    ]
+    return <FileList files={files} />
   }
 
   return (

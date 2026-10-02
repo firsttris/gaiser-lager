@@ -1,7 +1,7 @@
 import type { RecordItem, RecordStatus } from '../state/app-state'
 import { flowLabel, money, quantity, statusBadge, statusStages } from '../utils/history-utils'
 import { Camera } from 'lucide-react'
-import { DocLinkButton } from './doc-link-button'
+import { FileList, type FileEntry } from './file-list'
 import { SelectInput } from './select-input'
 
 interface Props {
@@ -37,6 +37,33 @@ export function HistoryTable({
   onPhotosClick,
   selectable = true,
 }: Props) {
+  function recordFiles(record: RecordItem): FileEntry[] {
+    const files: FileEntry[] = []
+    if (record.deliveryNoteId) {
+      const id = record.deliveryNoteId
+      files.push({ key: id, label: id, kind: 'Lieferschein', color: 'amber', onClick: () => onDeliveryNoteClick?.(id), loading: downloadingDocId === id })
+    }
+    if (record.invoiceId) {
+      const id = record.invoiceId
+      files.push({ key: id, label: id, kind: 'Rechnung', color: 'blue', onClick: () => onInvoiceClick?.(id), loading: downloadingDocId === id })
+    }
+    if (record.cancelId) {
+      const id = record.cancelId
+      files.push({ key: id, label: id, kind: 'Storno', color: 'red', onClick: () => onCancelClick?.(id), loading: downloadingDocId === id })
+    }
+    if (onPhotosClick && record.photoCount) {
+      files.push({
+        key: 'photos',
+        label: `${record.photoCount} ${record.photoCount === 1 ? 'Foto' : 'Fotos'}`,
+        kind: 'Lieferschein-Fotos',
+        color: 'emerald',
+        icon: <Camera className="h-4 w-4" strokeWidth={2.25} />,
+        onClick: () => onPhotosClick(record),
+      })
+    }
+    return files
+  }
+
   return (
     // Cards or table depending on the space the list actually has (container
     // query), not the screen width: with the larger kiosk font the table needs
@@ -63,32 +90,8 @@ export function HistoryTable({
                   {record.createdByName && (
                     <p className="mt-1 text-xs text-slate-600">Gebucht von: {record.createdByName}</p>
                   )}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {record.deliveryNoteId && (
-                      <DocLinkButton
-                        id={record.deliveryNoteId}
-                        color="amber"
-                        onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                        loading={downloadingDocId === record.deliveryNoteId}
-                      />
-                    )}
-                    {record.invoiceId && (
-                      <DocLinkButton
-                        id={record.invoiceId}
-                        color="blue"
-                        onClick={() => onInvoiceClick?.(record.invoiceId!)}
-                        loading={downloadingDocId === record.invoiceId}
-                      />
-                    )}
-                    {record.cancelId && (
-                      <DocLinkButton
-                        id={record.cancelId}
-                        color="red"
-                        onClick={() => onCancelClick?.(record.cancelId!)}
-                        loading={downloadingDocId === record.cancelId}
-                      />
-                    )}
-                    {onPhotosClick && record.photoCount ? <PhotosButton record={record} onClick={onPhotosClick} /> : null}
+                  <div className="mt-2">
+                    <FileList files={recordFiles(record)} />
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -239,33 +242,7 @@ export function HistoryTable({
                     </td>
                   )}
                   <td className="px-2 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      {record.deliveryNoteId && (
-                        <DocLinkButton
-                          id={record.deliveryNoteId}
-                          color="amber"
-                          onClick={() => onDeliveryNoteClick?.(record.deliveryNoteId!)}
-                          loading={downloadingDocId === record.deliveryNoteId}
-                        />
-                      )}
-                      {record.invoiceId && (
-                        <DocLinkButton
-                          id={record.invoiceId}
-                          color="blue"
-                          onClick={() => onInvoiceClick?.(record.invoiceId!)}
-                          loading={downloadingDocId === record.invoiceId}
-                        />
-                      )}
-                      {record.cancelId && (
-                        <DocLinkButton
-                          id={record.cancelId}
-                          color="red"
-                          onClick={() => onCancelClick?.(record.cancelId!)}
-                          loading={downloadingDocId === record.cancelId}
-                        />
-                      )}
-                      {onPhotosClick && record.photoCount ? <PhotosButton record={record} onClick={onPhotosClick} /> : null}
-                    </div>
+                    <FileList files={recordFiles(record)} />
                   </td>
                 </tr>
               )
@@ -277,17 +254,3 @@ export function HistoryTable({
   )
 }
 
-function PhotosButton({ record, onClick }: { record: RecordItem; onClick: (record: RecordItem) => void }) {
-  const count = record.photoCount ?? 0
-  return (
-    <button
-      type="button"
-      onClick={() => onClick(record)}
-      title="Lieferschein-Fotos des Fahrers ansehen"
-      className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1 text-sm whitespace-nowrap text-emerald-900 hover:opacity-75"
-    >
-      <Camera className="h-4 w-4" strokeWidth={2.25} />
-      {count} {count === 1 ? 'Foto' : 'Fotos'}
-    </button>
-  )
-}
