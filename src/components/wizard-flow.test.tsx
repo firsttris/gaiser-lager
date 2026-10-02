@@ -63,9 +63,19 @@ describe('WizardFlow', () => {
     expect(submitButton().disabled).toBe(true)
 
     fireEvent.click(within(amountGroup()).getByRole('button', { name: '15' }))
-    fireEvent.change(screen.getByLabelText('Baustelle', { selector: 'input' }), { target: { value: 'Nordring 12' } })
-
+    // Total shows as soon as there is an amount, before a site is chosen.
     expect(screen.getByText('150,00 €', { exact: false })).toBeTruthy()
+    expect(screen.getByText('Baustelle fehlt')).toBeTruthy()
+    expect(submitButton().disabled).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Baustelle wählen …' }))
+    fireEvent.change(screen.getByLabelText('Baustelle suchen oder neu eingeben'), { target: { value: '  Nordring   12 ' } })
+    fireEvent.click(screen.getByRole('button', { name: '„Nordring 12“ als neue Baustelle anlegen' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    const picked = within(screen.getByRole('group', { name: 'Baustelle' })).getByRole('button', { name: /Nordring 12/ })
+    expect(picked.getAttribute('aria-pressed')).toBe('true')
+    expect(picked.textContent).toContain('Neu, wird mit dem Vorgang gespeichert')
     expect(submitButton().disabled).toBe(false)
     fireEvent.click(submitButton())
     expect(createRecord).toHaveBeenCalledWith(
@@ -80,19 +90,25 @@ describe('WizardFlow', () => {
       { type: 'pickup', productName: 'Rollkies', amount: 12.5, unit: 't', constructionSiteName: 'Hafenstraße 3', createdAt: '01.10.2026, 09:00' },
       { type: 'dropoff', productName: 'Betonschutt', amount: 7, unit: 't', constructionSiteName: 'Ringweg 9', createdAt: '30.09.2026, 09:00' },
     ]
-    sites = [{ id: 's1', name: 'Altbau Süd', companyId: 'c1' }, { id: 's2', name: 'Nordring 12', companyId: 'c1' }]
+    sites = [
+      { id: 's1', name: 'Altbau Süd', companyId: 'c1' },
+      { id: 's2', name: 'Hafenstraße 3', companyId: 'c1' },
+      { id: 's3', name: 'Nordring 12', companyId: 'c1' },
+      { id: 's4', name: 'Ringweg 9', companyId: 'c1' },
+    ]
     renderWizard()
 
     const last = await screen.findByText('Wie zuletzt')
-    const siteGroup = screen.getByRole('group', { name: 'Baustelle' })
+    const siteGroup = await screen.findByRole('group', { name: 'Baustelle' })
+    await within(siteGroup).findByRole('button', { name: 'Altbau Süd' })
     expect(within(siteGroup).getAllByRole('button').map((b) => b.textContent)).toEqual([
       'Nordring 12',
       'Hafenstraße 3',
       'Ringweg 9',
       'Altbau Süd',
-      'Neue Baustelle',
+      'Andere Baustelle …',
     ])
-    expect(screen.queryByLabelText('Baustelle eingeben', { selector: 'input' })).toBeNull()
+    expect(screen.queryByRole('textbox')).toBeNull()
 
     fireEvent.click(last)
     // Rollkies selected → its history amount 12,5 joins the quick picks.
@@ -130,15 +146,38 @@ describe('WizardFlow', () => {
     expect(within(dialog).getByText('7,5')).toBeTruthy()
   })
 
-  it('opens the text field only on "Neue Baustelle" and drops a picked button site', async () => {
+  it('finds older sites in the dialog without case and shows the pick as an extra button', async () => {
+    sites = ['A-Straße 1', 'B-Straße 2', 'C-Straße 3', 'D-Straße 4', 'E-Straße 5', 'Zollhof 7'].map((name, i) => ({
+      id: `s${i}`,
+      name,
+      companyId: 'c1',
+    }))
+    renderWizard()
+    const siteGroup = await screen.findByRole('group', { name: 'Baustelle' })
+    await within(siteGroup).findByRole('button', { name: 'A-Straße 1' })
+    expect(within(siteGroup).queryByRole('button', { name: 'Zollhof 7' })).toBeNull()
+
+    fireEvent.click(within(siteGroup).getByRole('button', { name: 'Andere Baustelle …' }))
+    fireEvent.change(screen.getByLabelText('Baustelle suchen oder neu eingeben'), { target: { value: 'zollhof 7' } })
+    const dialog = screen.getByRole('dialog')
+    // Same name in other case is the existing site, not a new one.
+    expect(within(dialog).queryByText(/als neue Baustelle anlegen/)).toBeNull()
+    fireEvent.click(within(dialog).getByRole('option', { name: 'Zollhof 7' }))
+
+    const extra = within(siteGroup).getByRole('button', { name: 'Zollhof 7' })
+    expect(extra.getAttribute('aria-pressed')).toBe('true')
+    expect(extra.textContent).not.toContain('Neu')
+  })
+
+  it('keeps the existing spelling when "Wie zuletzt" names a site in other case', async () => {
+    recentBookings = [{ type: 'pickup', productName: 'Betonrecycling', amount: 5, unit: 't', constructionSiteName: 'altbau süd', createdAt: '' }]
     sites = [{ id: 's1', name: 'Altbau Süd', companyId: 'c1' }]
     renderWizard()
     const siteGroup = await screen.findByRole('group', { name: 'Baustelle' })
-    fireEvent.click(within(siteGroup).getByRole('button', { name: 'Altbau Süd' }))
-    fireEvent.click(within(siteGroup).getByRole('button', { name: 'Neue Baustelle' }))
-
-    const input = screen.getByLabelText('Baustelle eingeben', { selector: 'input' }) as HTMLInputElement
-    expect(input.value).toBe('')
-    expect(document.activeElement).toBe(input)
+    await within(siteGroup).findByRole('button', { name: 'Altbau Süd' })
+    fireEvent.click(await screen.findByText('Wie zuletzt'))
+    expect(within(siteGroup).getAllByRole('button').map((b) => b.textContent)).toEqual(['Altbau Süd', 'Andere Baustelle …'])
+    fireEvent.click(submitButton())
+    expect(createRecord).toHaveBeenCalledWith(expect.objectContaining({ constructionSiteName: 'Altbau Süd' }))
   })
 })
