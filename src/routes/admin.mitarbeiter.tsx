@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Pencil } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { adminCreateEmployee, adminEmployeesQueryOptions, adminUpdateEmployee } from '../server/employees'
+import { adminCreateEmployee, adminDeleteEmployee, adminEmployeesQueryOptions, adminUpdateEmployee } from '../server/employees'
+import { ConfirmDialog } from '../components/confirm-dialog'
 import { CompanyInput, PinInput } from '../components/company-form-inputs'
 import { FormDialog } from '../components/form-dialog'
 import { Spinner } from '../components/spinner'
@@ -18,8 +19,8 @@ export const Route = createFileRoute('/admin/mitarbeiter')({
 
 type Employee = { id: string; name: string; active: boolean }
 
-// Driver logins (name + 4-digit PIN). No delete: deactivating keeps the
-// "gebucht von" history on old Vorgänge intact.
+// Driver logins (name + 4-digit PIN). Deactivate for a break, delete when
+// someone leaves; old Vorgänge keep "Gebucht von" either way.
 function AdminEmployeesPage() {
   const queryClient = useQueryClient()
   const { data: employees = [] } = useQuery(adminEmployeesQueryOptions())
@@ -29,6 +30,8 @@ function AdminEmployeesPage() {
   }
   const createMutation = useMutation({ mutationFn: adminCreateEmployee, onSuccess: refresh })
   const updateMutation = useMutation({ mutationFn: adminUpdateEmployee, onSuccess: refresh })
+  const deleteMutation = useMutation({ mutationFn: adminDeleteEmployee, onSuccess: refresh })
+  const [deleting, setDeleting] = useState<Employee | null>(null)
 
   const [name, setName] = useState('')
   const [pin, setPin] = useState('')
@@ -79,12 +82,21 @@ function AdminEmployeesPage() {
     setEditing(null)
   }
 
+  async function confirmDelete() {
+    if (!deleting) return
+    const employee = deleting
+    setDeleting(null)
+    const result = await deleteMutation.mutateAsync({ data: { id: employee.id } })
+    setListMessage(result.ok ? `${employee.name} wurde gelöscht.` : result.message)
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
       <h2 className="font-title text-4xl text-slate-900">Mitarbeiter</h2>
       <p className="mt-2 text-sm text-slate-700">
         Logins für die LKW-Fahrer (Name + 4-stellige PIN). Anmeldung über „Mitarbeiter-Anmeldung“ auf der Startseite.
-        Ausgeschiedene Mitarbeiter deaktivieren statt löschen.
+        Deaktivieren sperrt die Anmeldung vorübergehend; Löschen entfernt den Login ganz. Bei alten Vorgängen bleibt
+        „Gebucht von“ in beiden Fällen erhalten.
       </p>
 
       <form onSubmit={create} className="mt-4 grid max-w-2xl gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:grid-cols-3">
@@ -122,18 +134,39 @@ function AdminEmployeesPage() {
               <p className="font-semibold text-slate-900">{employee.name}</p>
               {!employee.active && <p className="text-sm text-slate-700">deaktiviert</p>}
             </div>
-            <button
-              type="button"
-              onClick={() => startEdit(employee)}
-              aria-label={`${employee.name} bearbeiten`}
-              title="Bearbeiten"
-              className="rounded-xl bg-slate-100 p-3 text-slate-800 hover:bg-slate-200"
-            >
-              <Pencil className="h-5 w-5" strokeWidth={2.25} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => startEdit(employee)}
+                aria-label={`${employee.name} bearbeiten`}
+                title="Bearbeiten"
+                className="rounded-xl bg-slate-100 p-3 text-slate-800 hover:bg-slate-200"
+              >
+                <Pencil className="h-5 w-5" strokeWidth={2.25} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleting(employee)}
+                disabled={deleteMutation.isPending}
+                aria-label={`${employee.name} löschen`}
+                title="Löschen"
+                className="rounded-xl bg-red-50 p-3 text-red-700 hover:bg-red-100 disabled:opacity-60"
+              >
+                <Trash2 className="h-5 w-5" strokeWidth={2.25} />
+              </button>
+            </div>
           </article>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Mitarbeiter löschen"
+        message={`${deleting?.name ?? ''} wirklich löschen? Die Anmeldung ist danach nicht mehr möglich. Bei alten Vorgängen bleibt „Gebucht von“ erhalten.`}
+        confirmLabel="Löschen"
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setDeleting(null)}
+      />
 
       <FormDialog
         open={editing !== null}

@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { PIN_HASH_ROUNDS } from './companies'
 
@@ -49,7 +50,6 @@ export const adminCreateEmployee = createServerFn({ method: 'POST' })
     return { ok: true } as const
   })
 
-// No delete on purpose: deactivating keeps the "booked by" history intact.
 export const adminUpdateEmployee = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => updateEmployeeSchema.parse(data))
@@ -72,5 +72,26 @@ export const adminUpdateEmployee = createServerFn({ method: 'POST' })
         message: error.code === UNIQUE_VIOLATION ? 'Diesen Namen gibt es bereits.' : 'Der Mitarbeiter konnte nicht gespeichert werden.',
       } as const
     }
+    return { ok: true } as const
+  })
+
+// Old Vorgänge and photos keep the driver's name as text (created_by_name,
+// employee_name), so deleting only drops the link to the login; "Gebucht von"
+// stays as it was. A driver who is still logged in is out with their next
+// request (requireAnySession finds no employee any more).
+export const adminDeleteEmployee = createServerFn({ method: 'POST' })
+  .middleware([requireAdminSession])
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+    const supabase = getServiceSupabaseClient()
+    const failed = { ok: false, message: 'Der Mitarbeiter konnte nicht gelöscht werden.' } as const
+
+    const { error: recordsError } = await supabase.from('records').update({ created_by_employee_id: null }).eq('created_by_employee_id', data.id)
+    if (recordsError) return failed
+    const { error: photosError } = await supabase.from('delivery_note_photos').update({ employee_id: null }).eq('employee_id', data.id)
+    if (photosError) return failed
+
+    const { error } = await supabase.from('employees').delete().eq('id', data.id)
+    if (error) return failed
     return { ok: true } as const
   })
