@@ -7,6 +7,7 @@ import { adminSetDeliveryNoteBatchProcessed, deliveryNotePhotosQueryOptions } fr
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { formatBerlinDateTime } from '../utils/berlin-time'
 import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
+import { SelectInput } from '../components/select-input'
 
 export const Route = createFileRoute('/admin/lieferscheine')({
   beforeLoad: async ({ context }) => {
@@ -40,15 +41,16 @@ function AdminDeliveryNoteInboxPage() {
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <label className="text-sm font-semibold text-slate-700">
           Status
-          <select
+          <SelectInput
             value={status}
-            onChange={(event) => setStatus(event.target.value as typeof status)}
-            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-          >
-            <option value="open">Offen</option>
-            <option value="done">Erledigt</option>
-            <option value="all">Alle</option>
-          </select>
+            onChange={(next) => setStatus(next as typeof status)}
+            options={[
+              { value: 'open', label: 'Offen' },
+              { value: 'done', label: 'Erledigt' },
+              { value: 'all', label: 'Alle' },
+            ]}
+            className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+          />
         </label>
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>

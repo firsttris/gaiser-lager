@@ -1,3 +1,10 @@
+import { SelectInput } from './select-input'
+
+const FLOW_OPTIONS = [
+  { value: 'dropoff', label: 'Annahme' },
+  { value: 'pickup', label: 'Verkauf' },
+]
+
 export function ProductNameInput({
   label,
   value,
@@ -73,14 +80,13 @@ export function ProductFlowSelect({
   return (
     <div>
       <label className="text-sm font-semibold text-slate-700">{label}</label>
-      <select
+      <SelectInput
         value={value}
-        onChange={(e) => onChange(e.target.value as 'pickup' | 'dropoff')}
-        className={`mt-2 w-full border border-slate-300 bg-white ${borderStyle} ${sizes} outline-none focus:border-slate-800`}
-      >
-        <option value="dropoff">Annahme</option>
-        <option value="pickup">Verkauf</option>
-      </select>
+        onChange={(flow) => onChange(flow as 'pickup' | 'dropoff')}
+        options={FLOW_OPTIONS}
+        className={`mt-2 w-full ${borderStyle} ${sizes}`}
+        label={label}
+      />
     </div>
   )
 }

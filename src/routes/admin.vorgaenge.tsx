@@ -19,8 +19,16 @@ import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: 'Alle Typen' },
+  { value: 'dropoff', label: 'Annahme' },
+  { value: 'pickup', label: 'Verkauf' },
+  { value: 'lkw', label: 'LKW' },
+]
 
 export const Route = createFileRoute('/admin/vorgaenge')({
   beforeLoad: async ({ context }) => {
@@ -197,44 +205,32 @@ function AdminVorgaengePage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">
           <label className="text-sm font-semibold text-slate-700">
             Firma
-            <select
+            <SelectInput
               value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Firmen</option>
-              {companyOptions.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
+              onChange={setCompanyFilter}
+              options={[{ value: 'all', label: 'Alle Firmen' }, ...companyOptions.map((company) => ({ value: company.id, label: company.name }))]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Typ
-            <select
+            <SelectInput
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Typen</option>
-              <option value="dropoff">Annahme</option>
-              <option value="pickup">Verkauf</option>
-              <option value="lkw">LKW</option>
-            </select>
+              onChange={(type) => setTypeFilter(type as 'all' | 'pickup' | 'dropoff' | 'lkw')}
+              options={TYPE_FILTER_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | RecordStatus)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              {statusStages.map((stage) => (
-                <option key={stage.value} value={stage.value}>{stage.label}</option>
-              ))}
-            </select>
+              onChange={(status) => setStatusFilter(status as 'all' | RecordStatus)}
+              options={[{ value: 'all', label: 'Alle Status' }, ...statusStages]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -243,7 +239,7 @@ function AdminVorgaengePage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Baustelle, LS-/RG-/ST-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />

@@ -19,6 +19,7 @@ import {
   SAMPLE_INVOICE_EMAIL_VALUES,
   unknownPlaceholders,
 } from '../utils/email-template'
+import { SelectInput } from '../components/select-input'
 
 export const Route = createFileRoute('/admin/e-mail')({
   beforeLoad: async ({ context }) => {
@@ -221,18 +222,20 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
             </label>
             <label className={LABEL_CLASS}>
               Verschlüsselung
-              <select
+              <SelectInput
                 value={form.smtpSecurity}
-                onChange={(e) => {
-                  const security = e.target.value as EmailSettingsInput['smtpSecurity']
+                onChange={(next) => {
+                  const security = next as EmailSettingsInput['smtpSecurity']
                   update('smtpSecurity', security)
                   update('smtpPort', security === 'tls' ? 465 : 587)
                 }}
-                className={`${INPUT_CLASS} bg-white`}
-              >
-                <option value="starttls">STARTTLS (Port 587)</option>
-                <option value="tls">SSL/TLS (Port 465)</option>
-              </select>
+                options={[
+                  { value: 'starttls', label: 'STARTTLS (Port 587)' },
+                  { value: 'tls', label: 'SSL/TLS (Port 465)' },
+                ]}
+                className={`${INPUT_CLASS} min-h-12`}
+                label="Verschlüsselung"
+              />
             </label>
             <label className={LABEL_CLASS}>
               Port

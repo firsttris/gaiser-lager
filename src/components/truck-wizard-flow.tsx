@@ -6,6 +6,7 @@ import { AutocompleteInput } from './autocomplete-input'
 import { useAppState, type Company, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { Spinner } from './spinner'
+import { SelectInput } from './select-input'
 
 function money(value: number) {
   return new Intl.NumberFormat('de-DE', {
@@ -91,17 +92,14 @@ export function TruckWizardFlow({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-semibold text-slate-700">LKW</label>
-            <select
-              value={selectedTruckId}
-              onChange={(e) => setSelectedTruckId(Number(e.target.value))}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-lg outline-none focus:border-amber-500"
-            >
-              {trucks.map((truck) => (
-                <option key={truck.id} value={truck.id}>
-                  {truck.name}
-                </option>
-              ))}
-            </select>
+            <SelectInput
+              value={String(selectedTruckId)}
+              onChange={(truckId) => setSelectedTruckId(Number(truckId))}
+              options={trucks.map((truck) => ({ value: String(truck.id), label: truck.name }))}
+              className="mt-2 w-full min-h-14 px-4 py-4 text-lg"
+              size="large"
+              label="LKW"
+            />
           </div>
 
           <div>

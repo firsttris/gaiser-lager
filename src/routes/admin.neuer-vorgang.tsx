@@ -3,6 +3,7 @@ import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useMemo, useState } from 'react'
 import { BookingForCompany } from '../components/booking-for-company'
 import { useAppState } from '../state/app-state'
+import { SelectInput } from '../components/select-input'
 
 export const Route = createFileRoute('/admin/neuer-vorgang')({
   beforeLoad: async ({ context }) => {
@@ -40,18 +41,14 @@ function AdminNeuerVorgangPage() {
 
         <div className="mt-5">
           <label className="block text-sm font-semibold text-slate-700">Kunde</label>
-          <select
+          <SelectInput
             value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-slate-800 sm:max-w-sm"
-          >
-            <option value="">Bitte Kunde auswählen</option>
-            {sortedCompanies.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            onChange={setCompanyId}
+            options={sortedCompanies.map((c) => ({ value: c.id, label: c.name }))}
+            className="mt-2 w-full min-h-12 px-3 py-2 font-normal sm:max-w-sm"
+            placeholder="Bitte Kunde auswählen"
+            label="Kunde"
+          />
         </div>
       </article>
 

@@ -6,6 +6,7 @@ import { type ConstructionSite, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
 import { FormDialog } from '../components/form-dialog'
 import { ConfirmDialog } from '../components/confirm-dialog'
+import { SelectInput } from '../components/select-input'
 
 export const Route = createFileRoute('/admin/baustellen')({
   beforeLoad: async ({ context }) => {
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/admin/baustellen')({
 })
 
 const INPUT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800'
-const SELECT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-slate-800'
+const SELECT_CLASS = 'mt-2 w-full min-h-12 px-4 py-3 font-normal'
 
 function AdminSitesPage() {
   const {
@@ -49,16 +50,7 @@ function AdminSitesPage() {
         a.name.localeCompare(b.name, 'de'),
     )
 
-  const companyOptions = (
-    <>
-      <option value="">Bitte Kunde auswählen</option>
-      {sortedCompanies.map((company) => (
-        <option key={company.id} value={company.id}>
-          {company.name}
-        </option>
-      ))}
-    </>
-  )
+  const companyOptions = sortedCompanies.map((company) => ({ value: company.id, label: company.name }))
 
   async function submitConstructionSite(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -123,9 +115,14 @@ function AdminSitesPage() {
       <form onSubmit={submitConstructionSite} className="mt-4 grid gap-4 md:grid-cols-5">
         <div className="md:col-span-2">
           <label className="text-sm font-semibold text-slate-700">Kunde</label>
-          <select value={createCompanyId} onChange={(event) => setCreateCompanyId(event.target.value)} className={SELECT_CLASS}>
-            {companyOptions}
-          </select>
+          <SelectInput
+            value={createCompanyId}
+            onChange={setCreateCompanyId}
+            options={companyOptions}
+            className={SELECT_CLASS}
+            placeholder="Bitte Kunde auswählen"
+            label="Kunde"
+          />
         </div>
         <div className="md:col-span-2">
           <label className="text-sm font-semibold text-slate-700">Baustelle</label>
@@ -166,14 +163,13 @@ function AdminSitesPage() {
 
       <label className="mt-6 block max-w-sm text-sm font-semibold text-slate-700">
         Kunde
-        <select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value)} className={SELECT_CLASS}>
-          <option value="all">Alle Kunden</option>
-          {sortedCompanies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name}
-            </option>
-          ))}
-        </select>
+        <SelectInput
+          value={companyFilter}
+          onChange={setCompanyFilter}
+          options={[{ value: 'all', label: 'Alle Kunden' }, ...companyOptions]}
+          className={SELECT_CLASS}
+          label="Kunde"
+        />
       </label>
 
       <div className="mt-4 space-y-3">
@@ -224,9 +220,14 @@ function AdminSitesPage() {
         </div>
         <div>
           <label className="text-sm font-semibold text-slate-700">Kunde</label>
-          <select value={editCompanyId} onChange={(event) => setEditCompanyId(event.target.value)} className={SELECT_CLASS}>
-            {companyOptions}
-          </select>
+          <SelectInput
+            value={editCompanyId}
+            onChange={setEditCompanyId}
+            options={companyOptions}
+            className={SELECT_CLASS}
+            placeholder="Bitte Kunde auswählen"
+            label="Kunde"
+          />
         </div>
         <p className="text-sm text-slate-700">
           Der neue Name gilt für offene Vorgänge. Bereits abgerechnete Vorgänge und Rechnungen bleiben unverändert.

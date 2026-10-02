@@ -20,8 +20,16 @@ import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadg
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
 import { berlinIsoDate, formatBerlinDate } from '../utils/berlin-time'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const INVOICE_STATUS_OPTIONS = [
+  { value: 'all', label: 'Alle Status' },
+  { value: 'offen', label: 'Offen' },
+  { value: 'bezahlt', label: 'Bezahlt' },
+  { value: 'storniert', label: 'Storniert' },
+]
 
 export const Route = createFileRoute('/admin/rechnungen')({
   beforeLoad: async ({ context }) => {
@@ -211,30 +219,22 @@ function AdminRechnungenPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Firma
-            <select
+            <SelectInput
               value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Firmen</option>
-              {companyOptions.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
+              onChange={setCompanyFilter}
+              options={[{ value: 'all', label: 'Alle Firmen' }, ...companyOptions.map((company) => ({ value: company.id, label: company.name }))]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              <option value="offen">Offen</option>
-              <option value="bezahlt">Bezahlt</option>
-              <option value="storniert">Storniert</option>
-            </select>
+              onChange={(status) => setStatusFilter(status as typeof statusFilter)}
+              options={INVOICE_STATUS_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -243,7 +243,7 @@ function AdminRechnungenPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Rechnungs-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />

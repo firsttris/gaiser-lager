@@ -1,6 +1,7 @@
 import type { RecordItem, RecordStatus } from '../state/app-state'
 import { flowLabel, money, quantity, statusBadge, statusStages } from '../utils/history-utils'
 import { DocLinkButton } from './doc-link-button'
+import { SelectInput } from './select-input'
 
 interface Props {
   records: RecordItem[]
@@ -124,17 +125,13 @@ export function HistoryTable({
               {onStatusChange && (
                 <label className="mt-3 block text-xs font-semibold text-slate-700">
                   Status
-                  <select
+                  <SelectInput
                     value={record.status}
-                    onChange={(event) => onStatusChange(record.id, event.target.value as RecordStatus)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs font-normal outline-none focus:border-slate-800"
-                  >
-                    {statusStages.map((stage) => (
-                      <option key={stage.value} value={stage.value}>
-                        {stage.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(status) => onStatusChange(record.id, status as RecordStatus)}
+                    options={statusStages}
+                    className="mt-1 w-full min-h-10 px-2 py-1 text-sm font-normal"
+                    label="Status"
+                  />
                 </label>
               )}
             </article>
@@ -215,17 +212,13 @@ export function HistoryTable({
                   </td>
                   {onStatusChange ? (
                     <td className="px-2 py-2">
-                      <select
+                      <SelectInput
                         value={record.status}
-                        onChange={(event) => onStatusChange(record.id, event.target.value as RecordStatus)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-normal outline-none focus:border-slate-800"
-                      >
-                        {statusStages.map((stage) => (
-                          <option key={stage.value} value={stage.value}>
-                            {stage.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(status) => onStatusChange(record.id, status as RecordStatus)}
+                        options={statusStages}
+                        className="w-full min-h-10 px-2 py-1 text-sm font-normal"
+                        label="Status"
+                      />
                     </td>
                   ) : (
                     <td className="px-2 py-2">

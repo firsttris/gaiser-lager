@@ -17,8 +17,16 @@ import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-do
 import { berlinIsoDate } from '../utils/berlin-time'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: 'Alle Typen' },
+  { value: 'dropoff', label: 'Annahme' },
+  { value: 'pickup', label: 'Verkauf' },
+  { value: 'lkw', label: 'LKW' },
+]
 
 export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPage })
 
@@ -141,30 +149,22 @@ function HistoryPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Typ
-            <select
+            <SelectInput
               value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Typen</option>
-              <option value="dropoff">Annahme</option>
-              <option value="pickup">Verkauf</option>
-              <option value="lkw">LKW</option>
-            </select>
+              onChange={(type) => setTypeFilter(type as 'all' | 'pickup' | 'dropoff' | 'lkw')}
+              options={TYPE_FILTER_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'all' | RecordStatus)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              {statusStages.map((stage) => (
-                <option key={stage.value} value={stage.value}>{stage.label}</option>
-              ))}
-            </select>
+              onChange={(status) => setStatusFilter(status as 'all' | RecordStatus)}
+              options={[{ value: 'all', label: 'Alle Status' }, ...statusStages]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -173,7 +173,7 @@ function HistoryPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="Baustelle, LS-/RG-/ST-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
