@@ -6,7 +6,7 @@ import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
 import { CompanyInput, PinInput } from '../components/company-form-inputs'
-import { PinPad } from '../components/pin-pad'
+import { PinEntry } from '../components/pin-pad'
 import { PostalCodeCityFields } from '../components/postal-code-city-fields'
 import { isValidEmail } from '../utils/email'
 
@@ -33,18 +33,24 @@ function RegistrierenPage() {
     if (isLoggedIn) void navigate({ to: '/kunde/neuer-vorgang' })
   }, [isLoggedIn, navigate])
 
-  async function submitMasterPin(event: React.FormEvent<HTMLFormElement>) {
+  function submitMasterPin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    void attemptMasterPin(masterPin)
+  }
 
-    if (masterPin.length !== 4) {
+  // Takes the PIN as an argument: the pad calls this with the fourth digit
+  // before React has re-rendered with the new state.
+  async function attemptMasterPin(enteredPin: string) {
+    if (enteredPin.length !== 4) {
       setMasterPinError('Bitte eine 4-stellige PIN eingeben.')
       return
     }
 
     try {
-      const result = await verifyMasterPin({ masterPin })
+      const result = await verifyMasterPin({ masterPin: enteredPin })
       if (!result.ok) {
         setMasterPinError(result.message)
+        setMasterPin('')
         return
       }
 
@@ -52,6 +58,7 @@ function RegistrierenPage() {
       setStep('konto')
     } catch {
       setMasterPinError('Master-PIN ist ungültig.')
+      setMasterPin('')
     }
   }
 
@@ -128,8 +135,17 @@ function RegistrierenPage() {
 
           {step === 'masterpin' ? (
             <form onSubmit={submitMasterPin} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-              <PinInput label="Master-PIN" value={masterPin} onChange={setMasterPin} />
-              <PinPad value={masterPin} onChange={setMasterPin} disabled={isVerifyingMasterPin} />
+              <PinEntry
+                label="Master-PIN"
+                value={masterPin}
+                onChange={(next) => {
+                  setMasterPin(next)
+                  setMasterPinError('')
+                }}
+                onComplete={(full) => void attemptMasterPin(full)}
+                disabled={isVerifyingMasterPin}
+                hasError={Boolean(masterPinError)}
+              />
 
               {masterPinError && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{masterPinError}</p>}
 

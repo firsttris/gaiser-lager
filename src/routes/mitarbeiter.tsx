@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { ClipboardPlus, History, HardHat, LogOut } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
-import { PinPad } from '../components/pin-pad'
+import { PinEntry } from '../components/pin-pad'
 import { FontScaleSwitch } from '../components/font-scale-switch'
 import { Logo } from '../components/logo'
 import { NavLink } from '../components/nav-link'
@@ -98,15 +98,21 @@ function EmployeeLogin() {
     }
   }, [navigate])
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    void attemptLogin(pin)
+  }
+
+  // Takes the PIN as an argument: the pad calls this with the fourth digit
+  // before React has re-rendered with the new state.
+  async function attemptLogin(enteredPin: string) {
     if (!selected) return
-    if (!/^\d{4}$/.test(pin)) {
+    if (!/^\d{4}$/.test(enteredPin)) {
       setError('Bitte die 4-stellige PIN eingeben.')
       return
     }
     try {
-      const result = await employeeLogin(selected.id, pin)
+      const result = await employeeLogin(selected.id, enteredPin)
       if (!result.ok) {
         setError(result.message)
         setPin('')
@@ -115,6 +121,7 @@ function EmployeeLogin() {
       void navigate({ to: '/mitarbeiter/neuer-vorgang' })
     } catch {
       setError('Anmeldung fehlgeschlagen. Bitte erneut versuchen.')
+      setPin('')
     }
   }
 
@@ -157,22 +164,17 @@ function EmployeeLogin() {
         ) : (
           <form onSubmit={submit} className="mt-6 space-y-5">
             <p className="text-xl font-semibold text-slate-900">{selected.name}</p>
-            <div>
-              <label className="text-sm font-semibold text-slate-700" htmlFor="employee-pin">
-                PIN
-              </label>
-              <input
-                id="employee-pin"
-                type="password"
-                inputMode="numeric"
-                autoComplete="off"
-                value={pin}
-                onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
-                placeholder="4-stellig"
-                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-center text-2xl tracking-[0.5em] placeholder:text-lg placeholder:tracking-normal outline-none focus:border-brand-600"
-              />
-            </div>
-            <PinPad value={pin} onChange={setPin} disabled={isEmployeeLoggingIn} />
+            <PinEntry
+              label="PIN"
+              value={pin}
+              onChange={(next) => {
+                setPin(next)
+                setError('')
+              }}
+              onComplete={(full) => void attemptLogin(full)}
+              disabled={isEmployeeLoggingIn}
+              hasError={Boolean(error)}
+            />
             {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
             <div className="flex gap-3">
               <button
