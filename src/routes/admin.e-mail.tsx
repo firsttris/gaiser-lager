@@ -391,7 +391,7 @@ function TemplateEditor({
             type="button"
             onClick={() => insertPlaceholder(placeholder.token)}
             title={placeholder.description}
-            className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-800 hover:bg-slate-200"
+            className="min-h-11 rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-slate-800 hover:bg-slate-200"
           >
             {placeholder.token}
           </button>

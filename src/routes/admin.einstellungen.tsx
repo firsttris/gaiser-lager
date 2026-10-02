@@ -170,70 +170,70 @@ function AdminEinstellungenPage() {
       <form onSubmit={submit} className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Format Rechnungsnummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Format Rechnungsnummer</label>
             <input
               value={invoiceTemplate}
               onChange={(e) => setInvoiceTemplate(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
             <p className="mt-1 text-xs text-slate-600">Vorschau: {invoicePreview}</p>
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Nächste Rechnungsnummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Nächste Rechnungsnummer</label>
             <input
               type="number"
               min={1}
               value={nextInvoiceNumber}
               onChange={(e) => setNextInvoiceNumber(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Format Lieferscheinnummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Format Lieferscheinnummer</label>
             <input
               value={deliveryNoteTemplate}
               onChange={(e) => setDeliveryNoteTemplate(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
             <p className="mt-1 text-xs text-slate-600">Vorschau: {deliveryNotePreview}</p>
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-slate-700">Nächste Lieferscheinnummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Nächste Lieferscheinnummer</label>
             <input
               type="number"
               min={1}
               value={nextDeliveryNoteNumber}
               onChange={(e) => setNextDeliveryNoteNumber(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>
         </div>
 
         <div className="md:col-span-2">
-          <label className="text-sm font-semibold text-slate-700">Stellen der laufenden Nummer</label>
+          <label className="block text-sm font-semibold text-slate-700">Stellen der laufenden Nummer</label>
           <input
             type="number"
             min={1}
             max={10}
             value={numberPadding}
             onChange={(e) => setNumberPadding(e.target.value)}
-            className="mt-2 w-32 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            className="mt-2 w-32 min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
           />
           <p className="mt-1 text-xs text-slate-600">Z.B. 4 ergibt 0001, 0002, ...</p>
         </div>
 
         <div className="space-y-4 md:col-span-2 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Format Kundennummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Format Kundennummer</label>
             <input
               value={customerNumberTemplate}
               onChange={(e) => setCustomerNumberTemplate(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
             <p className="mt-1 text-xs text-slate-600">
               Vorschau: {customerNumberPreview}. Gilt, wenn beim Anlegen keine Kundennummer eingetragen wird, und bei
@@ -241,14 +241,14 @@ function AdminEinstellungenPage() {
             </p>
           </div>
           <div>
-            <label className="text-sm font-semibold text-slate-700">Nächste Kundennummer</label>
+            <label className="block text-sm font-semibold text-slate-700">Nächste Kundennummer</label>
             <input
               type="number"
               inputMode="numeric"
               min={1}
               value={nextCustomerNumber}
               onChange={(e) => setNextCustomerNumber(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
             {highestCustomerNumber !== null && (
               <p className={`mt-1 text-xs ${nextCustomerNumberIsBelowHighest ? 'font-semibold text-amber-800' : 'text-slate-600'}`}>
@@ -310,7 +310,7 @@ function AdminEinstellungenPage() {
 
         <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Kunden und Mitarbeiter (Minuten)</label>
+            <label className="block text-sm font-semibold text-slate-700">Kunden und Mitarbeiter (Minuten)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -318,11 +318,11 @@ function AdminEinstellungenPage() {
               max={240}
               value={inactivityTimeoutMinutes}
               onChange={(e) => setInactivityTimeoutMinutes(e.target.value)}
-              className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+              className="mt-2 w-40 min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-slate-700">Admin (Minuten)</label>
+            <label className="block text-sm font-semibold text-slate-700">Admin (Minuten)</label>
             <input
               type="number"
               inputMode="numeric"
@@ -330,7 +330,7 @@ function AdminEinstellungenPage() {
               max={240}
               value={adminInactivityTimeoutMinutes}
               onChange={(e) => setAdminInactivityTimeoutMinutes(e.target.value)}
-              className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+              className="mt-2 w-40 min-h-12 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>
 
@@ -419,7 +419,7 @@ function AdminPasswordSection() {
       </p>
 
       <form onSubmit={submit} className="mt-4 grid gap-4 md:grid-cols-3">
-        <label className="text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-slate-700">
           Aktuelles Passwort
           <input
             type="password"
@@ -429,7 +429,7 @@ function AdminPasswordSection() {
             className={PASSWORD_INPUT_CLASS}
           />
         </label>
-        <label className="text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-slate-700">
           Neues Passwort
           <input
             type="password"
@@ -440,7 +440,7 @@ function AdminPasswordSection() {
             className={PASSWORD_INPUT_CLASS}
           />
         </label>
-        <label className="text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-slate-700">
           Neues Passwort wiederholen
           <input
             type="password"

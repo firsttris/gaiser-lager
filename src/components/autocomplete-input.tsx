@@ -123,7 +123,7 @@ export function AutocompleteInput({
         tabIndex={-1}
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => setIsMenuOpen((open) => !open)}
-        className="absolute right-3 top-[2.6rem] inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-700"
+        className="absolute right-1.5 top-[2.225rem] inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-700"
         aria-label={`${label} Vorschläge anzeigen`}
       >
         <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">

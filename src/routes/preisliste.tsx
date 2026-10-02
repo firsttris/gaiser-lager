@@ -34,7 +34,7 @@ function PriceListPage() {
         <div className="mb-8 flex items-center gap-4">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4" />
             Zurück zum Login

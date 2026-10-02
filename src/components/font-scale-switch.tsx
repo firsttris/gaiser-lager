@@ -31,6 +31,9 @@ function applyScale(scale: FontScale) {
   }
 }
 
+// The three A's stand on one baseline (items-end + equal bottom padding), like
+// letters in a line of text, instead of each being centred in its box.
+//
 // Text size per device: the kiosk tablet can be set to large once and keeps it.
 // "auto" (nothing selected) uses the default from styles.css (100 %).
 export function FontScaleSwitch({ className = '' }: { className?: string }) {
@@ -54,7 +57,7 @@ export function FontScaleSwitch({ className = '' }: { className?: string }) {
           aria-label={option.title}
           aria-pressed={scale === option.value}
           onClick={() => choose(option.value)}
-          className={`flex min-h-12 min-w-12 items-center justify-center rounded-lg px-2 font-bold leading-none ${option.className} ${
+          className={`flex min-h-12 min-w-12 items-end justify-center rounded-lg px-2 pb-[0.6rem] font-bold leading-none ${option.className} ${
             scale === option.value ? 'bg-brand-600 text-white' : 'text-slate-800 hover:bg-white'
           }`}
         >

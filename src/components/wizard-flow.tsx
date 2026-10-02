@@ -224,7 +224,7 @@ export function WizardFlow({
             placeholder="z.B. Nordring 12, Berlin"
             required
             helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-brand-600"
+            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-14 text-lg outline-none focus:border-brand-600"
           />
         </div>
 

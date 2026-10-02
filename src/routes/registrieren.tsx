@@ -143,7 +143,7 @@ function RegistrierenPage() {
               </button>
 
               <div className="border-t border-slate-200 pt-3 text-center">
-                <Link to="/" className="text-sm font-semibold text-slate-600 no-underline hover:text-slate-900">
+                <Link to="/" className="inline-flex min-h-12 items-center text-sm font-semibold text-slate-600 no-underline hover:text-slate-900">
                   Zurück zur Anmeldung
                 </Link>
               </div>
