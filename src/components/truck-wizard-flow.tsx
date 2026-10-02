@@ -1,23 +1,29 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { constructionSitesQueryOptions } from '../server/construction-sites'
-import { useEffect, useRef, useState } from 'react'
-import { AutocompleteInput } from './autocomplete-input'
+import { recentBookingsQueryOptions, type RecentBooking } from '../server/records'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppState, type Company, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { Spinner } from './spinner'
-import { SelectInput } from './select-input'
+import { formatAmount } from './amount-dialog'
+import {
+  BookingSummary,
+  ChoiceButtons,
+  LastBookingButton,
+  QuickAmountPicker,
+  SitePicker,
+  buildQuickAmounts,
+  currentSiteName,
+  money,
+  orderSiteNames,
+} from './booking-pickers'
 import { DeliveryNotePhotoPicker, type PendingPhoto, releasePendingPhotos } from './delivery-note-photo-picker'
 import { uploadDeliveryNotePhoto } from '../server/delivery-note-photos'
 import { blobToDataUrl } from '../utils/shrink-image'
 
-function money(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-  }).format(value)
-}
+// Half a day and a full day are the usual truck bookings.
+const DEFAULT_QUICK_HOURS = [1, 2, 4, 6, 8]
 
 export function TruckWizardFlow({
   company,
@@ -33,8 +39,9 @@ export function TruckWizardFlow({
 }) {
   const { trucks, createTruckRecord, isCreatingTruckRecord } = useAppState()
   const { data: constructionSites = [] } = useQuery(constructionSitesQueryOptions(company.id))
+  const { data: recentBookings = [] } = useQuery(recentBookingsQueryOptions(company.id))
 
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState<'form' | 'success'>('form')
   const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedTruckId, setSelectedTruckId] = useState(() => trucks[0]?.id ?? 0)
   const [hours, setHours] = useState('')
@@ -61,9 +68,26 @@ export function TruckWizardFlow({
   const validConstructionSiteName = constructionSiteName.trim().length > 0
   const currentHourlyPrice = selectedTruck?.price ?? 0
   const total = validHours ? parsedHours * currentHourlyPrice : 0
+  const isComplete = Boolean(selectedTruck) && validHours && validConstructionSiteName
+
+  const truckBookings = useMemo(() => recentBookings.filter((booking) => booking.type === 'lkw'), [recentBookings])
+  // "Wie zuletzt" only for a truck that is still on offer.
+  const lastBooking = truckBookings.find((booking) => trucks.some((truck) => truck.name === booking.productName))
+  const quickHours = useMemo(
+    () => buildQuickAmounts(truckBookings.filter((b) => b.productName === selectedTruck?.name).map((b) => b.amount), DEFAULT_QUICK_HOURS),
+    [truckBookings, selectedTruck?.name],
+  )
+  const allSiteNames = useMemo(() => orderSiteNames(recentBookings, constructionSites), [recentBookings, constructionSites])
+
+  function applyBooking(booking: RecentBooking) {
+    const truck = trucks.find((t) => t.name === booking.productName)
+    if (truck) setSelectedTruckId(truck.id)
+    setHours(String(booking.amount))
+    setConstructionSiteName(currentSiteName(allSiteNames, booking.constructionSiteName))
+  }
 
   async function submitRecord() {
-    if (!selectedTruck || !validHours || !validConstructionSiteName) return
+    if (!isComplete || !selectedTruck) return
 
     const record = await createTruckRecord({
       truck: selectedTruck,
@@ -82,7 +106,7 @@ export function TruckWizardFlow({
       total,
       record,
     })
-    setStep(3)
+    setStep('success')
     setSelectedTruckId(trucks[0]?.id ?? 0)
     setHours('')
     setConstructionSiteName('')
@@ -125,49 +149,25 @@ export function TruckWizardFlow({
     }
   }
 
-  if (step === 1) {
+  if (step === 'form') {
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+      <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">LKW und Stunden</h3>
         <p className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-600">
           Kunde: <strong>{company.name}</strong>
         </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-sm font-semibold text-slate-700">LKW</label>
-            <SelectInput
-              value={String(selectedTruckId)}
-              onChange={(truckId) => setSelectedTruckId(Number(truckId))}
-              options={trucks.map((truck) => ({ value: String(truck.id), label: truck.name }))}
-              className="mt-2 w-full min-h-14 px-4 py-4 text-lg"
-              size="large"
-              label="LKW"
-            />
-          </div>
 
-          <div>
-            <label className="text-sm font-semibold text-slate-700">Stunden</label>
-            <input
-              value={hours}
-              onChange={(e) => setHours(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
-              inputMode="decimal"
-              placeholder="z.B. 4.5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-brand-600"
-            />
-          </div>
+        {lastBooking && <LastBookingButton booking={lastBooking} onApply={() => applyBooking(lastBooking)} />}
 
-          <div className="sm:col-span-2">
-            <AutocompleteInput
-              label="Baustelle"
-              value={constructionSiteName}
-              onChange={setConstructionSiteName}
-              options={constructionSites.map((site) => ({ id: site.id, label: site.name, badge: 'bekannt' }))}
-              placeholder="z.B. Nordring 12, Berlin"
-              required
-              helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-              inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-14 text-lg outline-none focus:border-brand-600"
-            />
-          </div>
+        <div className="grid gap-5">
+          <ChoiceButtons
+            label="LKW"
+            options={trucks.map((truck) => ({ value: truck.id, title: truck.name, detail: `${money(truck.price)} / Std. netto` }))}
+            value={selectedTruckId}
+            onChange={setSelectedTruckId}
+          />
+          <QuickAmountPicker label="Stunden" unit="Std." value={hours} onChange={setHours} quickAmounts={quickHours} />
+          <SitePicker siteNames={allSiteNames} value={constructionSiteName} onChange={setConstructionSiteName} />
         </div>
 
         {withDeliveryNotePhotos && (
@@ -181,9 +181,23 @@ export function TruckWizardFlow({
           </div>
         )}
 
-        <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-          Stundenpreis: <strong>{money(currentHourlyPrice)}</strong> / Std. (netto)
-        </div>
+        <BookingSummary
+          headline={
+            validHours && selectedTruck
+              ? `${formatAmount(parsedHours)} Std. ${selectedTruck.name}${
+                  withDeliveryNotePhotos && photos.length ? ` · ${photos.length} ${photos.length === 1 ? 'Foto' : 'Fotos'}` : ''
+                }`
+              : null
+          }
+          siteName={constructionSiteName}
+          unitPriceText={`${money(currentHourlyPrice)} / Std. netto`}
+          total={total}
+          emptyText={
+            <>
+              Stundenpreis: <strong>{money(currentHourlyPrice)}</strong> / Std. (netto). Stunden wählen, dann erscheint die Summe.
+            </>
+          }
+        />
 
         <div className="flex gap-2">
           <button
@@ -195,71 +209,11 @@ export function TruckWizardFlow({
           </button>
           <button
             type="button"
-            onClick={() => setStep(2)}
-            disabled={!validHours || !validConstructionSiteName}
-            className="rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            Weiter zur Prüfung
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 2) {
-    return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-        <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
-        <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Typ</dt>
-            <dd className="font-semibold">LKW-Stunden</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">LKW</dt>
-            <dd className="font-semibold">{selectedTruck?.name}</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Stunden</dt>
-            <dd className="font-semibold">{hours} Std.</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Baustelle</dt>
-            <dd className="font-semibold">{constructionSiteName.trim()}</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Stundenpreis</dt>
-            <dd className="font-semibold">
-              {money(currentHourlyPrice)} (netto)
-            </dd>
-          </div>
-          {withDeliveryNotePhotos && (
-            <div className="rounded-xl bg-slate-50 p-4">
-              <dt className="text-slate-600">Lieferschein-Fotos</dt>
-              <dd className="font-semibold">{photos.length === 0 ? 'keine' : photos.length}</dd>
-            </div>
-          )}
-          <div className="rounded-xl bg-amber-50 p-4">
-            <dt className="text-amber-700">Gesamtsumme</dt>
-            <dd className="text-lg font-bold text-amber-800">{money(total)}</dd>
-          </div>
-        </dl>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setStep(1)}
-            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
-          >
-            Zurück
-          </button>
-          <button
-            type="button"
             onClick={submitRecord}
-            disabled={!validHours || !validConstructionSiteName || isCreatingTruckRecord}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!isComplete || isCreatingTruckRecord}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-lg font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isCreatingTruckRecord && <Spinner className="h-4 w-4" />}
+            {isCreatingTruckRecord && <Spinner className="h-5 w-5" />}
             Vorgang anlegen
           </button>
         </div>
@@ -267,7 +221,7 @@ export function TruckWizardFlow({
     )
   }
 
-  if (step === 3 && successRecord) {
+  if (step === 'success' && successRecord) {
     return (
       <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-card">
         <div className="flex items-center gap-3">

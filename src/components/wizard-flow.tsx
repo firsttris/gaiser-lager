@@ -1,11 +1,10 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { History, MapPin } from 'lucide-react'
 import { constructionSitesQueryOptions } from '../server/construction-sites'
 import { recentBookingsQueryOptions, type RecentBooking } from '../server/records'
 import { useMemo, useState } from 'react'
-import { SitePickerDialog, sameSiteName } from './site-dialog'
-import { AmountPadDialog, formatAmount } from './amount-dialog'
+import { formatAmount } from './amount-dialog'
+import { BookingSummary, LastBookingButton, QuickAmountPicker, SitePicker, buildQuickAmounts, currentSiteName, money, orderSiteNames } from './booking-pickers'
 import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
@@ -55,50 +54,7 @@ function getVisual(product: { id: number; imageUrl: string | null }): ProductVis
   return product.imageUrl ? { ...staticVisual, imagePath: product.imageUrl } : staticVisual
 }
 
-function money(value: number) {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-  }).format(value)
-}
-
-// One-tap amounts on the kiosk: the amounts this company booked most often
-// for the material, topped up with round defaults until the row is full.
 const DEFAULT_QUICK_AMOUNTS = [5, 10, 15, 20, 25]
-const QUICK_AMOUNT_COUNT = 5
-const SITE_CHOICE_COUNT = 5
-
-function buildQuickAmounts(history: number[]) {
-  const counts = new Map<number, number>()
-  for (const amount of history) counts.set(amount, (counts.get(amount) ?? 0) + 1)
-  const frequent = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0] - b[0])
-    .slice(0, QUICK_AMOUNT_COUNT)
-    .map(([amount]) => amount)
-  for (const amount of DEFAULT_QUICK_AMOUNTS) {
-    if (frequent.length >= QUICK_AMOUNT_COUNT) break
-    if (!frequent.includes(amount)) frequent.push(amount)
-  }
-  return frequent.sort((a, b) => a - b)
-}
-
-// All of the company's sites, recently used first, then the rest by name.
-// Recent bookings may name sites that were renamed or deleted since; only
-// sites that still exist are offered (when the site list is loaded).
-function orderSiteNames(recent: RecentBooking[], allSites: { name: string }[]) {
-  const names: string[] = []
-  const add = (name: string) => {
-    if (!names.some((existing) => sameSiteName(existing, name))) names.push(name)
-  }
-  const existing = allSites.map((site) => site.name)
-  for (const booking of recent) {
-    const current = existing.find((name) => sameSiteName(name, booking.constructionSiteName))
-    if (current) add(current)
-  }
-  for (const name of existing) add(name)
-  return names
-}
 
 export function WizardFlow({
   flowType,
@@ -120,8 +76,6 @@ export function WizardFlow({
   const navigate = useNavigate()
 
   const [step, setStep] = useState<'form' | 'success'>('form')
-  const [isAmountDialogOpen, setIsAmountDialogOpen] = useState(false)
-  const [isSiteDialogOpen, setIsSiteDialogOpen] = useState(false)
   const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(
     () => products.find((p) => p.flow === flowType)?.id ?? 0,
@@ -153,27 +107,16 @@ export function WizardFlow({
   // "Wie zuletzt" only for a material that is still on offer.
   const lastBooking = flowBookings.find((booking) => availableProducts.some((p) => p.name === booking.productName))
   const quickAmounts = useMemo(
-    () => buildQuickAmounts(flowBookings.filter((b) => b.productName === selectedProduct?.name).map((b) => b.amount)),
+    () => buildQuickAmounts(flowBookings.filter((b) => b.productName === selectedProduct?.name).map((b) => b.amount), DEFAULT_QUICK_AMOUNTS),
     [flowBookings, selectedProduct?.name],
   )
-  const isCustomAmount = validAmount && !quickAmounts.includes(parsedAmount)
   const allSiteNames = useMemo(() => orderSiteNames(recentBookings, constructionSites), [recentBookings, constructionSites])
-  const trimmedSiteName = constructionSiteName.trim()
-  // The most relevant sites as buttons. A chosen site that isn't among them
-  // (picked in the dialog, new, or from "Wie zuletzt") is shown as an extra,
-  // selected button so the choice is always visible in the same place.
-  const siteButtons = useMemo(() => {
-    const buttons = allSiteNames.slice(0, SITE_CHOICE_COUNT)
-    if (trimmedSiteName && !buttons.some((name) => sameSiteName(name, trimmedSiteName))) buttons.push(trimmedSiteName)
-    return buttons
-  }, [allSiteNames, trimmedSiteName])
-  const isNewSite = validConstructionSiteName && !allSiteNames.some((name) => sameSiteName(name, trimmedSiteName))
 
   function applyBooking(booking: RecentBooking) {
     const product = availableProducts.find((p) => p.name === booking.productName)
     if (product) setSelectedProductId(product.id)
     setAmount(String(booking.amount))
-    setConstructionSiteName(allSiteNames.find((name) => sameSiteName(name, booking.constructionSiteName)) ?? booking.constructionSiteName)
+    setConstructionSiteName(currentSiteName(allSiteNames, booking.constructionSiteName))
   }
 
   async function submitRecord() {
@@ -230,22 +173,7 @@ export function WizardFlow({
           </p>
         )}
 
-        {lastBooking && (
-          <button
-            type="button"
-            onClick={() => applyBooking(lastBooking)}
-            className="flex w-full items-center gap-4 rounded-xl border-2 border-brand-600 bg-brand-50 px-5 py-4 text-left hover:bg-brand-100"
-          >
-            <History className="h-7 w-7 shrink-0 text-brand-700" strokeWidth={2.25} />
-            <span className="min-w-0">
-              <span className="block text-xs font-semibold tracking-wider text-brand-700 uppercase">Wie zuletzt</span>
-              <span className="block truncate text-lg font-semibold text-slate-900">
-                {formatAmount(lastBooking.amount)} {lastBooking.unit} {lastBooking.productName} · {lastBooking.constructionSiteName}
-              </span>
-              <span className="block text-sm text-slate-600">{lastBooking.createdAt}</span>
-            </span>
-          </button>
-        )}
+        {lastBooking && <LastBookingButton booking={lastBooking} onApply={() => applyBooking(lastBooking)} />}
 
         <div className="grid gap-5">
           <div>
@@ -296,94 +224,21 @@ export function WizardFlow({
           </div>
 
 
-          <div>
-            <p className="text-sm font-semibold text-slate-700">Menge ({unit})</p>
-            <div className="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-6" role="group" aria-label="Menge">
-              {quickAmounts.map((value) => {
-                const isSelected = validAmount && parsedAmount === value
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setAmount(String(value))}
-                    aria-pressed={isSelected}
-                    className={`min-h-14 rounded-xl border-2 text-lg font-semibold tabular-nums transition ${
-                      isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
-                    }`}
-                  >
-                    {formatAmount(value)}
-                  </button>
-                )
-              })}
-              <button
-                type="button"
-                onClick={() => setIsAmountDialogOpen(true)}
-                aria-pressed={isCustomAmount}
-                className={`min-h-14 rounded-xl border-2 px-2 text-base font-semibold transition ${
-                  isCustomAmount ? 'border-brand-600 bg-brand-50 text-brand-700 tabular-nums' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                {isCustomAmount ? formatAmount(parsedAmount) : 'Andere …'}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-semibold text-slate-700">Baustelle</p>
-            <div className="mt-2 grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Baustelle">
-              {siteButtons.map((name) => {
-                const isSelected = sameSiteName(name, trimmedSiteName)
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => setConstructionSiteName(name)}
-                    aria-pressed={isSelected}
-                    className={`min-h-14 rounded-xl border-2 px-4 py-2.5 text-left text-base font-semibold break-words transition ${
-                      isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
-                    }`}
-                  >
-                    {name}
-                    {isSelected && isNewSite && <span className="mt-0.5 block text-xs font-medium text-brand-700">Neu, wird mit dem Vorgang gespeichert</span>}
-                  </button>
-                )
-              })}
-              <button
-                type="button"
-                onClick={() => setIsSiteDialogOpen(true)}
-                className="flex min-h-14 items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:border-slate-400"
-              >
-                <MapPin className="h-5 w-5 shrink-0" strokeWidth={2.25} />
-                {allSiteNames.length > 0 ? 'Andere Baustelle …' : 'Baustelle wählen …'}
-              </button>
-            </div>
-          </div>
+          <QuickAmountPicker label="Menge" unit={unit} value={amount} onChange={setAmount} quickAmounts={quickAmounts} />
+          <SitePicker siteNames={allSiteNames} value={constructionSiteName} onChange={setConstructionSiteName} />
         </div>
 
-        {/* Replaces the former "Vorgang prüfen" step: everything that will be
-            booked is readable right above the button. */}
-        <div className={`rounded-xl p-4 ${validAmount ? 'bg-amber-50' : 'bg-slate-50'}`} aria-live="polite">
-          {validAmount && selectedProduct ? (
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-              <div className="min-w-0">
-                <p className="text-lg font-semibold text-slate-900">
-                  {formatAmount(parsedAmount)} {unit} {selectedProduct.name}
-                </p>
-                <p className="text-slate-700">
-                  {validConstructionSiteName ? trimmedSiteName : <span className="text-slate-500">Baustelle fehlt</span>} ·{' '}
-                  {money(currentUnitPrice)} / {unit} netto
-                </p>
-              </div>
-              <p className="text-2xl font-bold text-amber-800">
-                {money(total)} <span className="text-sm font-semibold">netto</span>
-              </p>
-            </div>
-          ) : (
-            <p className="text-slate-700">
+        <BookingSummary
+          headline={validAmount && selectedProduct ? `${formatAmount(parsedAmount)} ${unit} ${selectedProduct.name}` : null}
+          siteName={constructionSiteName}
+          unitPriceText={`${money(currentUnitPrice)} / ${unit} netto`}
+          total={total}
+          emptyText={
+            <>
               Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {unit} (netto). Menge wählen, dann erscheint die Summe.
-            </p>
-          )}
-        </div>
+            </>
+          }
+        />
 
         <div className="flex gap-2">
           <button
@@ -404,25 +259,6 @@ export function WizardFlow({
           </button>
         </div>
 
-        <SitePickerDialog
-          open={isSiteDialogOpen}
-          siteNames={allSiteNames}
-          onClose={() => setIsSiteDialogOpen(false)}
-          onPick={(name) => {
-            setConstructionSiteName(name)
-            setIsSiteDialogOpen(false)
-          }}
-        />
-        <AmountPadDialog
-          open={isAmountDialogOpen}
-          unit={unit}
-          initialValue={amount}
-          onClose={() => setIsAmountDialogOpen(false)}
-          onApply={(value) => {
-            setAmount(value)
-            setIsAmountDialogOpen(false)
-          }}
-        />
       </div>
     )
   }
