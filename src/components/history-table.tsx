@@ -76,10 +76,11 @@ export function HistoryTable({
 
   return (
     // Cards or table depending on the space the list actually has (container
-    // query), not the screen width: with the larger kiosk font the table needs
-    // more room than the same screen offers.
+    // query). In rem, so the larger kiosk font needs proportionally more room;
+    // 44rem is chosen so the portrait kiosk tablet (125 % font, ~940px of
+    // list width) still gets the table.
     <div className="@container">
-      <div className="mt-4 space-y-3 @4xl:hidden">
+      <div className="mt-4 space-y-3 @min-[44rem]:hidden">
         {records.map((record) => {
           return (
             <article
@@ -159,7 +160,7 @@ export function HistoryTable({
         })}
       </div>
 
-      <div className="mt-4 hidden @4xl:block">
+      <div className="mt-4 hidden @min-[44rem]:block">
         <table className="data-table table-fixed">
           <thead>
             <tr>
@@ -176,13 +177,12 @@ export function HistoryTable({
                   </label>
                 </th>
               )}
-              <th className="w-28">Datum</th>
-              <th className="w-32">Typ</th>
+              <th className="w-24">Datum</th>
               <th>{showCompanyColumn ? 'Firma / Baustelle' : 'Baustelle'}</th>
               <th>Produkt</th>
-              <th className="num w-24">Menge</th>
-              <th className={onStatusChange ? 'w-36' : 'w-32'}>Status</th>
-              <th className="w-44">Dateien</th>
+              <th className="num w-20">Menge</th>
+              <th className={onStatusChange ? 'w-36' : 'w-28'}>Status</th>
+              <th className="w-32">Dateien</th>
             </tr>
           </thead>
           <tbody>
@@ -212,14 +212,6 @@ export function HistoryTable({
                     <span className="cell-secondary">{time}</span>
                   </td>
                   <td className="wrap-break-word">
-                    {flowLabel(record.type)}
-                    {record.createdByName && (
-                      <span className="cell-secondary" title="Gebucht von">
-                        {record.createdByName}
-                      </span>
-                    )}
-                  </td>
-                  <td className="wrap-break-word">
                     {showCompanyColumn ? (
                       <>
                         <span className="cell-primary">{record.company}</span>
@@ -229,9 +221,13 @@ export function HistoryTable({
                       <span className="line-clamp-2">{record.constructionSiteName || '—'}</span>
                     )}
                   </td>
-                  <td>
-                    <span className="line-clamp-2 wrap-break-word" title={record.productName}>
+                  <td className="wrap-break-word">
+                    <span className="line-clamp-2" title={record.productName}>
                       {record.productName}
+                    </span>
+                    <span className="cell-secondary">
+                      {flowLabel(record.type)}
+                      {record.createdByName && <span title="Gebucht von"> · {record.createdByName}</span>}
                     </span>
                   </td>
                   <td className="num">

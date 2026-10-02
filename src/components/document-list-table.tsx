@@ -39,7 +39,7 @@ export function DocumentListTable({
     // Cards or table depending on the space the list actually has (container
     // query), see HistoryTable.
     <div className="@container">
-      <div className="mt-4 space-y-3 @4xl:hidden">
+      <div className="mt-4 space-y-3 @min-[44rem]:hidden">
         {groups.map(({ id, items }) => {
           const total = items.reduce((sum, r) => sum + r.total, 0)
           const badge = getBadge(items)
@@ -104,8 +104,8 @@ export function DocumentListTable({
         })}
       </div>
 
-      <div className="mt-4 hidden @4xl:block">
-        <table className="data-table">
+      <div className="mt-4 hidden @min-[44rem]:block">
+        <table className="data-table table-fixed">
           <thead>
             <tr>
               {selectable && (
@@ -123,13 +123,11 @@ export function DocumentListTable({
                   )}
                 </th>
               )}
-              <th className="w-28">Datum</th>
-              <th>Nummer</th>
+              <th className="w-44">Nummer / Datum</th>
               {showCompanyColumn && <th>Firma</th>}
-              <th className="num w-24">Positionen</th>
-              {showTotalColumn && <th className="num w-32">Gesamt</th>}
-              <th className="w-40">Status</th>
-              <th className="w-44">Dateien</th>
+              <th className="num w-28">{showTotalColumn ? 'Gesamt' : 'Positionen'}</th>
+              <th className="w-28">Status</th>
+              <th className="w-36">Dateien</th>
               {renderActions && <th className="w-40">Aktionen</th>}
             </tr>
           </thead>
@@ -155,13 +153,20 @@ export function DocumentListTable({
                     </td>
                   )}
                   <td>
-                    {date}
-                    <span className="cell-secondary">{time}</span>
+                    <span className="font-mono whitespace-nowrap">{id}</span>
+                    <span className="cell-secondary">
+                      {date}, {time}
+                    </span>
                   </td>
-                  <td className="font-mono whitespace-nowrap">{id}</td>
                   {showCompanyColumn && <td className="cell-primary wrap-break-word">{items[0].company}</td>}
-                  <td className="num">{items.length}</td>
-                  {showTotalColumn && <td className="num">{money(total)}</td>}
+                  <td className="num">
+                    {showTotalColumn ? money(total) : items.length}
+                    {showTotalColumn && (
+                      <span className="cell-secondary">
+                        {items.length} {items.length === 1 ? 'Position' : 'Positionen'}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <div className="cell-badge flex flex-wrap gap-1">
                       <span className={`pill ${badge.className}`}>{badge.label}</span>

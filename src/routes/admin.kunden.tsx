@@ -231,7 +231,7 @@ function AdminKundenPage() {
 
       <div className="@container">
         {/* Cards when the list has too little room for the table (container query). */}
-        <div className="mt-5 space-y-3 @3xl:hidden">
+        <div className="mt-5 space-y-3 @min-[40rem]:hidden">
           {companies.map((company) => (
             <article key={company.id} className="rounded-xl border border-slate-200 p-4">
               <div className="flex items-start justify-between gap-3">
@@ -246,12 +246,14 @@ function AdminKundenPage() {
                 <br />
                 {[company.postalCode, company.city].filter(Boolean).join(' ') || '—'}
               </p>
-              <CompanyEmail email={company.email} />
+              <div className="mt-1">
+                <CompanyEmail email={company.email} />
+              </div>
             </article>
           ))}
         </div>
 
-        <div className="mt-5 hidden @3xl:block">
+        <div className="mt-5 hidden @min-[40rem]:block">
           <table className="data-table">
             <thead>
               <tr>
@@ -272,7 +274,7 @@ function AdminKundenPage() {
                     {company.street || '—'}
                     <span className="cell-secondary">{[company.postalCode, company.city].filter(Boolean).join(' ')}</span>
                   </td>
-                  <td className="break-all">
+                  <td className="wrap-anywhere">
                     <CompanyEmail email={company.email} />
                   </td>
                   <td>
@@ -339,8 +341,8 @@ function AdminKundenPage() {
 }
 
 function CompanyEmail({ email }: { email: string }) {
-  if (email) return <p className="mt-1 text-sm text-slate-800">{email}</p>
-  return <p className="mt-1 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">E-Mail fehlt</p>
+  if (email) return <span className="text-sm text-slate-800">{email}</span>
+  return <span className="pill bg-amber-100 text-amber-900">E-Mail fehlt</span>
 }
 
 function CompanyActions({

@@ -327,7 +327,7 @@ select:disabled {
   color: var(--color-slate-800);
 }
 .data-table th {
-  padding: 0.625rem 0.75rem;
+  padding: 0.625rem 0.5rem;
   text-align: left;
   vertical-align: bottom;
   font-size: var(--text-xs);
@@ -338,7 +338,7 @@ select:disabled {
   border-bottom: 1px solid var(--color-slate-200);
 }
 .data-table td {
-  padding: 0.75rem;
+  padding: 0.75rem 0.5rem;
   vertical-align: top;
 }
 .data-table.align-middle td {
