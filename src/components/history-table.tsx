@@ -127,7 +127,7 @@ export function HistoryTable({
                 <div>
                   <dt className="text-slate-600">Status</dt>
                   <dd className="mt-0.5">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
+                    <span className={`pill ${statusBadge(record.status).className}`}>
                       {statusBadge(record.status).label}
                     </span>
                   </dd>
@@ -151,11 +151,11 @@ export function HistoryTable({
       </div>
 
       <div className="mt-4 hidden @4xl:block">
-        <table className="w-full table-fixed border-collapse text-sm">
+        <table className="data-table table-fixed">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-600">
+            <tr>
               {selectable && (
-                <th className="w-8 px-2 py-2">
+                <th className="w-12">
                   <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
                     <input
                       type="checkbox"
@@ -167,30 +167,27 @@ export function HistoryTable({
                   </label>
                 </th>
               )}
-              <th className="w-28 px-2 py-2">Zeit</th>
-              <th className="w-20 px-2 py-2">Typ</th>
-              {showCompanyColumn && <th className="hidden w-32 px-2 py-2 @5xl:table-cell">Firma</th>}
-              <th className="w-40 px-2 py-2">Produkt</th>
-              <th className="w-16 px-2 py-2">Menge</th>
-              <th className={`hidden w-44 px-2 py-2 ${showCompanyColumn ? '@6xl:table-cell' : '@5xl:table-cell'}`}>Baustelle</th>
-              {onStatusChange ? (
-                <th className="w-32 px-2 py-2">Status</th>
-              ) : (
-                <th className="w-24 px-2 py-2">Status</th>
-              )}
-              <th className="w-48 px-2 py-2">Dateien</th>
+              <th className="w-28">Datum</th>
+              <th className="w-32">Typ</th>
+              <th>{showCompanyColumn ? 'Firma / Baustelle' : 'Baustelle'}</th>
+              <th>Produkt</th>
+              <th className="num w-24">Menge</th>
+              <th className={onStatusChange ? 'w-36' : 'w-32'}>Status</th>
+              <th className="w-44">Dateien</th>
             </tr>
           </thead>
           <tbody>
             {records.map((record) => {
+              const [date, time] = record.createdAt.split(', ')
+              const badge = statusBadge(record.status)
               return (
                 <tr
                   key={record.id}
-                  className={`border-b border-slate-100 align-top ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}
+                  className={record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}
                 >
                   {selectable && (
-                    <td className="px-2 pb-2 pt-2.5">
-                      <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                    <td>
+                      <label className="cell-check -mx-2.5 -mb-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
                         <input
                           type="checkbox"
                           checked={selectedSet.has(record.id)}
@@ -201,48 +198,54 @@ export function HistoryTable({
                       </label>
                     </td>
                   )}
-                  <td className="px-2 py-2 text-xs">
-                    <span className="block text-slate-600">{record.createdAt.split(', ')[0]}</span>
-                    <span className="block text-slate-600">{record.createdAt.split(', ')[1]}</span>
+                  <td>
+                    {date}
+                    <span className="cell-secondary">{time}</span>
                   </td>
-                  <td className="px-2 py-2">
+                  <td className="wrap-break-word">
                     {flowLabel(record.type)}
                     {record.createdByName && (
-                      <span className="block text-xs text-slate-600" title="Gebucht von">
+                      <span className="cell-secondary" title="Gebucht von">
                         {record.createdByName}
                       </span>
                     )}
                   </td>
-                  {showCompanyColumn && (
-                    <td className="hidden px-2 py-2 font-semibold text-slate-900 @5xl:table-cell">{record.company}</td>
-                  )}
-                  <td className="px-2 py-2">
-                    <p className="truncate" title={record.productName}>{record.productName}</p>
+                  <td className="wrap-break-word">
+                    {showCompanyColumn ? (
+                      <>
+                        <span className="cell-primary">{record.company}</span>
+                        <span className="cell-secondary line-clamp-2">{record.constructionSiteName || '—'}</span>
+                      </>
+                    ) : (
+                      <span className="line-clamp-2">{record.constructionSiteName || '—'}</span>
+                    )}
                   </td>
-                  <td className="px-2 py-2">
+                  <td>
+                    <span className="line-clamp-2 wrap-break-word" title={record.productName}>
+                      {record.productName}
+                    </span>
+                  </td>
+                  <td className="num">
                     {quantity(record.amount)} {record.unit}
                   </td>
-                  <td className={`hidden px-2 py-2 text-slate-700 ${showCompanyColumn ? '@6xl:table-cell' : '@5xl:table-cell'}`}>
-                    <p className="line-clamp-2 whitespace-pre-wrap wrap-break-word">{record.constructionSiteName || '-'}</p>
-                  </td>
                   {onStatusChange ? (
-                    <td className="px-2 py-2">
-                      <SelectInput
-                        value={record.status}
-                        onChange={(status) => onStatusChange(record.id, status as RecordStatus)}
-                        options={statusStages}
-                        className="w-full min-h-10 px-2 py-1 text-sm font-normal"
-                        label="Status"
-                      />
+                    <td>
+                      <div className="cell-trigger">
+                        <SelectInput
+                          value={record.status}
+                          onChange={(status) => onStatusChange(record.id, status as RecordStatus)}
+                          options={statusStages}
+                          className="w-full min-h-11 px-2 py-1 text-sm font-normal"
+                          label="Status"
+                        />
+                      </div>
                     </td>
                   ) : (
-                    <td className="px-2 py-2">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(record.status).className}`}>
-                        {statusBadge(record.status).label}
-                      </span>
+                    <td>
+                      <span className={`pill cell-badge ${badge.className}`}>{badge.label}</span>
                     </td>
                   )}
-                  <td className="px-2 py-2">
+                  <td>
                     <FileList files={recordFiles(record)} />
                   </td>
                 </tr>

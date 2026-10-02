@@ -6,22 +6,20 @@ function PriceTable({ title, products }: { title: string; products: PriceListPro
     <div>
       <h2 className="mb-4 text-xl font-semibold text-slate-900">{title}</h2>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+        <table className="data-table">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50">
-              <th className="px-4 py-3 text-left font-semibold text-slate-700">Produkt</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-700">Einheit</th>
-              <th className="px-4 py-3 text-right font-semibold text-slate-700">Preis</th>
+            <tr className="bg-slate-50">
+              <th>Produkt</th>
+              <th className="w-28">Einheit</th>
+              <th className="num w-32">Preis</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((product, idx) => (
-              <tr key={product.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                <td className="px-4 py-3 text-slate-900">{product.name}</td>
-                <td className="px-4 py-3 text-slate-700">{product.unit}</td>
-                <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                  {product.price > 0 ? money(product.price) : '—'}
-                </td>
+            {products.map((product) => (
+              <tr key={product.id} className="odd:bg-white even:bg-slate-50">
+                <td className="text-slate-900">{product.name}</td>
+                <td>{product.unit}</td>
+                <td className="num font-semibold text-slate-900">{product.price > 0 ? money(product.price) : '—'}</td>
               </tr>
             ))}
           </tbody>

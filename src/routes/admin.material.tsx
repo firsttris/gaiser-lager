@@ -150,24 +150,24 @@ function ProductList({ items, onEdit, onDelete, imageActionProductId, onImageUpl
       </div>
 
       <div className="mt-3 hidden @2xl:block">
-        <table className="w-full border-collapse text-sm">
+        <table className="data-table align-middle">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-700">
-              <th className="w-20 px-3 py-2">Bild</th>
-              <th className="px-3 py-2">Material</th>
-              <th className="w-24 px-3 py-2">Einheit</th>
-              <th className="w-32 px-3 py-2 text-right">Preis</th>
-              <th className="w-32 px-3 py-2 text-right">Aktionen</th>
+            <tr>
+              <th className="w-20">Bild</th>
+              <th>Material</th>
+              <th className="w-24">Einheit</th>
+              <th className="num w-32">Preis</th>
+              <th className="w-32 text-right">Aktionen</th>
             </tr>
           </thead>
           <tbody>
             {items.map((product) => (
-              <tr key={product.id} className="border-b border-slate-100 align-middle odd:bg-white even:bg-slate-50">
-                <td className="px-3 py-3">{image(product)}</td>
-                <td className="px-3 py-3 font-semibold wrap-break-word text-slate-900">{product.name}</td>
-                <td className="px-3 py-3 text-slate-800">{product.unit}</td>
-                <td className="px-3 py-3 text-right text-slate-900">{money(product.price)}</td>
-                <td className="px-3 py-3">
+              <tr key={product.id} className="odd:bg-white even:bg-slate-50">
+                <td>{image(product)}</td>
+                <td className="cell-primary wrap-break-word">{product.name}</td>
+                <td>{product.unit}</td>
+                <td className="num">{money(product.price)}</td>
+                <td>
                   <div className="flex justify-end">
                     <ProductActions product={product} onEdit={onEdit} onDelete={onDelete} />
                   </div>

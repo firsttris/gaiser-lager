@@ -102,7 +102,7 @@ export function FileList({ files }: { files: FileEntry[] }) {
         aria-expanded={isOpen}
         title={files.map((file) => file.label).join(', ')}
         aria-label={`Dateien: ${files.map((file) => file.label).join(', ')}`}
-        className={`-mx-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 whitespace-nowrap transition hover:bg-slate-900/5 ${isOpen ? 'bg-slate-900/5' : ''}`}
+        className={`cell-trigger -mx-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 whitespace-nowrap transition hover:bg-slate-900/5 ${isOpen ? 'bg-slate-900/5' : ''}`}
       >
         {BADGES.map((badge) => {
           const ofKind = files.filter((file) => file.color === badge.color)
@@ -111,7 +111,7 @@ export function FileList({ files }: { files: FileEntry[] }) {
           return (
             <span
               key={badge.color}
-              className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-bold tracking-wide ring-1 ring-inset ${badge.className}`}
+              className={`pill font-bold tracking-wide ring-1 ring-inset ${badge.className}`}
             >
               {badge.short || <Camera className="h-3.5 w-3.5" strokeWidth={2.5} />}
               {(count > 1 || !badge.short) && <span className="font-semibold">{badge.short ? `×${count}` : count}</span>}
@@ -148,7 +148,7 @@ export function FileList({ files }: { files: FileEntry[] }) {
                 }}
                 className="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 disabled:cursor-not-allowed"
               >
-                <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${ROW_COLORS[file.color]}`}>
+                <span className={`pill shrink-0 ${ROW_COLORS[file.color]}`}>
                   {file.icon}
                   {file.kind}
                 </span>

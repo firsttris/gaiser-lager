@@ -259,31 +259,31 @@ function AdminKundenPage() {
         </div>
 
         <div className="mt-5 hidden @3xl:block">
-          <table className="w-full border-collapse text-sm">
+          <table className="data-table">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-700">
-                <th className="px-3 py-2">Kundenname</th>
-                <th className="w-28 px-3 py-2">Kd.-Nr.</th>
-                <th className="px-3 py-2">Adresse</th>
-                <th className="px-3 py-2">E-Mail</th>
-                <th className="w-32 px-3 py-2 text-right">Aktionen</th>
+              <tr>
+                <th>Kunde</th>
+                <th>Adresse</th>
+                <th>E-Mail</th>
+                <th className="w-32 text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {companies.map((company) => (
-                <tr key={company.id} className="border-b border-slate-100 align-top odd:bg-white even:bg-slate-50">
-                  <td className="min-w-48 px-3 py-3 font-semibold wrap-break-word text-slate-900">{company.name}</td>
-                  <td className="px-3 py-3 text-slate-800">{company.customerNumber || '—'}</td>
-                  <td className="px-3 py-3 text-slate-800">
-                    {company.street || '—'}
-                    <br />
-                    {[company.postalCode, company.city].filter(Boolean).join(' ')}
+                <tr key={company.id} className="odd:bg-white even:bg-slate-50">
+                  <td className="min-w-48 wrap-break-word">
+                    <span className="cell-primary">{company.name}</span>
+                    <span className="cell-secondary">Kd.-Nr. {company.customerNumber || '—'}</span>
                   </td>
-                  <td className="px-3 py-3 break-all">
+                  <td>
+                    {company.street || '—'}
+                    <span className="cell-secondary">{[company.postalCode, company.city].filter(Boolean).join(' ')}</span>
+                  </td>
+                  <td className="break-all">
                     <CompanyEmail email={company.email} />
                   </td>
-                  <td className="px-3 py-3">
-                    <div className="flex justify-end">
+                  <td>
+                    <div className="cell-trigger flex justify-end">
                       <CompanyActions company={company} onEdit={startEdit} onDelete={setDeletingCompany} />
                     </div>
                   </td>
