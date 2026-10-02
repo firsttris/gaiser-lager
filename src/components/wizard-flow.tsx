@@ -202,7 +202,6 @@ export function WizardFlow({
     setSelectedProductId(products.find((p) => p.flow === flowType)?.id ?? 0)
     setAmount('')
     setConstructionSiteName('')
-    setIsSiteInputOpen(false)
   }
 
   async function redownloadDeliveryNote() {
