@@ -58,7 +58,7 @@ function EmployeeLayout() {
           <button
             type="button"
             onClick={() => void employeeLogout()}
-            className="ml-auto inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-200"
+            className="ml-auto inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 font-semibold text-slate-800 hover:bg-slate-200"
           >
             <LogOut className="h-5 w-5" strokeWidth={2.2} />
             Abmelden
@@ -194,7 +194,7 @@ function EmployeeLogin() {
           </form>
         )}
 
-        <Link to="/" className="mt-8 block text-center font-semibold text-slate-700 no-underline hover:text-slate-900">
+        <Link to="/" className="mt-6 flex min-h-12 items-center justify-center font-semibold text-slate-700 no-underline hover:text-slate-900">
           Zurück zur Kunden-Anmeldung
         </Link>
       </section>

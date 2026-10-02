@@ -27,14 +27,14 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Ja', onCon
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
             Nein
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700"
           >
             {confirmLabel}
           </button>

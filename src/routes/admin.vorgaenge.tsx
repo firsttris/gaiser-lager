@@ -195,7 +195,7 @@ function AdminVorgaengePage() {
             </p>
             <Link
               to="/admin/neuer-vorgang"
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
             >
               Neuer Vorgang
             </Link>
@@ -341,7 +341,7 @@ function AdminVorgaengePage() {
                 type="button"
                 onClick={() => setSammelrechnungOpen(false)}
                 disabled={isCreatingInvoice}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Abbrechen
               </button>
@@ -357,7 +357,7 @@ function AdminVorgaengePage() {
                   }
                 }}
                 disabled={isCreatingInvoice}
-                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-12 items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingInvoice && <Spinner className="h-4 w-4" />}
                 Rechnung erstellen

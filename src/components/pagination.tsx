@@ -29,7 +29,7 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
             value={String(pageSize)}
             onChange={(size) => onPageSizeChange(Number(size))}
             options={PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }))}
-            className="min-h-10 px-3 py-1 text-sm font-semibold text-slate-700"
+            className="min-h-11 px-3 py-1 text-sm font-semibold text-slate-700"
             label="Einträge pro Seite"
           />
         </label>
@@ -39,7 +39,7 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Zurück
         </button>
@@ -50,7 +50,7 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pageCount}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Weiter
         </button>

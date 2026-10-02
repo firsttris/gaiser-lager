@@ -133,7 +133,7 @@ function App() {
 
             <Link
               to="/mitarbeiter"
-              className="block text-center font-semibold text-slate-700 no-underline hover:text-slate-900"
+              className="flex min-h-12 items-center justify-center font-semibold text-slate-700 no-underline hover:text-slate-900"
             >
               Mitarbeiter-Anmeldung (Fahrer)
             </Link>

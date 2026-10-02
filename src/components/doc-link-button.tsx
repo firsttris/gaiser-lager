@@ -22,7 +22,7 @@ export function DocLinkButton({ id, color, onClick, loading = false }: Props) {
       onClick={onClick}
       disabled={loading}
       title={`${id} herunterladen`}
-      className={`flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 font-mono text-sm whitespace-nowrap hover:opacity-75 disabled:cursor-not-allowed ${COLOR_CLASSES[color]}`}
+      className={`flex min-h-11 cursor-pointer items-center gap-1 rounded-lg px-3 py-1 font-mono text-sm whitespace-nowrap hover:opacity-75 disabled:cursor-not-allowed ${COLOR_CLASSES[color]}`}
     >
       {loading && <Spinner className="h-3 w-3" />}
       {id}

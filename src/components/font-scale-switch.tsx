@@ -46,7 +46,7 @@ export function FontScaleSwitch() {
   }
 
   return (
-    <div role="group" aria-label="Schriftgröße" className="inline-flex items-end gap-0.5 rounded-xl bg-slate-100 p-1">
+    <div role="group" aria-label="Schriftgröße" className="inline-flex items-stretch gap-2 rounded-xl bg-slate-100 p-1">
       {OPTIONS.map((option) => (
         <button
           key={option.value}
@@ -55,7 +55,7 @@ export function FontScaleSwitch() {
           aria-label={option.title}
           aria-pressed={scale === option.value}
           onClick={() => choose(option.value)}
-          className={`min-w-9 rounded-lg px-2 py-1 font-bold leading-none ${option.className} ${
+          className={`flex min-h-12 min-w-12 items-end justify-center rounded-lg px-2 pb-3 font-bold leading-none ${option.className} ${
             scale === option.value ? 'bg-slate-900 text-white' : 'text-slate-800 hover:bg-white'
           }`}
         >

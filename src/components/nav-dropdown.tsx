@@ -46,7 +46,7 @@ export function NavDropdown({
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
-          className={`inline-flex w-full items-center justify-between gap-3 whitespace-nowrap border-l-4 px-3 py-2 text-sm font-semibold transition ${
+          className={`inline-flex min-h-12 w-full items-center justify-between gap-3 whitespace-nowrap border-l-4 px-3 py-3 text-sm font-semibold transition ${
             isActive ? 'border-amber-500 bg-amber-50/60 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
           }`}
         >
@@ -75,7 +75,7 @@ export function NavDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-1 text-sm font-semibold transition ${
+        className={`inline-flex min-h-12 items-center gap-2 whitespace-nowrap border-b-2 text-sm font-semibold transition ${
           isActive ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
         }`}
       >
@@ -85,15 +85,15 @@ export function NavDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-20 mt-2 min-w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+        <div className="absolute left-0 top-full z-20 mt-2 min-w-56 space-y-2 rounded-xl border border-slate-200 bg-white p-2 shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
           {items.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-900"
+              className="flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-900"
               activeProps={{
-                className: 'flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 no-underline',
+                className: 'flex min-h-12 items-center gap-3 rounded-lg bg-amber-50 px-3 py-3 text-sm font-semibold text-amber-700 no-underline',
               }}
             >
               {item.icon}

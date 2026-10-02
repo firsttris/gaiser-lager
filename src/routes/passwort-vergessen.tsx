@@ -67,7 +67,7 @@ function ForgotPasswordPage() {
           Kommt keine E-Mail an (z.B. weil der E-Mail-Versand noch nicht eingerichtet ist), kann das Passwort im
           Supabase-Dashboard zurückgesetzt werden.
         </p>
-        <Link to="/admin" className="mt-6 block text-center font-semibold text-slate-700 no-underline hover:text-slate-900">
+        <Link to="/admin" className="mt-4 flex min-h-12 items-center justify-center font-semibold text-slate-700 no-underline hover:text-slate-900">
           Zurück zur Admin-Anmeldung
         </Link>
       </section>

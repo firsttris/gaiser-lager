@@ -59,7 +59,7 @@ export function HistoryTable({
                   {record.createdByName && (
                     <p className="mt-1 text-xs text-slate-600">Gebucht von: {record.createdByName}</p>
                   )}
-                  <div className="mt-1 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {record.deliveryNoteId && (
                       <DocLinkButton
                         id={record.deliveryNoteId}
@@ -91,13 +91,15 @@ export function HistoryTable({
                     {flowLabel(record.type)}
                   </span>
                   {selectable && (
-                    <input
-                      type="checkbox"
-                      checked={selectedSet.has(record.id)}
-                      onChange={() => onToggle(record)}
-                      className="h-6 w-6 rounded border-slate-300"
-                      aria-label={`Eintrag ${record.id} markieren`}
-                    />
+                    <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedSet.has(record.id)}
+                        onChange={() => onToggle(record)}
+                        className="h-7 w-7 cursor-pointer rounded border-slate-300"
+                        aria-label={`Eintrag ${record.id} markieren`}
+                      />
+                    </label>
                   )}
                 </div>
               </div>
@@ -145,13 +147,15 @@ export function HistoryTable({
             <tr className="border-b border-slate-200 text-left text-slate-600">
               {selectable && (
                 <th className="w-8 px-2 py-2">
-                  <input
-                    type="checkbox"
-                    checked={areAllVisibleSelected}
-                    onChange={(event) => onSelectAll(event.target.checked)}
-                    className="h-6 w-6 rounded border-slate-300"
-                    aria-label="Alle sichtbaren Einträge markieren"
-                  />
+                  <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                    <input
+                      type="checkbox"
+                      checked={areAllVisibleSelected}
+                      onChange={(event) => onSelectAll(event.target.checked)}
+                      className="h-7 w-7 cursor-pointer rounded border-slate-300"
+                      aria-label="Alle sichtbaren Einträge markieren"
+                    />
+                  </label>
                 </th>
               )}
               <th className="w-28 px-2 py-2">Zeit</th>
@@ -177,13 +181,15 @@ export function HistoryTable({
                 >
                   {selectable && (
                     <td className="px-2 pb-2 pt-2.5">
-                      <input
-                        type="checkbox"
-                        checked={selectedSet.has(record.id)}
-                        onChange={() => onToggle(record)}
-                        className="h-6 w-6 rounded border-slate-300"
-                        aria-label={`Eintrag ${record.id} markieren`}
-                      />
+                      <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedSet.has(record.id)}
+                          onChange={() => onToggle(record)}
+                          className="h-7 w-7 cursor-pointer rounded border-slate-300"
+                          aria-label={`Eintrag ${record.id} markieren`}
+                        />
+                      </label>
                     </td>
                   )}
                   <td className="px-2 py-2 text-xs">
@@ -228,7 +234,7 @@ export function HistoryTable({
                     </td>
                   )}
                   <td className="px-2 py-2">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-2">
                       {record.deliveryNoteId && (
                         <DocLinkButton
                           id={record.deliveryNoteId}

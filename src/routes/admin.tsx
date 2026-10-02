@@ -139,7 +139,7 @@ function AdminPage() {
 
               <Link
                 to="/passwort-vergessen"
-                className="mt-3 block text-center text-sm font-semibold text-slate-700 no-underline hover:text-slate-900"
+                className="mt-3 flex min-h-12 items-center justify-center text-sm font-semibold text-slate-700 no-underline hover:text-slate-900"
               >
                 Passwort vergessen?
               </Link>
@@ -159,12 +159,24 @@ function AdminPage() {
               <Logo className="h-12 shrink-0 sm:h-16" />
             </div>
 
-            <div className="hidden sm:block sm:text-left">
-              <div className="mb-0.5 flex items-center justify-start gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
-                <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+            <div className="hidden items-start gap-6 sm:flex">
+              <div className="text-left">
+                <div className="mb-0.5 flex items-center justify-start gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
+                  <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+                </div>
+                <h1 className="font-title text-2xl leading-none text-slate-900">Verwaltung</h1>
               </div>
-              <h1 className="font-title text-2xl leading-none text-slate-900">Verwaltung</h1>
+              {/* Up here instead of in the navigation row: on the portrait
+                  tablet the row has no room left for it. */}
+              <button
+                type="button"
+                onClick={() => void adminLogout()}
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={2.2} />
+                Abmelden
+              </button>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:hidden">
@@ -173,7 +185,7 @@ function AdminPage() {
                 aria-expanded={isMenuOpen}
                 aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
                 onClick={() => setIsMenuOpen((open) => !open)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
               >
                 {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
               </button>
@@ -241,7 +253,7 @@ function AdminPage() {
                     setIsMenuOpen(false)
                     void adminLogout()
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   <LogOut className="h-4 w-4" strokeWidth={2.2} />
                   Abmelden
@@ -250,7 +262,7 @@ function AdminPage() {
             </div>
           )}
 
-          <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
+          <div className="mt-4 hidden flex-wrap border-t border-slate-100 pt-2 sm:flex sm:items-center sm:gap-x-4 sm:gap-y-1">
             <NavLink
               to="/admin/neuer-vorgang"
               icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}
@@ -281,16 +293,6 @@ function AdminPage() {
               items={settingsNavItems}
             />
 
-            <div className="ml-auto flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => void adminLogout()}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 transition hover:text-slate-900"
-              >
-                <LogOut className="h-4 w-4" strokeWidth={2.2} />
-                Abmelden
-              </button>
-            </div>
           </div>
         </div>
       </header>

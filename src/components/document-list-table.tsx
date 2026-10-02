@@ -49,13 +49,15 @@ export function DocumentListTable({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-2">
                   {selectable && (
-                    <input
-                      type="checkbox"
-                      checked={selectedIds!.has(id)}
-                      disabled={!rowSelectable}
-                      onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
-                      className="mt-1 h-6 w-6 shrink-0 rounded border-slate-300 disabled:opacity-40"
-                    />
+                    <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds!.has(id)}
+                        disabled={!rowSelectable}
+                        onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
+                        className="h-7 w-7 cursor-pointer shrink-0 rounded border-slate-300 disabled:opacity-40"
+                      />
+                    </label>
                   )}
                   <div className="min-w-0">
                     <p className="truncate font-mono text-sm font-semibold text-slate-900">{id}</p>
@@ -109,13 +111,15 @@ export function DocumentListTable({
               {selectable && (
                 <th className="w-8 px-2 py-2">
                   {onSelectAll && (
-                    <input
-                      type="checkbox"
-                      checked={areAllSelected ?? false}
-                      onChange={(e) => onSelectAll(e.target.checked)}
-                      className="h-6 w-6 rounded border-slate-300"
-                      aria-label="Alle sichtbaren Einträge markieren"
-                    />
+                    <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                      <input
+                        type="checkbox"
+                        checked={areAllSelected ?? false}
+                        onChange={(e) => onSelectAll(e.target.checked)}
+                        className="h-7 w-7 cursor-pointer rounded border-slate-300"
+                        aria-label="Alle sichtbaren Einträge markieren"
+                      />
+                    </label>
                   )}
                 </th>
               )}
@@ -138,13 +142,15 @@ export function DocumentListTable({
                 <tr key={id} className={`border-b border-slate-100 align-middle ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'odd:bg-white even:bg-slate-50'}`}>
                   {selectable && (
                     <td className="px-2 py-2.5">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds!.has(id)}
-                        disabled={!rowSelectable}
-                        onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
-                        className="h-6 w-6 rounded border-slate-300 disabled:opacity-40"
-                      />
+                      <label className="-m-2.5 inline-flex shrink-0 cursor-pointer p-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds!.has(id)}
+                          disabled={!rowSelectable}
+                          onChange={(e) => onSelectionChange!({ id, items }, e.target.checked)}
+                          className="h-7 w-7 cursor-pointer rounded border-slate-300 disabled:opacity-40"
+                        />
+                      </label>
                     </td>
                   )}
                   <td className="px-2 py-2.5 text-xs">
@@ -174,13 +180,13 @@ export function DocumentListTable({
                     </div>
                   </td>
                   <td className="px-2 py-2.5">
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {renderDateien(id, items)}
                     </div>
                   </td>
                   {renderActions && (
                     <td className="px-2 py-2.5">
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-2">
                         {renderActions(id, items)}
                       </div>
                     </td>
