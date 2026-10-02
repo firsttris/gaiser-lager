@@ -44,6 +44,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content: 'yes',
       },
       {
+        name: 'apple-mobile-web-app-title',
+        content: 'Gaiser',
+      },
+      {
         title: isDevServerOnRemoteDatabase ? '[PROD!] Gaiser Lager' : isDevelopmentDatabase ? '[DEV] Gaiser Lager' : 'Gaiser Lager',
       },
     ],
@@ -58,7 +62,18 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         rel: 'apple-touch-icon',
+        href: `${import.meta.env.BASE_URL}apple-touch-icon.png`,
+      },
+      {
+        rel: 'icon',
+        href: `${import.meta.env.BASE_URL}favicon.ico`,
+        sizes: '48x48',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
         href: `${import.meta.env.BASE_URL}logo192.png`,
+        sizes: '192x192',
       },
     ],
     scripts: [{ children: FONT_SCALE_SCRIPT }],
