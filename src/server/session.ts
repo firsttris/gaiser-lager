@@ -35,13 +35,21 @@ function customerSessionConfig(): SessionConfig {
   return { name: 'gaiser_customer', cookie: COOKIE, password: requireSessionSecret(), maxAge: 60 * 60 * 24 * 7 }
 }
 
+// One login per browser: logging in as one role ends the others. Otherwise a
+// leftover admin cookie made requireAnySession treat a driver as admin (the
+// LKW booking lost its driver and the photo upload was refused).
 export const getAdminSession = () => getSession<AdminSessionData>(adminSessionConfig())
-export const setAdminSession = (data: AdminSessionData) => updateSession<AdminSessionData>(adminSessionConfig(), data)
+export const setAdminSession = async (data: AdminSessionData) => {
+  await Promise.all([clearCustomerSession(), clearEmployeeSession()])
+  return updateSession<AdminSessionData>(adminSessionConfig(), data)
+}
 export const clearAdminSession = () => clearSession(adminSessionConfig())
 
 export const getCustomerSession = () => getSession<CustomerSessionData>(customerSessionConfig())
-export const setCustomerSession = (data: CustomerSessionData) =>
-  updateSession<CustomerSessionData>(customerSessionConfig(), data)
+export const setCustomerSession = async (data: CustomerSessionData) => {
+  await Promise.all([clearAdminSession(), clearEmployeeSession()])
+  return updateSession<CustomerSessionData>(customerSessionConfig(), data)
+}
 export const clearCustomerSession = () => clearSession(customerSessionConfig())
 
 export type EmployeeSessionData = {
@@ -56,6 +64,8 @@ function employeeSessionConfig(): SessionConfig {
 }
 
 export const getEmployeeSession = () => getSession<EmployeeSessionData>(employeeSessionConfig())
-export const setEmployeeSession = (data: EmployeeSessionData) =>
-  updateSession<EmployeeSessionData>(employeeSessionConfig(), data)
+export const setEmployeeSession = async (data: EmployeeSessionData) => {
+  await Promise.all([clearAdminSession(), clearCustomerSession()])
+  return updateSession<EmployeeSessionData>(employeeSessionConfig(), data)
+}
 export const clearEmployeeSession = () => clearSession(employeeSessionConfig())
