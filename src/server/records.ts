@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
@@ -8,7 +9,7 @@ import { formatGeneratedNumber } from '#/utils/numbering-format'
 import { berlinDayEndExclusive, berlinDayStart, formatBerlinDateTime } from '#/utils/berlin-time'
 import { roundCents } from '#/utils/money'
 import type { RecordRow } from '#/lib/supabase/types'
-import type { RecordItem } from '../state/app-state'
+import type { FlowType, RecordItem } from '../state/app-state'
 
 const createRecordSchema = z.object({
   type: z.enum(['pickup', 'dropoff']),
@@ -201,6 +202,54 @@ export const createTruckRecord = createServerFn({ method: 'POST' })
 
     if (error || !inserted) return null
     return toRecord(inserted)
+  })
+
+const recentBookingsSchema = z.object({ companyId: z.string().uuid().optional() }).optional()
+const RECENT_BOOKINGS_LIMIT = 40
+
+export type RecentBooking = {
+  type: FlowType | 'lkw'
+  productName: string
+  amount: number
+  unit: string
+  constructionSiteName: string
+  createdAt: string
+}
+
+// Feeds the one-tap suggestions in "Neuer Vorgang" ("Wie zuletzt", quick
+// amounts, recent construction sites). Same visibility as the lists:
+// customers their company, employees what they booked themselves, admins the
+// company given. Cancelled bookings are no suggestion.
+export const listRecentBookings = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => recentBookingsSchema.parse(data))
+  .handler(async ({ data }): Promise<RecentBooking[]> => {
+    const caller = await requireAnySession()
+    const companyId = caller.role === 'customer' ? caller.companyId : data?.companyId
+    if (!companyId) return []
+
+    let query = getServiceSupabaseClient()
+      .from('records')
+      .select('type, product_name, amount, unit, construction_site_name, created_at')
+      .eq('company_id', companyId)
+      .neq('status', 'storniert')
+    query = scopeToCaller(query, caller)
+
+    const { data: rows, error } = await query.order('id', { ascending: false }).limit(RECENT_BOOKINGS_LIMIT)
+    if (error || !rows) return []
+    return rows.map((row) => ({
+      type: row.type,
+      productName: row.product_name,
+      amount: row.amount,
+      unit: row.unit,
+      constructionSiteName: row.construction_site_name,
+      createdAt: formatBerlinDateTime(row.created_at),
+    }))
+  })
+
+export const recentBookingsQueryOptions = (companyId?: string) =>
+  queryOptions({
+    queryKey: ['records', 'recent', companyId ?? 'own'] as const,
+    queryFn: () => listRecentBookings({ data: companyId ? { companyId } : undefined }),
   })
 
 const listRecordsPageSchema = z.object({
