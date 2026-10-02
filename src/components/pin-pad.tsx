@@ -56,7 +56,7 @@ export function PinEntry({
     'flex min-h-16 items-center justify-center rounded-xl border border-slate-200 bg-white text-2xl font-semibold text-slate-900 tabular-nums shadow-card hover:border-slate-300 disabled:opacity-50'
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p id={labelId} className="text-sm font-semibold text-slate-700">
         {label}
       </p>
@@ -70,7 +70,14 @@ export function PinEntry({
             {digit}
           </button>
         ))}
-        <span aria-hidden="true" />
+        <button
+          type="button"
+          className={`${key} text-base font-medium text-slate-600`}
+          disabled={disabled || value.length === 0}
+          onClick={() => onChange('')}
+        >
+          Löschen
+        </button>
         <button type="button" className={key} disabled={disabled} onClick={() => press('0')}>
           0
         </button>
@@ -98,7 +105,7 @@ function isTypingTarget(target: EventTarget | null) {
 export function PinDots({ length, hasError = false }: { length: number; hasError?: boolean }) {
   const empty = hasError ? 'border-red-400 bg-transparent' : 'border-slate-300 bg-transparent'
   return (
-    <div className="flex justify-center gap-3.5 py-1" aria-hidden="true">
+    <div className="flex justify-center gap-4 py-3" aria-hidden="true">
       {Array.from({ length: PIN_LENGTH }, (_, index) => (
         <span
           key={index}
