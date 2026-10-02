@@ -93,14 +93,87 @@ Admin-Passwort). Zusätzlich gibt es lokal immer den Admin
 
 ## Datenbank
 
-Das Schema liegt vollständig in `supabase/migrations/`. Ablauf für Änderungen:
+Das Schema liegt vollständig in `supabase/migrations/`, eine Datei pro
+Änderung, eingespielt in der Reihenfolge des Zeitstempels im Dateinamen.
 
-1. Migration anlegen und lokal testen: `npm run db:clone` spielt sie auf den
-   aktuellen Produktionsdaten ein (Generalprobe), `npm run db:reset` auf
-   einer leeren Datenbank.
-2. In der Produktion ein Backup ziehen (Admin → Einstellungen → SQL-Backup).
-3. Migration in die Produktion einspielen (`npx supabase db push`),
-   **danach** den Code deployen.
+### Migration lokal entwickeln und testen
+
+```bash
+npx supabase migration new <kurzer_name>   # legt supabase/migrations/<zeitstempel>_<kurzer_name>.sql an
+# SQL schreiben, dann lokal einspielen:
+npx supabase migration up --local
+```
+
+Vor dem Deploy auf zwei Arten prüfen:
+
+- `npm run db:reset`: leere lokale Datenbank, alle Migrationen von vorn.
+  Zeigt, dass die Migrationen auf einer frischen Datenbank durchlaufen.
+- `npm run db:clone`: **Generalprobe**. Baut lokal den Migrationsstand der
+  Produktion nach, lädt die Produktionsdaten (nur lesend) und spielt danach
+  die noch nicht eingespielten Migrationen darüber. Muss mit
+  „✔ Neue Migrationen laufen fehlerfrei auf dem aktuellen Datenstand“ enden.
+
+Beide Befehle überschreiben nur die lokale Datenbank.
+
+Regeln:
+
+- Eine Migration, die schon in der Produktion eingespielt ist, wird **nie**
+  mehr geändert. Korrekturen kommen als neue Migration.
+- Neue Tabellen vergeben ihre Rechte selbst (`grant …`, siehe unten).
+
+### Migrationen in die Produktion einspielen
+
+Läuft von Hand vom eigenen PC, mit der Supabase CLI. Es gibt bewusst keinen
+CI-Job dafür.
+
+**Einmalig einrichten** (falls noch nicht geschehen):
+
+```bash
+npx supabase login                            # Browser-Login bei Supabase
+npx supabase link --project-ref <project-ref> # verknüpft das Repo mit dem Produktionsprojekt
+```
+
+Die Project-Ref steht im Supabase-Dashboard unter Project Settings → General.
+`db push` fragt nach dem Datenbank-Passwort (Project Settings → Database).
+
+**Ablauf bei jedem Deploy mit neuen Migrationen.** Vercel deployt
+automatisch, sobald etwas auf `main` landet. Deshalb gilt: **erst
+migrieren, dann mergen.** Am besten abends, wenn niemand am Kiosk arbeitet.
+
+```bash
+# 1. Generalprobe lokal
+npm run db:clone
+
+# 2. Backup der Produktion: in der Produktions-App
+#    Admin → Einstellungen → „SQL-Backup herunterladen“
+#    (außerhalb des Repos ablegen – enthält Kundendaten und PIN-Hashes)
+
+# 3. Welche Migrationen fehlen in der Produktion? (nur lesend)
+npx supabase migration list --linked
+
+# 4. Trockenlauf: zeigt, was eingespielt würde
+npx supabase db push --linked --dry-run
+
+# 5. Einspielen
+npx supabase db push --linked
+```
+
+6. Direkt danach den Pull Request auf `main` mergen. Vercel baut und
+   deployt (2–3 Minuten).
+7. Prüfen: Ganz unten auf jeder Seite steht
+   „Produktion · Version <commit> · Stand …“. Das Kürzel muss zum neuesten
+   Deployment in Vercel passen. Das Kiosk-Tablet lädt neue Versionen von
+   selbst neu (auf der Kunden-Anmeldung, nach 30 s ohne Eingabe). Beim
+   ersten Deploy nach Paket 1 muss es einmal von Hand neu geladen werden.
+8. Kurz durchklicken: als Kunde und als Fahrer anmelden, eine Rechnung
+   herunterladen.
+
+Zwischen Schritt 5 und dem fertigen Deploy läuft für ein paar Minuten noch
+der alte Code gegen das neue Schema. Deshalb abends.
+
+**Nie** `npx supabase db reset --linked` ausführen: Das löscht die
+Produktionsdatenbank. Lokale Befehle laufen immer über `npm run db:*` oder
+mit `--local`.
 
 Neue Tabellen müssen ihre Rechte für `service_role`/`authenticated` selbst
 vergeben (`grant …`): neuere Supabase-Versionen tun das nicht mehr
@@ -108,7 +181,9 @@ automatisch.
 
 In Produktion laufen die Umgebungsvariablen über Vercel
 (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
-`SESSION_SECRET`).
+`SESSION_SECRET`, optional `APP_URL` bei eigener Domain). Die SMTP-Daten für
+den E-Mail-Versand sind keine Umgebungsvariablen: Gaiser trägt sie in der
+App ein (Admin → Einstellungen → E-Mail).
 
 Die GitHub Action `supabase-keepalive.yml` verhindert, dass das kostenlose
 Supabase-Projekt nach 7 Tagen Inaktivität pausiert.
