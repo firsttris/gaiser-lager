@@ -5,8 +5,8 @@ type FontScale = 'auto' | 'normal' | 'large' | 'xlarge'
 
 const OPTIONS: Array<{ value: FontScale; label: string; title: string; className: string }> = [
   { value: 'normal', label: 'A', title: 'Normale Schrift', className: 'text-sm' },
-  { value: 'large', label: 'A', title: 'Große Schrift', className: 'text-base' },
-  { value: 'xlarge', label: 'A', title: 'Sehr große Schrift', className: 'text-lg' },
+  { value: 'large', label: 'A', title: 'Große Schrift', className: 'text-xl' },
+  { value: 'xlarge', label: 'A', title: 'Sehr große Schrift', className: 'text-3xl' },
 ]
 
 // Runs before hydration (inline in <head>) so the page doesn't jump in size.
