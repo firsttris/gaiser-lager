@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, Files } from 'lucide-react'
-import { DocLinkButton } from './doc-link-button'
 import { Spinner } from './spinner'
 
 export type FileEntry = {
@@ -26,9 +25,9 @@ const ROW_COLORS: Record<FileEntry['color'], string> = {
 const MENU_WIDTH = 300
 const GAP = 6
 
-// The Dateien column of the lists: a single file as its tag, several files
-// behind one "N Dateien" button with a menu, so rows stay one line high even
-// for Sammelrechnungen with many Lieferscheine. The menu is rendered in a portal so
+// The Dateien column of the lists: always one "N Dateien" button with a menu
+// of every file, so rows stay one line high and look the same, even for
+// Sammelrechnungen with many Lieferscheine. The menu is rendered in a portal so
 // the table never clips it.
 export function FileList({ files }: { files: FileEntry[] }) {
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -80,7 +79,6 @@ export function FileList({ files }: { files: FileEntry[] }) {
   }, [isOpen])
 
   if (files.length === 0) return null
-  if (files.length === 1) return <FileTag file={files[0]} />
   const anyLoading = files.some((file) => file.loading)
 
   return (
@@ -92,11 +90,11 @@ export function FileList({ files }: { files: FileEntry[] }) {
         aria-haspopup="menu"
         aria-expanded={isOpen}
         title={files.map((file) => file.label).join(', ')}
-        className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold whitespace-nowrap text-slate-800 hover:bg-slate-50"
+        className="flex min-h-11 w-40 cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-semibold whitespace-nowrap text-slate-800 hover:bg-slate-50"
       >
         {anyLoading ? <Spinner className="h-4 w-4" /> : <Files className="h-4 w-4" strokeWidth={2.25} />}
-        {files.length} Dateien
-        <ChevronDown className={`h-4 w-4 transition ${isOpen ? 'rotate-180' : ''}`} strokeWidth={2.25} />
+        {files.length} {files.length === 1 ? 'Datei' : 'Dateien'}
+        <ChevronDown className={`ml-auto h-4 w-4 transition ${isOpen ? 'rotate-180' : ''}`} strokeWidth={2.25} />
       </button>
       {isOpen &&
         position &&
@@ -137,20 +135,3 @@ export function FileList({ files }: { files: FileEntry[] }) {
   )
 }
 
-function FileTag({ file }: { file: FileEntry }) {
-  if (file.color === 'emerald' || file.icon) {
-    return (
-      <button
-        type="button"
-        onClick={file.onClick}
-        disabled={file.loading}
-        title={file.kind}
-        className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1 text-sm whitespace-nowrap hover:opacity-75 ${ROW_COLORS[file.color]}`}
-      >
-        {file.loading ? <Spinner className="h-4 w-4" /> : file.icon}
-        {file.label}
-      </button>
-    )
-  }
-  return <DocLinkButton id={file.label} color={file.color} onClick={file.onClick} loading={file.loading} />
-}
