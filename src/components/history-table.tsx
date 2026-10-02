@@ -58,6 +58,7 @@ export function HistoryTable({
         kind: 'Lieferschein-Fotos',
         color: 'emerald',
         icon: <Camera className="h-4 w-4" strokeWidth={2.25} />,
+        count: record.photoCount,
         onClick: () => onPhotosClick(record),
       })
     }
