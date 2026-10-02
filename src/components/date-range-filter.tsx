@@ -1,3 +1,5 @@
+import { SelectInput } from './select-input'
+
 export type DatePreset = 'all' | 'this-month' | 'last-month' | 'last-3-months' | 'this-year' | 'custom'
 
 export interface DateRangeState {
@@ -13,23 +15,26 @@ interface Props {
   onChange: (value: DateRangeState) => void
 }
 
+const DATE_PRESET_OPTIONS = [
+  { value: 'all', label: 'Alle Zeiträume' },
+  { value: 'this-month', label: 'Dieser Monat' },
+  { value: 'last-month', label: 'Letzter Monat' },
+  { value: 'last-3-months', label: 'Letzte 3 Monate' },
+  { value: 'this-year', label: 'Dieses Jahr' },
+  { value: 'custom', label: 'Benutzerdefiniert' },
+]
+
 export function DateRangeFilter({ value, onChange }: Props) {
   return (
     <>
       <label className="text-sm font-semibold text-slate-700">
         Zeitraum
-        <select
+        <SelectInput
           value={value.preset}
-          onChange={(e) => onChange({ preset: e.target.value as DatePreset, from: '', to: '' })}
-          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-        >
-          <option value="all">Alle Zeiträume</option>
-          <option value="this-month">Dieser Monat</option>
-          <option value="last-month">Letzter Monat</option>
-          <option value="last-3-months">Letzte 3 Monate</option>
-          <option value="this-year">Dieses Jahr</option>
-          <option value="custom">Benutzerdefiniert</option>
-        </select>
+          onChange={(preset) => onChange({ preset: preset as DatePreset, from: '', to: '' })}
+          options={DATE_PRESET_OPTIONS}
+          className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+        />
       </label>
       {value.preset === 'custom' && (
         <>
@@ -39,7 +44,7 @@ export function DateRangeFilter({ value, onChange }: Props) {
               type="date"
               value={value.from}
               onChange={(e) => onChange({ ...value, from: e.target.value })}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <label className="text-sm font-semibold text-slate-700">
@@ -48,7 +53,7 @@ export function DateRangeFilter({ value, onChange }: Props) {
               type="date"
               value={value.to}
               onChange={(e) => onChange({ ...value, to: e.target.value })}
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
         </>
@@ -57,8 +62,12 @@ export function DateRangeFilter({ value, onChange }: Props) {
   )
 }
 
+// Calendar date as the user sees it. (toISOString() would convert local
+// midnight to UTC first, which in Germany yields the previous day.)
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
 }
 
 // Resolves a preset into concrete ISO date boundaries for the server-side

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
@@ -13,22 +14,32 @@ import { useRecordSelection } from '../hooks/use-record-selection'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { createHistoryCsv, downloadCsvFile, money, statusStages } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { berlinIsoDate } from '../utils/berlin-time'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: 'Alle Typen' },
+  { value: 'dropoff', label: 'Annahme' },
+  { value: 'pickup', label: 'Verkauf' },
+  { value: 'lkw', label: 'LKW' },
+]
 
 export const Route = createFileRoute('/admin/vorgaenge')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminVorgaengePage,
 })
 
 function AdminVorgaengePage() {
-  const { companies, updateRecordStatus, assignInvoice, assignCancel, generateInvoiceNumber } = useAppState()
+  const { companies, createInvoice, cancelRecords } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState<'all' | 'pickup' | 'dropoff' | 'lkw'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | RecordStatus>('all')
@@ -36,17 +47,18 @@ function AdminVorgaengePage() {
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [sammelrechnungOpen, setSammelrechnungOpen] = useState(false)
-  const [sammelReverseCharge, setSammelReverseCharge] = useState(false)
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
 
   const companyOptions = useMemo(
-    () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
+    () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
     [companies],
   )
-  const companyId = companyFilter === 'all' ? undefined : companies.find((c) => c.name === companyFilter)?.id
+  const companyId = companyFilter === 'all' ? undefined : companyFilter
+  const companyById = (id: string) => companies.find((c) => c.id === id)
 
   const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
   const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
@@ -65,6 +77,7 @@ function AdminVorgaengePage() {
   }
 
   const recordsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['records', filters, page, pageSize] as const,
     queryFn: () => listRecordsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
@@ -87,16 +100,15 @@ function AdminVorgaengePage() {
   } = useRecordSelection(pageRecords)
 
   const selectedTotal = selectedRecords.reduce((sum, r) => sum + r.total, 0)
-  const selectedCompanies = Array.from(new Set(selectedRecords.map((r) => r.company)))
+  const selectedCompanyIds = Array.from(new Set(selectedRecords.map((r) => r.companyId)))
   const selectedAllOpenLieferschein = selectedRecords.length > 0 && selectedRecords.every((r) => r.status === 'lieferschein')
-  const canCreateInvoice = selectedAllOpenLieferschein && selectedCompanies.length === 1
+  const canCreateInvoice = selectedAllOpenLieferschein && selectedCompanyIds.length === 1
   const canStorno = selectedAllOpenLieferschein
 
   function exportSelectedAsCsv() {
     if (selectedRecords.length === 0) return
     const csv = createHistoryCsv(selectedRecords, true)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsvFile(`admin-history-${stamp}.csv`, csv)
+    downloadCsvFile(`admin-history-${berlinIsoDate()}.csv`, csv)
   }
 
   const selectedDeliveryNoteIds = [...new Set(selectedRecords.map((r) => r.deliveryNoteId).filter((id): id is string => Boolean(id)))]
@@ -114,25 +126,33 @@ function AdminVorgaengePage() {
     }
   }
 
-  function stornoSelection() {
-    selectedRecords.forEach((record) => {
-      const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${record.id}`
-      downloadStornoDoc([record], record.company, cancelId, record.deliveryNoteId)
-      assignCancel([record.id], cancelId)
-      updateRecordStatus(record.id, 'storniert')
-    })
+  // Each selected delivery note record is cancelled on its own (one Storno
+  // document per record). The PDF is only generated once the cancellation is
+  // stored, from the records as the database now has them.
+  async function stornoSelection() {
+    const failures: string[] = []
+    for (const record of selectedRecords) {
+      const result = await cancelRecords([record.id])
+      if (!result.ok) {
+        failures.push(`${record.deliveryNoteId ?? `#${record.id}`}: ${result.message}`)
+        continue
+      }
+      await handleCancelClick(result.documentId)
+    }
     clearSelection()
+    setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
   }
 
-  async function createSammelrechnung(isReverseCharge: boolean) {
+  async function createSammelrechnung() {
     if (!canCreateInvoice) return
-    const deliveryNoteRefs = selectedRecords.map((r) => r.deliveryNoteId).filter(Boolean).join(', ')
-    const customer = companies.find((c) => c.name === selectedCompanies[0])
-    const invoiceNo = await generateInvoiceNumber()
-    await downloadInvoicePdf(selectedRecords, customer, deliveryNoteRefs, invoiceNo, isReverseCharge)
-    selectedRecords.forEach((r) => updateRecordStatus(r.id, 'rechnung'))
-    assignInvoice(selectedRecords.map((r) => r.id), invoiceNo, isReverseCharge)
+    const result = await createInvoice(selectedRecords.map((r) => r.id))
+    if (!result.ok) {
+      setActionError(result.message)
+      return
+    }
+    setActionError(null)
     clearSelection()
+    await handleInvoiceClick(result.documentId)
   }
 
   async function handleDeliveryNoteClick(deliveryNoteId: string) {
@@ -140,8 +160,7 @@ function AdminVorgaengePage() {
     try {
       const group = await listRecordsByDocId({ data: { field: 'delivery_note_id', value: deliveryNoteId } })
       if (!group.length) return
-      const customer = companies.find((c) => c.name === group[0].company)
-      await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, customer)
+      await downloadCombinedDeliveryNote(group, group[0].company, deliveryNoteId, companyById(group[0].companyId))
     } finally {
       setDownloadingDocId(null)
     }
@@ -150,10 +169,7 @@ function AdminVorgaengePage() {
   async function handleInvoiceClick(invoiceId: string) {
     setDownloadingDocId(invoiceId)
     try {
-      const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
-      if (!group.length) return
-      const customer = companies.find((c) => c.name === group[0].company)
-      await downloadInvoicePdf(group, customer, group[0].deliveryNoteId, invoiceId, group[0].invoiceReverseCharge)
+      await downloadInvoicePdf(invoiceId)
     } finally {
       setDownloadingDocId(null)
     }
@@ -162,7 +178,7 @@ function AdminVorgaengePage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (!group.length) return
-    downloadStornoDoc(group, group[0].company, cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
+    await downloadCancellationPdf(group, companyById(group[0].companyId))
   }
 
   return (
@@ -179,7 +195,7 @@ function AdminVorgaengePage() {
             </p>
             <Link
               to="/admin/neuer-vorgang"
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
             >
               Neuer Vorgang
             </Link>
@@ -189,44 +205,32 @@ function AdminVorgaengePage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5">
           <label className="text-sm font-semibold text-slate-700">
             Firma
-            <select
+            <SelectInput
               value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Firmen</option>
-              {companyOptions.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+              onChange={setCompanyFilter}
+              options={[{ value: 'all', label: 'Alle Firmen' }, ...companyOptions.map((company) => ({ value: company.id, label: company.name }))]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Typ
-            <select
+            <SelectInput
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Typen</option>
-              <option value="dropoff">Annahme</option>
-              <option value="pickup">Verkauf</option>
-              <option value="lkw">LKW</option>
-            </select>
+              onChange={(type) => setTypeFilter(type as 'all' | 'pickup' | 'dropoff' | 'lkw')}
+              options={TYPE_FILTER_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | RecordStatus)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              {statusStages.map((stage) => (
-                <option key={stage.value} value={stage.value}>{stage.label}</option>
-              ))}
-            </select>
+              onChange={(status) => setStatusFilter(status as 'all' | RecordStatus)}
+              options={[{ value: 'all', label: 'Alle Status' }, ...statusStages]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -235,7 +239,7 @@ function AdminVorgaengePage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Baustelle, LS-/RG-/ST-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
@@ -247,7 +251,7 @@ function AdminVorgaengePage() {
           pluralLabel="Einträge"
           total={selectedTotal}
           warning={
-            selectedAllOpenLieferschein && selectedCompanies.length > 1
+            selectedAllOpenLieferschein && selectedCompanyIds.length > 1
               ? 'Rechnung ist nur möglich, wenn alle markierten Einträge zur gleichen Firma gehören.'
               : undefined
           }
@@ -285,10 +289,14 @@ function AdminVorgaengePage() {
               icon: <FilePlus className="h-3.5 w-3.5" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !canCreateInvoice,
-              onClick: () => { setSammelReverseCharge(false); setSammelrechnungOpen(true) },
+              onClick: () => setSammelrechnungOpen(true),
             },
           ]}
         />
+
+        {actionError && (
+          <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-4 text-sm font-medium text-rose-700">{actionError}</p>
+        )}
 
         {recordsQuery.isLoading ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
@@ -326,28 +334,14 @@ function AdminVorgaengePage() {
           >
             <h3 className="font-semibold text-slate-900">Rechnung erstellen</h3>
             <p className="mt-2 text-sm text-slate-600">
-              {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedCompanies[0]} · {money(selectedTotal)}
+              {selectedRecords.length} {selectedRecords.length === 1 ? 'Eintrag' : 'Einträge'} für {selectedRecords[0]?.company} · {money(selectedTotal)}
             </p>
-            <label className="mt-4 flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={sammelReverseCharge}
-                onChange={(e) => setSammelReverseCharge(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span className="text-sm font-medium text-slate-700">Reverse Charge (§13b UStG)</span>
-            </label>
-            {sammelReverseCharge && (
-              <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-                USt. wird nicht ausgewiesen. Der Hinweis zur Steuerschuldnerschaft des Leistungsempfängers wird auf der Rechnung ergänzt.
-              </p>
-            )}
             <div className="mt-5 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setSammelrechnungOpen(false)}
                 disabled={isCreatingInvoice}
-                className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-100 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Abbrechen
               </button>
@@ -356,14 +350,14 @@ function AdminVorgaengePage() {
                 onClick={async () => {
                   setIsCreatingInvoice(true)
                   try {
-                    await createSammelrechnung(sammelReverseCharge)
+                    await createSammelrechnung()
                     setSammelrechnungOpen(false)
                   } finally {
                     setIsCreatingInvoice(false)
                   }
                 }}
                 disabled={isCreatingInvoice}
-                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-12 items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingInvoice && <Spinner className="h-4 w-4" />}
                 Rechnung erstellen
@@ -379,7 +373,7 @@ function AdminVorgaengePage() {
         title={pendingAction?.title ?? ''}
         message={pendingAction?.message ?? ''}
         confirmLabel="Ja"
-        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
     </section>

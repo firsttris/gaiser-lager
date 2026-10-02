@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FileSpreadsheet, Receipt } from 'lucide-react'
@@ -12,11 +13,20 @@ import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { TopNav } from '../components/top-nav'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
+import { berlinIsoDate } from '../utils/berlin-time'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const INVOICE_STATUS_OPTIONS = [
+  { value: 'all', label: 'Alle Status' },
+  { value: 'offen', label: 'Offen' },
+  { value: 'bezahlt', label: 'Bezahlt' },
+  { value: 'storniert', label: 'Storniert' },
+]
 
 export const Route = createFileRoute('/kunde/rechnungen')({ component: RechnungenPage })
 
@@ -44,6 +54,7 @@ function RechnungenPage() {
   }
 
   const groupsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['invoice-groups', filters, page, pageSize] as const,
     queryFn: () => listInvoiceGroupsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
@@ -62,15 +73,15 @@ function RechnungenPage() {
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), false)
-    const stamp = new Date().toISOString().slice(0, 10)
+    const stamp = berlinIsoDate()
     const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`rechnungen-${company}-${stamp}.csv`, csv)
   }
 
-  async function handleInvoiceDownload(id: string, items: RecordItem[], deliveryNoteRefs: string) {
+  async function handleInvoiceDownload(id: string) {
     setDownloadingDocId(id)
     try {
-      await downloadInvoicePdf(items, selectedCompany ?? undefined, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+      await downloadInvoicePdf(id)
     } finally {
       setDownloadingDocId(null)
     }
@@ -78,41 +89,24 @@ function RechnungenPage() {
 
   async function downloadSelectedInvoices() {
     for (const group of selectedGroups) {
-      const deliveryNoteRefs = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
-      await handleInvoiceDownload(group.id, group.items, deliveryNoteRefs)
+      await handleInvoiceDownload(group.id)
     }
   }
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const deliveryNoteRefs = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))].join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => void handleInvoiceDownload(id, items, deliveryNoteRefs)}
+          onClick={() => void handleInvoiceDownload(id)}
           loading={downloadingDocId === id}
         />
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, selectedCompany?.name ?? '', cancelId, id)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, selectedCompany ?? undefined)} />
         )}
       </>
-    )
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <PageShell>
-        <TopNav />
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
-          <p className="mt-2 text-slate-600">Die Rechnungen sind nur nach Firmen-PIN verfügbar.</p>
-          <Link to="/" className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline">
-            Zum Login
-          </Link>
-        </section>
-      </PageShell>
     )
   }
 
@@ -133,16 +127,12 @@ function RechnungenPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              <option value="offen">Offen</option>
-              <option value="bezahlt">Bezahlt</option>
-              <option value="storniert">Storniert</option>
-            </select>
+              onChange={(status) => setStatusFilter(status as typeof statusFilter)}
+              options={INVOICE_STATUS_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -151,7 +141,7 @@ function RechnungenPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Rechnungs-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />

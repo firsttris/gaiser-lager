@@ -1,12 +1,20 @@
-import { Outlet, createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
-import { Blocks, Building2, Clock, LogOut, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
+import { Outlet, createFileRoute, Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { adminSessionStatusQueryOptions } from '../server/admin-auth'
+import { Blocks, Building2, Camera, Clock, HardHat, LogOut, Mail, MapPinned, Menu, PlusCircle, Receipt, ReceiptText, Settings, ShieldCheck, X } from 'lucide-react'
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
+import { InactivityGuard } from '../components/inactivity-guard'
+
+// An untouched admin login on the kiosk must not block the customers: after
+// this long without input it returns to the customer login.
+const ADMIN_LOGIN_IDLE_MS = 60_000
+const IDLE_RESET_EVENTS: (keyof WindowEventMap)[] = ['mousedown', 'keydown', 'touchstart']
 
 export const Route = createFileRoute('/admin')({ component: AdminPage })
 
@@ -15,11 +23,17 @@ const settingsNavItems = [
   { to: '/admin/lkw', label: 'LKW', icon: <Clock className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/kunden', label: 'Kunden', icon: <Building2 className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/baustellen', label: 'Baustellen', icon: <MapPinned className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: <HardHat className="h-4 w-4" strokeWidth={2.25} /> },
+  { to: '/admin/e-mail', label: 'E-Mail', icon: <Mail className="h-4 w-4" strokeWidth={2.25} /> },
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: <Settings className="h-4 w-4" strokeWidth={2.25} /> },
 ]
 
 function AdminPage() {
-  const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout } = useAppState()
+  const { isAdminLoggedIn, adminLogin, isAdminLoggingIn, adminLogout, isLoggingOut, signupSettings } = useAppState()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const isLoginPage = pathname === '/admin' || pathname === '/admin/'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
@@ -37,6 +51,33 @@ function AdminPage() {
     setAuthError('')
     setPassword('')
   }
+
+  // Session gone on an admin sub-page (expired, logged out elsewhere): back to
+  // the customer login, never to the admin login (the kiosk would get stuck).
+  // Reads the query cache directly (see kunde.tsx).
+  // Only on /admin pages: while leaving the admin area (e.g. to "Passwort
+  // vergessen") this layout briefly sees the new path and must not redirect.
+  const isAdminSubPage = pathname.startsWith('/admin/') && !isLoginPage
+  useEffect(() => {
+    const session = queryClient.getQueryData(adminSessionStatusQueryOptions().queryKey)
+    if (!session?.isAdminLoggedIn && isAdminSubPage && !isLoggingOut) window.location.assign('/')
+  }, [isAdminLoggedIn, isAdminSubPage, isLoggingOut, queryClient])
+
+  useEffect(() => {
+    if (isAdminLoggedIn || !isLoginPage) return
+    let timer = setTimeout(() => void navigate({ to: '/' }), ADMIN_LOGIN_IDLE_MS)
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void navigate({ to: '/' }), ADMIN_LOGIN_IDLE_MS)
+    }
+    for (const eventName of IDLE_RESET_EVENTS) window.addEventListener(eventName, reset, { passive: true })
+    return () => {
+      clearTimeout(timer)
+      for (const eventName of IDLE_RESET_EVENTS) window.removeEventListener(eventName, reset)
+    }
+  }, [isAdminLoggedIn, isLoginPage, navigate])
+
+  if (!isAdminLoggedIn && !isLoginPage) return null
 
   if (!isAdminLoggedIn) {
     return (
@@ -93,7 +134,14 @@ function AdminPage() {
                 to="/"
                 className="mt-3 inline-flex w-full justify-center rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-200"
               >
-                Zum Kundenportal
+                Zurück zur Kunden-Anmeldung
+              </Link>
+
+              <Link
+                to="/passwort-vergessen"
+                className="mt-3 flex min-h-12 items-center justify-center text-sm font-semibold text-slate-700 no-underline hover:text-slate-900"
+              >
+                Passwort vergessen?
               </Link>
             </form>
           </div>
@@ -111,12 +159,24 @@ function AdminPage() {
               <Logo className="h-12 shrink-0 sm:h-16" />
             </div>
 
-            <div className="hidden sm:block sm:text-left">
-              <div className="mb-0.5 flex items-center justify-start gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
-                <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+            <div className="hidden items-start gap-6 sm:flex">
+              <div className="text-left">
+                <div className="mb-0.5 flex items-center justify-start gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
+                  <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+                </div>
+                <h1 className="font-title text-2xl leading-none text-slate-900">Verwaltung</h1>
               </div>
-              <h1 className="font-title text-2xl leading-none text-slate-900">Verwaltung</h1>
+              {/* Up here instead of in the navigation row: on the portrait
+                  tablet the row has no room left for it. */}
+              <button
+                type="button"
+                onClick={() => void adminLogout()}
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={2.2} />
+                Abmelden
+              </button>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:hidden">
@@ -125,7 +185,7 @@ function AdminPage() {
                 aria-expanded={isMenuOpen}
                 aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
                 onClick={() => setIsMenuOpen((open) => !open)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
               >
                 {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
               </button>
@@ -169,6 +229,15 @@ function AdminPage() {
                 Rechnungen
               </NavLink>
 
+              <NavLink
+                to="/admin/lieferscheine"
+                compact
+                onClick={() => setIsMenuOpen(false)}
+                icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
+              >
+                Lieferscheine
+              </NavLink>
+
               <NavDropdown
                 label="Einstellungen"
                 icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
@@ -182,9 +251,9 @@ function AdminPage() {
                   type="button"
                   onClick={() => {
                     setIsMenuOpen(false)
-                    adminLogout()
+                    void adminLogout()
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   <LogOut className="h-4 w-4" strokeWidth={2.2} />
                   Abmelden
@@ -193,7 +262,7 @@ function AdminPage() {
             </div>
           )}
 
-          <div className="mt-5 hidden border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-6">
+          <div className="mt-4 hidden flex-wrap border-t border-slate-100 pt-2 sm:flex sm:items-center sm:gap-x-4 sm:gap-y-1">
             <NavLink
               to="/admin/neuer-vorgang"
               icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}
@@ -212,27 +281,28 @@ function AdminPage() {
             >
               Rechnungen
             </NavLink>
+            <NavLink
+              to="/admin/lieferscheine"
+              icon={<Camera className="h-4 w-4" strokeWidth={2.25} />}
+            >
+              Lieferscheine
+            </NavLink>
             <NavDropdown
               label="Einstellungen"
               icon={<Settings className="h-4 w-4" strokeWidth={2.25} />}
               items={settingsNavItems}
             />
 
-            <div className="ml-auto flex items-center gap-4">
-              <button
-                type="button"
-                onClick={adminLogout}
-                className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition hover:text-slate-700"
-              >
-                <LogOut className="h-4 w-4" strokeWidth={2.2} />
-                Abmelden
-              </button>
-            </div>
           </div>
         </div>
       </header>
 
       <Outlet />
+      <InactivityGuard
+        timeoutMinutes={signupSettings.adminInactivityTimeoutMinutes}
+        onLogout={adminLogout}
+        isLoggingOut={isLoggingOut}
+      />
     </PageShell>
   )
 }

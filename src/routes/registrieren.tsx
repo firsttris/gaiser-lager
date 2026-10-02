@@ -5,8 +5,9 @@ import { TopNav } from '../components/top-nav'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
-import { CompanyInput, PinInput, PriceCategorySelect } from '../components/company-form-inputs'
-import type { PriceCategory } from '../state/app-state'
+import { CompanyInput, PinInput } from '../components/company-form-inputs'
+import { PostalCodeCityFields } from '../components/postal-code-city-fields'
+import { isValidEmail } from '../utils/email'
 
 export const Route = createFileRoute('/registrieren')({ component: RegistrierenPage })
 
@@ -19,7 +20,7 @@ function RegistrierenPage() {
   const [masterPinError, setMasterPinError] = useState('')
 
   const [name, setName] = useState('')
-  const [priceCategory, setPriceCategory] = useState<PriceCategory>('business')
+  const [email, setEmail] = useState('')
   const [pin, setPin] = useState('')
   const [pinConfirmation, setPinConfirmation] = useState('')
   const [street, setStreet] = useState('')
@@ -56,6 +57,11 @@ function RegistrierenPage() {
   async function submitSignUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (!isValidEmail(email)) {
+      setError('Bitte eine gültige E-Mail-Adresse für Rechnungen eingeben.')
+      return
+    }
+
     if (pin.length !== 4) {
       setError('Bitte eine 4-stellige PIN eingeben.')
       return
@@ -70,7 +76,7 @@ function RegistrierenPage() {
       const result = await signUp({
         masterPin,
         name,
-        priceCategory,
+        email,
         pin,
         pinConfirmation,
         street,
@@ -151,7 +157,15 @@ function RegistrierenPage() {
                 placeholder="z.B. Krampfert Wohnbau GmbH"
               />
 
-              <PriceCategorySelect label="Tarifgruppe" value={priceCategory} onChange={setPriceCategory} />
+              <CompanyInput
+                label="E-Mail für Rechnungen"
+                value={email}
+                onChange={setEmail}
+                placeholder="z.B. buchhaltung@firma.de"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+              />
 
               <div className="grid gap-4 grid-cols-2">
                 <PinInput label="Ihre PIN (4-stellig)" value={pin} onChange={setPin} />
@@ -165,15 +179,15 @@ function RegistrierenPage() {
                 placeholder="z.B. Bastian-Gugel-Straße 11"
               />
 
-              <div className="grid gap-4 grid-cols-2">
-                <CompanyInput
-                  label="PLZ"
-                  value={postalCode}
-                  onChange={(val) => setPostalCode(val.replace(/[^0-9]/g, '').slice(0, 5))}
-                  placeholder="z.B. 77815"
-                />
-                <CompanyInput label="Ort" value={city} onChange={setCity} placeholder="z.B. Bühl" />
-              </div>
+              <PostalCodeCityFields
+                postalCode={postalCode}
+                city={city}
+                onChange={(update) => {
+                  if (update.postalCode !== undefined) setPostalCode(update.postalCode)
+                  if (update.city !== undefined) setCity(update.city)
+                }}
+                inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800"
+              />
 
               {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 

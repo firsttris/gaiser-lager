@@ -1,17 +1,21 @@
-import { type PriceCategory } from '../state/app-state'
-
 export function CompanyInput({
   label,
   value,
   onChange,
   placeholder,
   variant = 'default',
+  type = 'text',
+  inputMode,
+  autoComplete,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   placeholder: string
   variant?: 'default' | 'compact'
+  type?: 'text' | 'email'
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode']
+  autoComplete?: string
 }) {
   const sizes = variant === 'compact' ? 'px-3 py-2' : 'px-4 py-3'
   const borderStyle = variant === 'compact' ? 'rounded-lg' : 'rounded-xl'
@@ -20,9 +24,12 @@ export function CompanyInput({
     <div>
       <label className="text-sm font-semibold text-slate-700">{label}</label>
       <input
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
         className={`mt-2 w-full border border-slate-300 ${borderStyle} ${sizes} outline-none focus:border-slate-800`}
       />
     </div>
@@ -58,35 +65,6 @@ export function PinInput({
         placeholder="1234"
         className={`mt-2 w-full border border-slate-300 ${borderStyle} ${sizes} outline-none focus:border-slate-800`}
       />
-    </div>
-  )
-}
-
-export function PriceCategorySelect({
-  label,
-  value,
-  onChange,
-  variant = 'default',
-}: {
-  label: string
-  value: PriceCategory
-  onChange: (value: PriceCategory) => void
-  variant?: 'default' | 'compact'
-}) {
-  const sizes = variant === 'compact' ? 'px-3 py-2' : 'px-4 py-3'
-  const borderStyle = variant === 'compact' ? 'rounded-lg' : 'rounded-xl'
-
-  return (
-    <div>
-      <label className="text-sm font-semibold text-slate-700">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as PriceCategory)}
-        className={`mt-2 w-full border border-slate-300 bg-white ${borderStyle} ${sizes} outline-none focus:border-slate-800`}
-      >
-        <option value="business">Unternehmen</option>
-        <option value="private">Privat</option>
-      </select>
     </div>
   )
 }

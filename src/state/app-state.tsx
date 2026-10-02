@@ -1,10 +1,10 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { employeeSessionStatusQueryOptions, employeeSignIn, employeeSignOut } from '../server/employee-auth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminSessionStatusQueryOptions, adminSignIn, adminSignOut } from '../server/admin-auth'
 import { customerSessionStatusQueryOptions, customerSignIn, customerSignOut, customerSignUp } from '../server/customer-auth'
 import {
   adminCompaniesQueryOptions,
-  publicCompaniesQueryOptions,
   adminCreateCompany,
   adminUpdateCompany,
   adminDeleteCompany,
@@ -36,14 +36,13 @@ import {
 import {
   numberingSettingsQueryOptions,
   updateNumberingSettings as apiUpdateNumberingSettings,
-  generateInvoiceNumber as apiGenerateInvoiceNumber,
 } from '../server/numbering'
 import {
   createRecord as apiCreateRecord,
   createTruckRecord as apiCreateTruckRecord,
-  updateRecordStatus as apiUpdateRecordStatus,
-  assignInvoice as apiAssignInvoice,
-  assignCancel as apiAssignCancel,
+  createInvoice as apiCreateInvoice,
+  cancelRecords as apiCancelRecords,
+  markInvoicesPaid as apiMarkInvoicesPaid,
 } from '../server/records'
 
 export { formatGeneratedNumber } from '../utils/numbering-format'
@@ -51,8 +50,6 @@ export { formatGeneratedNumber } from '../utils/numbering-format'
 export type FlowType = 'pickup' | 'dropoff'
 export type RecordType = FlowType | 'lkw'
 export type RecordStatus = 'offen' | 'lieferschein' | 'rechnung' | 'bezahlt' | 'storniert'
-export type PriceCategory = 'private' | 'business'
-
 // Every domain entity below lives in Supabase — see src/server/*.ts. Nothing
 // in this file touches localStorage; AppStateProvider is a thin TanStack
 // Query wrapper, not a data store.
@@ -63,7 +60,8 @@ export type Company = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  /** Where invoices are sent; empty for customers who don't have one yet. */
+  email: string
 }
 
 export type Product = {
@@ -71,28 +69,30 @@ export type Product = {
   name: string
   unit: string
   flow: FlowType
-  pickupPrivatePrice: number
-  pickupBusinessPrice: number
-  dropoffPrivatePrice: number
-  dropoffBusinessPrice: number
+  /** Net price per unit. */
+  price: number
   imageUrl: string | null
 }
 
 export type Truck = {
   id: number
   name: string
-  privatePrice: number
-  businessPrice: number
+  /** Net price per hour. */
+  price: number
 }
 
 export type ConstructionSite = {
   id: string
   name: string
+  companyId: string
 }
 
 export type RecordItem = {
   id: number
+  companyId: string
   company: string
+  /** Employee who booked it (truck driver); undefined if booked by the customer or an admin. */
+  createdByName?: string
   constructionSiteId: string
   constructionSiteName: string
   type: RecordType
@@ -102,14 +102,21 @@ export type RecordItem = {
   unitPrice: number
   total: number
   status: RecordStatus
+  // Formatted for display in German time ("1.10.2026, 08:15:00").
   createdAt: string
+  // Raw ISO timestamps, for anything that computes with dates.
+  createdAtIso: string
   deliveryNoteId?: string
   invoiceId?: string
   invoiceReverseCharge?: boolean
+  invoicedAt?: string
   cancelId?: string
+  cancelledAt?: string
 }
 
 type LoginResult = { ok: true } | { ok: false; message: string }
+export type IssuedDocumentResult = { ok: true; documentId: string; documentDate: string } | { ok: false; message: string }
+type ActionResult = { ok: true } | { ok: false; message: string }
 type CreateCompanyResult = { ok: true } | { ok: false; message: string }
 
 export type NumberingSettings = {
@@ -118,10 +125,14 @@ export type NumberingSettings = {
   nextInvoiceNumber: number
   nextDeliveryNoteNumber: number
   numberPadding: number
+  customerNumberTemplate: string
+  nextCustomerNumber: number
+  highestCustomerNumber: number | null
 }
 
 export type SignupSettings = {
   inactivityTimeoutMinutes: number
+  adminInactivityTimeoutMinutes: number
 }
 
 const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
@@ -130,10 +141,14 @@ const DEFAULT_NUMBERING_SETTINGS: NumberingSettings = {
   nextInvoiceNumber: 1,
   nextDeliveryNoteNumber: 1,
   numberPadding: 4,
+  customerNumberTemplate: '{NUMMER}',
+  nextCustomerNumber: 10600,
+  highestCustomerNumber: null,
 }
 
 const DEFAULT_SIGNUP_SETTINGS: SignupSettings = {
   inactivityTimeoutMinutes: 5,
+  adminInactivityTimeoutMinutes: 10,
 }
 
 type UpdateNumberingSettingsInput = Partial<NumberingSettings>
@@ -160,15 +175,14 @@ type CreateCompanyInput = {
   postalCode: string
   city: string
   pin: string
-  priceCategory: PriceCategory
+  email: string
 }
 
 type CreateProductInput = {
   name: string
   unit: string
   flow: FlowType
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type UpdateCompanyInput = {
@@ -178,7 +192,7 @@ type UpdateCompanyInput = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  email: string
 }
 
 type UpdateProductInput = {
@@ -186,8 +200,7 @@ type UpdateProductInput = {
   name: string
   unit: string
   flow: FlowType
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type DeleteCompanyInput = {
@@ -212,15 +225,13 @@ type RemoveProductImageInput = {
 
 type CreateTruckInput = {
   name: string
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type UpdateTruckInput = {
   id: number
   name: string
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 type DeleteTruckInput = {
@@ -229,11 +240,13 @@ type DeleteTruckInput = {
 
 type CreateConstructionSiteInput = {
   name: string
+  companyId: string
 }
 
 type UpdateConstructionSiteInput = {
   id: string
   name: string
+  companyId: string
 }
 
 type DeleteConstructionSiteInput = {
@@ -251,7 +264,7 @@ type SignUpInput = {
   street: string
   postalCode: string
   city: string
-  priceCategory: PriceCategory
+  email: string
   pin: string
   pinConfirmation: string
 }
@@ -265,7 +278,8 @@ type VerifyMasterPinInput = {
 }
 
 type UpdateInactivityTimeoutInput = {
-  minutes: number
+  customerMinutes: number
+  adminMinutes: number
 }
 
 type AppState = {
@@ -281,7 +295,10 @@ type AppState = {
   signupSettings: SignupSettings
   login: (companyId: string, pin: string) => Promise<LoginResult>
   isLoggingIn: boolean
-  logout: () => void
+  // Both wait for the sign-out and then always load the customer login page
+  // (full reload: clears all cached data and picks up a new app version).
+  logout: () => Promise<void>
+  isLoggingOut: boolean
   signUp: (input: SignUpInput) => Promise<LoginResult>
   isSigningUp: boolean
   verifyMasterPin: (input: VerifyMasterPinInput) => Promise<LoginResult>
@@ -292,7 +309,12 @@ type AppState = {
   isUpdatingInactivityTimeout: boolean
   adminLogin: (email: string, password: string) => Promise<LoginResult>
   isAdminLoggingIn: boolean
-  adminLogout: () => void
+  adminLogout: () => Promise<void>
+  /** Logged-in employee (truck driver), see /mitarbeiter. */
+  employee: { id: string; name: string } | null
+  employeeLogin: (employeeId: string, pin: string) => Promise<LoginResult>
+  isEmployeeLoggingIn: boolean
+  employeeLogout: () => Promise<void>
   createRecord: (input: CreateRecordInput) => Promise<RecordItem | null>
   isCreatingRecord: boolean
   createTruckRecord: (input: CreateTruckRecordInput) => Promise<RecordItem | null>
@@ -327,32 +349,42 @@ type AppState = {
   isUpdatingConstructionSite: boolean
   deleteConstructionSite: (input: DeleteConstructionSiteInput) => Promise<CreateCompanyResult>
   isDeletingConstructionSite: boolean
-  updateRecordStatus: (recordId: number, status: RecordStatus) => void
-  assignInvoice: (recordIds: number[], invoiceId: string, reverseCharge?: boolean) => void
-  assignCancel: (recordIds: number[], cancelId: string) => void
+  // Each runs as one database transaction; resolve only once it's persisted.
+  createInvoice: (recordIds: number[]) => Promise<IssuedDocumentResult>
+  cancelRecords: (recordIds: number[]) => Promise<IssuedDocumentResult>
+  markInvoicesPaid: (invoiceIds: string[]) => Promise<ActionResult>
   updateNumberingSettings: (input: UpdateNumberingSettingsInput) => Promise<CreateCompanyResult>
   isUpdatingNumberingSettings: boolean
-  generateInvoiceNumber: () => Promise<string>
   downloadDatabaseBackup: () => Promise<CreateCompanyResult>
   isDownloadingBackup: boolean
 }
 
 const AppStateContext = createContext<AppState | null>(null)
 
+// Turns a thrown server-function error (network, expired session) into the
+// same { ok: false } shape as a rejected action, so callers handle one path.
+async function withActionError<T extends { ok: boolean }>(run: () => Promise<T>): Promise<T | { ok: false; message: string }> {
+  try {
+    return await run()
+  } catch {
+    return { ok: false, message: 'Die Aktion ist fehlgeschlagen. Bitte Verbindung prüfen und erneut versuchen.' }
+  }
+}
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
   const adminSessionQuery = useQuery(adminSessionStatusQueryOptions())
   const customerSessionQuery = useQuery(customerSessionStatusQueryOptions())
+  const employeeSessionQuery = useQuery(employeeSessionStatusQueryOptions())
   const isAdminLoggedIn = adminSessionQuery.data?.isAdminLoggedIn ?? false
   const selectedCompany = customerSessionQuery.data?.company ?? null
-  const hasSession = isAdminLoggedIn || selectedCompany !== null
+  const employee = employeeSessionQuery.data?.employee ?? null
+  const hasSession = isAdminLoggedIn || selectedCompany !== null || employee !== null
 
-  // Two separate queries (rather than one conditional queryOptions object) so
-  // each stays a single, stable shape — switching only which one is enabled.
-  const adminCompaniesQuery = useQuery({ ...adminCompaniesQueryOptions(), enabled: isAdminLoggedIn })
-  const publicCompaniesQuery = useQuery({ ...publicCompaniesQueryOptions(), enabled: !isAdminLoggedIn })
-  const companiesQuery = isAdminLoggedIn ? adminCompaniesQuery : publicCompaniesQuery
+  // The full customer list is admin-only; the customer login searches
+  // server-side instead (searchCompanies), so it can't be browsed.
+  const companiesQuery = useQuery({ ...adminCompaniesQueryOptions(), enabled: isAdminLoggedIn })
   const companies = companiesQuery.data ?? []
 
   // Dual-mode catalog/records data — only meaningful once some session exists,
@@ -372,15 +404,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const hydrated =
     adminSessionQuery.isFetched &&
     customerSessionQuery.isFetched &&
-    companiesQuery.isFetched &&
+    employeeSessionQuery.isFetched &&
+    (!isAdminLoggedIn || companiesQuery.isFetched) &&
     (!hasSession || (productsQuery.isFetched && trucksQuery.isFetched && constructionSitesQuery.isFetched))
 
   const invalidate = (queryKey: readonly unknown[]) => void queryClient.invalidateQueries({ queryKey })
 
+  // After a successful login the session query is refetched *before* the
+  // login call resolves, so the next page doesn't briefly see "logged out"
+  // and send the user back to the start page.
+  const refreshSession = (queryKey: readonly unknown[]) => queryClient.invalidateQueries({ queryKey })
+
   const adminSignInMutation = useMutation({
     mutationFn: adminSignIn,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'admin'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'admin'])
     },
   })
   const adminSignOutMutation = useMutation({
@@ -392,18 +430,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   })
   const customerSignInMutation = useMutation({
     mutationFn: customerSignIn,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'customer'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'customer'])
     },
   })
   const customerSignOutMutation = useMutation({
     mutationFn: customerSignOut,
     onSuccess: () => invalidate(['auth', 'customer']),
   })
+  const employeeSignInMutation = useMutation({
+    mutationFn: employeeSignIn,
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'employee'])
+    },
+  })
+  const employeeSignOutMutation = useMutation({ mutationFn: employeeSignOut })
   const customerSignUpMutation = useMutation({
     mutationFn: customerSignUp,
-    onSuccess: (result) => {
-      if (result.ok) invalidate(['auth', 'customer'])
+    onSuccess: async (result) => {
+      if (result.ok) await refreshSession(['auth', 'customer'])
     },
   })
   const setMasterPinMutation = useMutation({ mutationFn: adminSetMasterPin })
@@ -512,29 +557,42 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     },
   })
 
+  // A new Vorgang may have created a new construction site on the way.
   const createRecordMutation = useMutation({
     mutationFn: apiCreateRecord,
     onSuccess: (record) => {
-      if (record) invalidate(['records'])
+      if (record) {
+        invalidate(['records'])
+        invalidate(['construction-sites'])
+      }
     },
   })
   const createTruckRecordMutation = useMutation({
     mutationFn: apiCreateTruckRecord,
     onSuccess: (record) => {
-      if (record) invalidate(['records'])
+      if (record) {
+        invalidate(['records'])
+        invalidate(['construction-sites'])
+      }
     },
   })
-  const updateRecordStatusMutation = useMutation({
-    mutationFn: apiUpdateRecordStatus,
-    onSuccess: () => invalidate(['records']),
+  // Document actions change records shown both in Vorgänge (['records']) and
+  // Rechnungen (['invoice-groups']), so both lists are refreshed.
+  const invalidateDocuments = () => {
+    invalidate(['records'])
+    invalidate(['invoice-groups'])
+  }
+  const createInvoiceMutation = useMutation({
+    mutationFn: apiCreateInvoice,
+    onSettled: invalidateDocuments,
   })
-  const assignInvoiceMutation = useMutation({
-    mutationFn: apiAssignInvoice,
-    onSuccess: () => invalidate(['records']),
+  const cancelRecordsMutation = useMutation({
+    mutationFn: apiCancelRecords,
+    onSettled: invalidateDocuments,
   })
-  const assignCancelMutation = useMutation({
-    mutationFn: apiAssignCancel,
-    onSuccess: () => invalidate(['records']),
+  const markInvoicesPaidMutation = useMutation({
+    mutationFn: apiMarkInvoicesPaid,
+    onSettled: invalidateDocuments,
   })
 
   const updateNumberingSettingsMutation = useMutation({
@@ -542,10 +600,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     onSuccess: (result) => {
       if (result.ok) invalidate(['numbering-settings'])
     },
-  })
-  const generateInvoiceNumberMutation = useMutation({
-    mutationFn: apiGenerateInvoiceNumber,
-    onSuccess: () => invalidate(['numbering-settings']),
   })
 
   const downloadBackupMutation = useMutation({
@@ -569,7 +623,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       signupSettings,
       login: async (companyId, pin) => customerSignInMutation.mutateAsync({ data: { companyId, pin } }),
       isLoggingIn: customerSignInMutation.isPending,
-      logout: () => customerSignOutMutation.mutate({}),
+      logout: async () => {
+        try {
+          await customerSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
+      isLoggingOut: customerSignOutMutation.isPending || adminSignOutMutation.isPending || employeeSignOutMutation.isPending,
+      employee,
+      employeeLogin: async (employeeId, pin) => employeeSignInMutation.mutateAsync({ data: { employeeId, pin } }),
+      isEmployeeLoggingIn: employeeSignInMutation.isPending,
+      employeeLogout: async () => {
+        try {
+          await employeeSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
       signUp: async (input) => customerSignUpMutation.mutateAsync({ data: input }),
       isSigningUp: customerSignUpMutation.isPending,
       verifyMasterPin: async (input) => verifyMasterPinMutation.mutateAsync({ data: input }),
@@ -580,7 +651,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingInactivityTimeout: updateInactivityTimeoutMutation.isPending,
       adminLogin: async (email, password) => adminSignInMutation.mutateAsync({ data: { email, password } }),
       isAdminLoggingIn: adminSignInMutation.isPending,
-      adminLogout: () => adminSignOutMutation.mutate({}),
+      adminLogout: async () => {
+        try {
+          await adminSignOutMutation.mutateAsync({})
+        } finally {
+          window.location.assign('/')
+        }
+      },
       createRecord: async ({ type, product, amount, constructionSiteName, company }: CreateRecordInput) => {
         return createRecordMutation.mutateAsync({
           data: { type, productId: product.id, amount, constructionSiteName, companyId: company?.id },
@@ -623,13 +700,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       isUpdatingConstructionSite: updateSiteMutation.isPending,
       deleteConstructionSite: async (input) => deleteSiteMutation.mutateAsync({ data: input }),
       isDeletingConstructionSite: deleteSiteMutation.isPending,
-      updateRecordStatus: (recordId, status) => updateRecordStatusMutation.mutate({ data: { recordId, status } }),
-      assignInvoice: (recordIds, invoiceId, reverseCharge) =>
-        assignInvoiceMutation.mutate({ data: { recordIds, invoiceId, reverseCharge } }),
-      assignCancel: (recordIds, cancelId) => assignCancelMutation.mutate({ data: { recordIds, cancelId } }),
+      createInvoice: async (recordIds) => {
+        const result = await withActionError(() => createInvoiceMutation.mutateAsync({ data: { recordIds } }))
+        if (result.ok) invalidate(['numbering-settings'])
+        return result
+      },
+      cancelRecords: async (recordIds) => withActionError(() => cancelRecordsMutation.mutateAsync({ data: { recordIds } })),
+      markInvoicesPaid: async (invoiceIds) => withActionError(() => markInvoicesPaidMutation.mutateAsync({ data: { invoiceIds } })),
       updateNumberingSettings: async (input) => updateNumberingSettingsMutation.mutateAsync({ data: input }),
       isUpdatingNumberingSettings: updateNumberingSettingsMutation.isPending,
-      generateInvoiceNumber: async () => generateInvoiceNumberMutation.mutateAsync({}),
       downloadDatabaseBackup: async () => {
         try {
           const result = await downloadBackupMutation.mutateAsync({})
@@ -658,6 +737,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       updateInactivityTimeoutMutation,
       adminSignInMutation,
       adminSignOutMutation,
+      employee,
+      employeeSignInMutation,
+      employeeSignOutMutation,
       createRecordMutation,
       createTruckRecordMutation,
       createCompanyMutation,
@@ -675,11 +757,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       createSiteMutation,
       updateSiteMutation,
       deleteSiteMutation,
-      updateRecordStatusMutation,
-      assignInvoiceMutation,
-      assignCancelMutation,
+      createInvoiceMutation,
+      cancelRecordsMutation,
+      markInvoicesPaidMutation,
       updateNumberingSettingsMutation,
-      generateInvoiceNumberMutation,
       downloadBackupMutation,
     ],
   )

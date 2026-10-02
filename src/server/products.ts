@@ -5,6 +5,8 @@ import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { requireAnySession } from './auth-context'
 import type { ProductRow } from '#/lib/supabase/types'
+import { parsePriceInput } from '#/utils/money'
+import { RENAMEABLE_RECORD_STATUSES } from './record-snapshots'
 
 const flowSchema = z.enum(['pickup', 'dropoff'])
 
@@ -12,8 +14,7 @@ const createProductSchema = z.object({
   name: z.string(),
   unit: z.string(),
   flow: flowSchema,
-  privatePrice: z.string(),
-  businessPrice: z.string(),
+  price: z.string(),
 })
 
 const updateProductSchema = createProductSchema.extend({ id: z.number() })
@@ -52,28 +53,9 @@ function toProduct(row: ProductRow) {
     name: row.name,
     unit: row.unit,
     flow: row.flow,
-    pickupPrivatePrice: row.pickup_private_price,
-    pickupBusinessPrice: row.pickup_business_price,
-    dropoffPrivatePrice: row.dropoff_private_price,
-    dropoffBusinessPrice: row.dropoff_business_price,
+    price: row.price,
     imageUrl: productImageUrl(row.image_path),
   }
-}
-
-function parsePrices(privatePrice: string, businessPrice: string) {
-  const parsedPrivatePrice = Number(privatePrice)
-  const parsedBusinessPrice = Number(businessPrice)
-
-  if (
-    Number.isNaN(parsedPrivatePrice) ||
-    Number.isNaN(parsedBusinessPrice) ||
-    parsedPrivatePrice < 0 ||
-    parsedBusinessPrice < 0
-  ) {
-    return null
-  }
-
-  return { parsedPrivatePrice, parsedBusinessPrice }
 }
 
 export const listProducts = createServerFn({ method: 'GET' }).handler(async () => {
@@ -93,22 +75,19 @@ export const adminCreateProduct = createServerFn({ method: 'POST' })
     const cleanedUnit = data.unit.trim()
 
     if (!cleanedName || !cleanedUnit) {
-      return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' } as const
+      return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase.from('products').insert({
       name: cleanedName,
       unit: cleanedUnit,
       flow: data.flow,
-      pickup_private_price: data.flow === 'pickup' ? prices.parsedPrivatePrice : 0,
-      pickup_business_price: data.flow === 'pickup' ? prices.parsedBusinessPrice : 0,
-      dropoff_private_price: data.flow === 'dropoff' ? prices.parsedPrivatePrice : 0,
-      dropoff_business_price: data.flow === 'dropoff' ? prices.parsedBusinessPrice : 0,
+      price,
     })
 
     if (error) {
@@ -122,7 +101,11 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
   .middleware([requireAdminSession])
   .validator((data: unknown) => updateProductSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: currentProduct } = await context.supabase.from('products').select('name').eq('id', data.id).maybeSingle()
+    const { data: currentProduct } = await context.supabase
+      .from('products')
+      .select('name, flow')
+      .eq('id', data.id)
+      .maybeSingle()
     if (!currentProduct) {
       return { ok: false, message: 'Das Produkt wurde nicht gefunden.' } as const
     }
@@ -131,12 +114,12 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
     const cleanedUnit = data.unit.trim()
 
     if (!cleanedName || !cleanedUnit) {
-      return { ok: false, message: 'Bitte Produktname und Einheit ausfuellen.' } as const
+      return { ok: false, message: 'Bitte Produktname und Einheit ausfüllen.' } as const
     }
 
-    const prices = parsePrices(data.privatePrice, data.businessPrice)
-    if (!prices) {
-      return { ok: false, message: 'Preise muessen gueltige positive Zahlen sein.' } as const
+    const price = parsePriceInput(data.price)
+    if (price === null) {
+      return { ok: false, message: 'Der Preis muss eine gültige positive Zahl sein (z. B. 12,50).' } as const
     }
 
     const { error } = await context.supabase
@@ -145,10 +128,7 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
         name: cleanedName,
         unit: cleanedUnit,
         flow: data.flow,
-        pickup_private_price: data.flow === 'pickup' ? prices.parsedPrivatePrice : 0,
-        pickup_business_price: data.flow === 'pickup' ? prices.parsedBusinessPrice : 0,
-        dropoff_private_price: data.flow === 'dropoff' ? prices.parsedPrivatePrice : 0,
-        dropoff_business_price: data.flow === 'dropoff' ? prices.parsedBusinessPrice : 0,
+        price,
       })
       .eq('id', data.id)
 
@@ -157,7 +137,12 @@ export const adminUpdateProduct = createServerFn({ method: 'POST' })
     }
 
     if (currentProduct.name !== cleanedName) {
-      await context.supabase.from('records').update({ product_name: cleanedName }).eq('product_name', currentProduct.name)
+      await context.supabase
+        .from('records')
+        .update({ product_name: cleanedName })
+        .eq('type', currentProduct.flow)
+        .eq('product_name', currentProduct.name)
+        .in('status', RENAMEABLE_RECORD_STATUSES)
     }
 
     return { ok: true } as const
@@ -179,12 +164,13 @@ export const adminDeleteProduct = createServerFn({ method: 'POST' })
     const { count: historyCount } = await context.supabase
       .from('records')
       .select('id', { count: 'exact', head: true })
+      .eq('type', currentProduct.flow)
       .eq('product_name', currentProduct.name)
 
     if (historyCount && historyCount > 0) {
       return {
         ok: false,
-        message: 'Produkt kann nicht geloescht werden, solange Historie-Eintraege vorhanden sind.',
+        message: 'Produkt kann nicht gelöscht werden, solange Historie-Einträge vorhanden sind.',
       } as const
     }
 
@@ -199,7 +185,7 @@ export const adminDeleteProduct = createServerFn({ method: 'POST' })
 
     const { error } = await context.supabase.from('products').delete().eq('id', data.id)
     if (error) {
-      return { ok: false, message: 'Das Produkt konnte nicht geloescht werden.' } as const
+      return { ok: false, message: 'Das Produkt konnte nicht gelöscht werden.' } as const
     }
 
     if (currentProduct.image_path) {

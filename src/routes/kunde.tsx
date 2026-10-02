@@ -1,13 +1,9 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { customerSessionStatusQueryOptions } from '../server/customer-auth'
-import { customerSignOut } from '../server/customer-auth'
-import { signupSettingsQueryOptions } from '../server/signup-settings'
-import { InactivityLogoutDialog } from '../components/inactivity-logout-dialog'
-
-const WARNING_SECONDS = 30
-const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
+import { InactivityGuard } from '../components/inactivity-guard'
+import { useAppState } from '../state/app-state'
 
 export const Route = createFileRoute('/kunde')({
   beforeLoad: async ({ context }) => {
@@ -18,125 +14,27 @@ export const Route = createFileRoute('/kunde')({
 })
 
 function CustomerLayout() {
+  const { isLoggedIn, logout, isLoggingOut, signupSettings } = useAppState()
   const queryClient = useQueryClient()
-  const { data: signupSettings } = useQuery(signupSettingsQueryOptions())
 
-  const inactivityMinutes = signupSettings?.inactivityTimeoutMinutes ?? 5
-  const inactivityMs = inactivityMinutes * 60_000
-
-  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const warningDeadlineRef = useRef<number | null>(null)
-  const inactivityMsRef = useRef<number>(inactivityMs)
-
-  const [warningDeadline, setWarningDeadline] = useState<number | null>(null)
-  const [currentTime, setCurrentTime] = useState(() => Date.now())
-
-  const { mutateAsync: logoutCustomer, isPending: isLoggingOut } = useMutation({
-    mutationFn: customerSignOut,
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['auth', 'customer'] })
-      window.location.assign('/')
-    },
-  })
-
-  const clearTimers = useCallback(() => {
-    if (warningTimerRef.current) {
-      clearTimeout(warningTimerRef.current)
-      warningTimerRef.current = null
-    }
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current)
-      logoutTimerRef.current = null
-    }
-  }, [])
-
-  const clearWarning = useCallback(() => {
-    warningDeadlineRef.current = null
-    setWarningDeadline(null)
-  }, [])
-
-  const triggerLogout = useCallback(() => {
-    if (isLoggingOut) return
-
-    clearTimers()
-    clearWarning()
-    void logoutCustomer({})
-  }, [clearTimers, clearWarning, isLoggingOut, logoutCustomer])
-
-  const scheduleTimers = useCallback(() => {
-    const timeoutMs = inactivityMsRef.current
-    if (timeoutMs <= 0 || isLoggingOut) return
-
-    clearTimers()
-    clearWarning()
-
-    const warningMs = Math.min(WARNING_SECONDS * 1000, timeoutMs)
-    const warningDelayMs = Math.max(timeoutMs - warningMs, 0)
-
-    warningTimerRef.current = setTimeout(() => {
-      const deadline = Date.now() + warningMs
-      warningDeadlineRef.current = deadline
-      setWarningDeadline(deadline)
-    }, warningDelayMs)
-
-    logoutTimerRef.current = setTimeout(() => {
-      triggerLogout()
-    }, timeoutMs)
-  }, [clearTimers, clearWarning, isLoggingOut, triggerLogout])
-
+  // Session ended while on a customer page (expired, PIN changed, logged out
+  // elsewhere): straight back to the login page, never a "please log in" page.
+  // Reads the query cache directly: right after login the cache is already up
+  // to date while the context may not have re-rendered yet.
   useEffect(() => {
-    inactivityMsRef.current = inactivityMs
-  }, [inactivityMs])
+    const session = queryClient.getQueryData(customerSessionStatusQueryOptions().queryKey)
+    if (!session?.isLoggedIn && !isLoggingOut) window.location.assign('/')
+  }, [isLoggedIn, isLoggingOut, queryClient])
 
-  useEffect(() => {
-    if (inactivityMs <= 0) {
-      clearTimers()
-      clearWarning()
-      return
-    }
-
-    scheduleTimers()
-
-    const handleActivity = () => {
-      if (warningDeadlineRef.current !== null) return
-      scheduleTimers()
-    }
-
-    for (const eventName of ACTIVITY_EVENTS) {
-      window.addEventListener(eventName, handleActivity, { passive: true })
-    }
-
-    return () => {
-      for (const eventName of ACTIVITY_EVENTS) {
-        window.removeEventListener(eventName, handleActivity)
-      }
-      clearTimers()
-    }
-  }, [inactivityMs, clearTimers, clearWarning, scheduleTimers])
-
-  useEffect(() => {
-    if (warningDeadline === null) return
-
-    const intervalId = setInterval(() => {
-      setCurrentTime(Date.now())
-    }, 250)
-
-    return () => clearInterval(intervalId)
-  }, [warningDeadline])
-
-  const secondsRemaining = warningDeadline === null ? 0 : Math.max(0, Math.ceil((warningDeadline - currentTime) / 1000))
+  if (!isLoggedIn) return null
 
   return (
     <>
       <Outlet />
-      <InactivityLogoutDialog
-        open={warningDeadline !== null}
-        secondsRemaining={secondsRemaining}
-        totalSeconds={Math.min(WARNING_SECONDS, Math.floor(inactivityMs / 1000))}
+      <InactivityGuard
+        timeoutMinutes={signupSettings.inactivityTimeoutMinutes}
+        onLogout={logout}
         isLoggingOut={isLoggingOut}
-        onContinueSession={scheduleTimers}
-        onLogoutNow={triggerLogout}
       />
     </>
   )

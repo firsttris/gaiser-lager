@@ -4,16 +4,14 @@ interface ProductFormState {
   name: string
   unit: string
   flow: 'pickup' | 'dropoff'
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 const INITIAL_STATE: ProductFormState = {
   name: '',
   unit: '',
   flow: 'dropoff',
-  privatePrice: '0',
-  businessPrice: '0',
+  price: '',
 }
 
 export function useProductForm() {

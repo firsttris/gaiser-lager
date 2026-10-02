@@ -1,24 +1,30 @@
 {
+  "id": "/",
   "name": "Gaiser Lager",
-  "short_name": "Gaiser Lager",
-  "description": "Gaiser Lager",
-  "start_url": ".",
+  "short_name": "Gaiser",
+  "description": "Kundenportal und Verwaltung für das Lager der Gaiser GmbH Erdbau und Abbruch",
+  "lang": "de",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "orientation": "any",
+  "background_color": "#ffffff",
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "./logo192.png",
+      "src": "/logo192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "./logo512.png",
+      "src": "/logo512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "./logo512.png",
+      "src": "/logo-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

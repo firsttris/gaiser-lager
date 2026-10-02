@@ -47,8 +47,8 @@ export function InstallAppButton({ className = '', compact = false }: InstallApp
   if (isStandalone) return null
 
   const baseClasses = compact
-    ? 'inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-900 transition hover:bg-amber-100'
-    : 'inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100'
+    ? 'inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-5 py-2 text-center text-sm font-semibold text-amber-900 transition hover:bg-amber-100'
+    : 'inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-5 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100'
 
   return (
     <button

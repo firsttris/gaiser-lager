@@ -11,14 +11,14 @@ const LOCKOUT_MINUTES = 15
 // directly). Lives in its own .server.ts file — unlike signup-settings.ts,
 // it isn't imported by any client-visible module, so this file's
 // service-client.server import can't leak into the client bundle.
-export async function checkAndConsumeMasterPin(
+export async function verifyMasterPin(
   masterPin: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const supabase = getServiceSupabaseClient()
 
   const { data: settings } = await supabase
     .from('signup_settings')
-    .select('master_pin_hash, failed_pin_attempts, pin_locked_until')
+    .select('master_pin_hash')
     .eq('id', true)
     .maybeSingle()
 
@@ -26,22 +26,17 @@ export async function checkAndConsumeMasterPin(
     return { ok: false, message: 'Registrierung ist derzeit nicht verfügbar.' }
   }
 
-  if (settings.pin_locked_until && new Date(settings.pin_locked_until) > new Date()) {
-    return { ok: false, message: 'Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.' }
+  // Claims one attempt atomically before comparing — see claim_master_pin_attempt.
+  const { data: attemptAllowed } = await supabase.rpc('claim_master_pin_attempt', {
+    p_max_attempts: MAX_ATTEMPTS,
+    p_lock_minutes: LOCKOUT_MINUTES,
+  })
+  if (!attemptAllowed) {
+    return { ok: false, message: `Zu viele Fehlversuche. Bitte in ${LOCKOUT_MINUTES} Minuten erneut versuchen.` }
   }
 
   const validMasterPin = await bcrypt.compare(masterPin, settings.master_pin_hash)
-
   if (!validMasterPin) {
-    const nextAttempts = settings.failed_pin_attempts + 1
-    const lockedUntil =
-      nextAttempts >= MAX_ATTEMPTS ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000).toISOString() : null
-
-    await supabase
-      .from('signup_settings')
-      .update({ failed_pin_attempts: lockedUntil ? 0 : nextAttempts, pin_locked_until: lockedUntil })
-      .eq('id', true)
-
     return { ok: false, message: 'Master-PIN ist ungültig.' }
   }
 

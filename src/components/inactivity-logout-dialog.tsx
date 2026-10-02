@@ -28,7 +28,7 @@ export function InactivityLogoutDialog({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Inaktivitaet erkannt</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Inaktivität erkannt</p>
         <h3 className="mt-2 text-2xl font-semibold text-slate-900">Noch da?</h3>
         <p className="mt-2 text-sm text-slate-600">
           Sie werden in <span className="font-semibold text-slate-900">{secondsRemaining} Sekunden</span> automatisch

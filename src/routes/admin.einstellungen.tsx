@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { adminSessionStatusQueryOptions } from '../server/admin-auth'
+import { ADMIN_PASSWORD_MIN_LENGTH, adminChangePassword, adminSessionStatusQueryOptions } from '../server/admin-auth'
 import { useEffect, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
 import { PinInput } from '../components/company-form-inputs'
@@ -8,7 +9,7 @@ import { PinInput } from '../components/company-form-inputs'
 export const Route = createFileRoute('/admin/einstellungen')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminEinstellungenPage,
 })
@@ -39,12 +40,17 @@ function AdminEinstellungenPage() {
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState(String(numberingSettings.nextInvoiceNumber))
   const [nextDeliveryNoteNumber, setNextDeliveryNoteNumber] = useState(String(numberingSettings.nextDeliveryNoteNumber))
   const [numberPadding, setNumberPadding] = useState(String(numberingSettings.numberPadding))
+  const [customerNumberTemplate, setCustomerNumberTemplate] = useState(numberingSettings.customerNumberTemplate)
+  const [nextCustomerNumber, setNextCustomerNumber] = useState(String(numberingSettings.nextCustomerNumber))
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const [newMasterPin, setNewMasterPin] = useState('')
   const [masterPinMessage, setMasterPinMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
 
   const [inactivityTimeoutMinutes, setInactivityTimeoutMinutes] = useState(String(signupSettings.inactivityTimeoutMinutes))
+  const [adminInactivityTimeoutMinutes, setAdminInactivityTimeoutMinutes] = useState(
+    String(signupSettings.adminInactivityTimeoutMinutes),
+  )
   const [inactivityTimeoutMessage, setInactivityTimeoutMessage] = useState<{
     kind: 'success' | 'error'
     text: string
@@ -61,15 +67,22 @@ function AdminEinstellungenPage() {
     setNextInvoiceNumber(String(numberingSettings.nextInvoiceNumber))
     setNextDeliveryNoteNumber(String(numberingSettings.nextDeliveryNoteNumber))
     setNumberPadding(String(numberingSettings.numberPadding))
+    setCustomerNumberTemplate(numberingSettings.customerNumberTemplate)
+    setNextCustomerNumber(String(numberingSettings.nextCustomerNumber))
   }, [numberingSettings])
 
   useEffect(() => {
     setInactivityTimeoutMinutes(String(signupSettings.inactivityTimeoutMinutes))
-  }, [signupSettings.inactivityTimeoutMinutes])
+    setAdminInactivityTimeoutMinutes(String(signupSettings.adminInactivityTimeoutMinutes))
+  }, [signupSettings.inactivityTimeoutMinutes, signupSettings.adminInactivityTimeoutMinutes])
 
   const paddingValue = Math.max(Number(numberPadding) || 1, 1)
   const invoicePreview = formatGeneratedNumber(invoiceTemplate, Number(nextInvoiceNumber) || 0, paddingValue)
   const deliveryNotePreview = formatGeneratedNumber(deliveryNoteTemplate, Number(nextDeliveryNoteNumber) || 0, paddingValue)
+  const customerNumberPreview = formatGeneratedNumber(customerNumberTemplate, Number(nextCustomerNumber) || 0, 1)
+  const highestCustomerNumber = numberingSettings.highestCustomerNumber
+  const nextCustomerNumberIsBelowHighest =
+    highestCustomerNumber !== null && (Number(nextCustomerNumber) || 0) <= highestCustomerNumber
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -80,6 +93,8 @@ function AdminEinstellungenPage() {
       nextInvoiceNumber: Math.max(Number(nextInvoiceNumber) || 1, 1),
       nextDeliveryNoteNumber: Math.max(Number(nextDeliveryNoteNumber) || 1, 1),
       numberPadding: paddingValue,
+      customerNumberTemplate,
+      nextCustomerNumber: Math.max(Number(nextCustomerNumber) || 1, 1),
     })
 
     if (!result.ok) {
@@ -107,16 +122,19 @@ function AdminEinstellungenPage() {
     event.preventDefault()
     setInactivityTimeoutMessage(null)
 
-    const minutes = Math.max(0, Math.min(240, Number(inactivityTimeoutMinutes) || 0))
+    const clampMinutes = (value: string) => Math.max(0, Math.min(240, Number(value) || 0))
+    const minutes = clampMinutes(inactivityTimeoutMinutes)
+    const adminMinutes = clampMinutes(adminInactivityTimeoutMinutes)
 
-    const result = await updateInactivityTimeout({ minutes })
+    const result = await updateInactivityTimeout({ customerMinutes: minutes, adminMinutes })
     if (!result.ok) {
       setInactivityTimeoutMessage({ kind: 'error', text: result.message })
       return
     }
 
     setInactivityTimeoutMinutes(String(minutes))
-    setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitaets-Timeout wurde gespeichert.' })
+    setAdminInactivityTimeoutMinutes(String(adminMinutes))
+    setInactivityTimeoutMessage({ kind: 'success', text: 'Inaktivitäts-Timeout wurde gespeichert.' })
   }
 
   async function downloadBackup() {
@@ -157,7 +175,7 @@ function AdminEinstellungenPage() {
               onChange={(e) => setInvoiceTemplate(e.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
-            <p className="mt-1 text-xs text-slate-500">Vorschau: {invoicePreview}</p>
+            <p className="mt-1 text-xs text-slate-600">Vorschau: {invoicePreview}</p>
           </div>
 
           <div>
@@ -180,7 +198,7 @@ function AdminEinstellungenPage() {
               onChange={(e) => setDeliveryNoteTemplate(e.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
             />
-            <p className="mt-1 text-xs text-slate-500">Vorschau: {deliveryNotePreview}</p>
+            <p className="mt-1 text-xs text-slate-600">Vorschau: {deliveryNotePreview}</p>
           </div>
 
           <div>
@@ -205,7 +223,39 @@ function AdminEinstellungenPage() {
             onChange={(e) => setNumberPadding(e.target.value)}
             className="mt-2 w-32 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
           />
-          <p className="mt-1 text-xs text-slate-500">Z.B. 4 ergibt 0001, 0002, ...</p>
+          <p className="mt-1 text-xs text-slate-600">Z.B. 4 ergibt 0001, 0002, ...</p>
+        </div>
+
+        <div className="space-y-4 md:col-span-2 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Format Kundennummer</label>
+            <input
+              value={customerNumberTemplate}
+              onChange={(e) => setCustomerNumberTemplate(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-slate-800"
+            />
+            <p className="mt-1 text-xs text-slate-600">
+              Vorschau: {customerNumberPreview}. Gilt, wenn beim Anlegen keine Kundennummer eingetragen wird, und bei
+              der Selbstregistrierung. Bereits vergebene Nummern werden übersprungen.
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Nächste Kundennummer</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={nextCustomerNumber}
+              onChange={(e) => setNextCustomerNumber(e.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            />
+            {highestCustomerNumber !== null && (
+              <p className={`mt-1 text-xs ${nextCustomerNumberIsBelowHighest ? 'font-semibold text-amber-800' : 'text-slate-600'}`}>
+                Höchste vergebene Kundennummer: {highestCustomerNumber}.
+                {nextCustomerNumberIsBelowHighest && ' Die nächste Nummer liegt darunter – belegte Nummern werden übersprungen.'}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="md:col-span-2">
@@ -229,6 +279,8 @@ function AdminEinstellungenPage() {
           {message.text}
         </p>
       )}
+
+      <AdminPasswordSection />
 
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="font-title text-2xl text-slate-900">Master-PIN für Kunden-Registrierung</h3>
@@ -264,21 +316,35 @@ function AdminEinstellungenPage() {
       </div>
 
       <div className="mt-8 border-t border-slate-200 pt-6">
-        <h3 className="font-title text-2xl text-slate-900">Automatischer Kunden-Logout bei Inaktivitaet</h3>
+        <h3 className="font-title text-2xl text-slate-900">Automatischer Logout bei Inaktivität</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Nach dieser Zeit ohne Eingaben wird der Kunde automatisch abgemeldet. Die letzten 30 Sekunden wird ein
-          Countdown als Hinweis angezeigt.
+          Nach dieser Zeit ohne Eingaben wird automatisch abgemeldet und die Kunden-Anmeldung angezeigt. Die letzten
+          30 Sekunden wird ein Countdown als Hinweis angezeigt. Wichtig am Kiosk-Tablet, das sich mehrere Personen
+          teilen.
         </p>
 
         <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Inaktivitaetszeit (Minuten)</label>
+            <label className="text-sm font-semibold text-slate-700">Kunden (Minuten)</label>
             <input
               type="number"
+              inputMode="numeric"
               min={0}
               max={240}
               value={inactivityTimeoutMinutes}
               onChange={(e) => setInactivityTimeoutMinutes(e.target.value)}
+              className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Admin (Minuten)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={240}
+              value={adminInactivityTimeoutMinutes}
+              onChange={(e) => setAdminInactivityTimeoutMinutes(e.target.value)}
               className="mt-2 w-40 rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-slate-800"
             />
           </div>
@@ -293,7 +359,7 @@ function AdminEinstellungenPage() {
           </button>
         </form>
 
-        <p className="mt-1 text-xs text-slate-500">0 deaktiviert den automatischen Logout.</p>
+        <p className="mt-1 text-xs text-slate-600">0 deaktiviert den automatischen Logout.</p>
 
         {inactivityTimeoutMessage && (
           <p
@@ -334,5 +400,108 @@ function AdminEinstellungenPage() {
         )}
       </div>
     </section>
+  )
+}
+
+const PASSWORD_INPUT_CLASS = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-800'
+
+function AdminPasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [repeatPassword, setRepeatPassword] = useState('')
+  const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null)
+  const changePassword = useMutation({ mutationFn: adminChangePassword })
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setMessage(null)
+
+    if (newPassword.length < ADMIN_PASSWORD_MIN_LENGTH) {
+      setMessage({ kind: 'error', text: `Das neue Passwort muss mindestens ${ADMIN_PASSWORD_MIN_LENGTH} Zeichen haben.` })
+      return
+    }
+    if (newPassword !== repeatPassword) {
+      setMessage({ kind: 'error', text: 'Die beiden neuen Passwörter stimmen nicht überein.' })
+      return
+    }
+
+    try {
+      const result = await changePassword.mutateAsync({ data: { currentPassword, newPassword } })
+      if (!result.ok) {
+        setMessage({ kind: 'error', text: result.message })
+        return
+      }
+    } catch {
+      setMessage({ kind: 'error', text: 'Passwort konnte nicht geändert werden.' })
+      return
+    }
+
+    setCurrentPassword('')
+    setNewPassword('')
+    setRepeatPassword('')
+    setMessage({ kind: 'success', text: 'Passwort wurde geändert. Andere Geräte wurden abgemeldet.' })
+  }
+
+  return (
+    <div className="mt-8 border-t border-slate-200 pt-6">
+      <h3 className="font-title text-2xl text-slate-900">Mein Passwort</h3>
+      <p className="mt-2 text-sm text-slate-600">
+        Ändert das Passwort des angemeldeten Admin-Kontos. Danach sind alle anderen Geräte mit diesem Konto abgemeldet.
+      </p>
+
+      <form onSubmit={submit} className="mt-4 grid gap-4 md:grid-cols-3">
+        <label className="text-sm font-semibold text-slate-700">
+          Aktuelles Passwort
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Neues Passwort
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            placeholder={`mind. ${ADMIN_PASSWORD_MIN_LENGTH} Zeichen`}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Neues Passwort wiederholen
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={repeatPassword}
+            onChange={(event) => setRepeatPassword(event.target.value)}
+            className={PASSWORD_INPUT_CLASS}
+          />
+        </label>
+        <div className="md:col-span-3">
+          <button
+            type="submit"
+            disabled={changePassword.isPending || !currentPassword || !newPassword || !repeatPassword}
+            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {changePassword.isPending && <Spinner className="h-4 w-4" />}
+            Passwort ändern
+          </button>
+        </div>
+      </form>
+
+      {message && (
+        <p
+          className={`mt-4 rounded-xl p-3 text-sm ${
+            message.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+          }`}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
   )
 }

@@ -2,14 +2,12 @@ import { useState } from 'react'
 
 interface TruckFormState {
   name: string
-  privatePrice: string
-  businessPrice: string
+  price: string
 }
 
 const INITIAL_STATE: TruckFormState = {
   name: '',
-  privatePrice: '0',
-  businessPrice: '0',
+  price: '',
 }
 
 export function useTruckForm() {

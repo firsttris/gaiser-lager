@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { FileDown, FileSpreadsheet, Receipt } from 'lucide-react'
@@ -11,11 +12,21 @@ import { TopNav } from '../components/top-nav'
 import { type RecordStatus, useAppState } from '../state/app-state'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, statusStages } from '../utils/history-utils'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
+import { berlinIsoDate } from '../utils/berlin-time'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const TYPE_FILTER_OPTIONS = [
+  { value: 'all', label: 'Alle Typen' },
+  { value: 'dropoff', label: 'Annahme' },
+  { value: 'pickup', label: 'Verkauf' },
+  { value: 'lkw', label: 'LKW' },
+]
 
 export const Route = createFileRoute('/kunde/vorgaenge')({ component: HistoryPage })
 
@@ -45,6 +56,7 @@ function HistoryPage() {
   }
 
   const recordsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['records', filters, page, pageSize] as const,
     queryFn: () => listRecordsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
@@ -83,9 +95,7 @@ function HistoryPage() {
   async function handleInvoiceClick(invoiceId: string) {
     setDownloadingDocId(invoiceId)
     try {
-      const group = await listRecordsByDocId({ data: { field: 'invoice_id', value: invoiceId } })
-      if (group.length === 0) return
-      await downloadInvoicePdf(group, selectedCompany ?? undefined, group[0].deliveryNoteId, invoiceId)
+      await downloadInvoicePdf(invoiceId)
     } finally {
       setDownloadingDocId(null)
     }
@@ -94,14 +104,14 @@ function HistoryPage() {
   async function handleCancelClick(cancelId: string) {
     const group = await listRecordsByDocId({ data: { field: 'cancel_id', value: cancelId } })
     if (group.length === 0) return
-    downloadStornoDoc(group, selectedCompany?.name ?? '', cancelId, group[0].invoiceId ?? group[0].deliveryNoteId)
+    await downloadCancellationPdf(group, selectedCompany ?? undefined)
   }
 
   function exportSelectedAsCsv() {
     if (selectedRecords.length === 0) return
 
     const csv = createHistoryCsv(selectedRecords, false)
-    const stamp = new Date().toISOString().slice(0, 10)
+    const stamp = berlinIsoDate()
     const company = companyFilenameSegment(selectedCompany?.name)
     downloadCsvFile(`history-${company}-${stamp}.csv`, csv)
   }
@@ -119,24 +129,6 @@ function HistoryPage() {
     for (const id of selectedInvoiceIds) {
       await handleInvoiceClick(id)
     }
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <PageShell>
-        <TopNav />
-        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
-          <h1 className="font-title text-5xl text-slate-900">Bitte zuerst einloggen</h1>
-          <p className="mt-2 text-slate-600">Die Vorgänge sind nur nach Firmen-PIN verfügbar.</p>
-          <Link
-            to="/"
-            className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white no-underline"
-          >
-            Zum Login
-          </Link>
-        </section>
-      </PageShell>
-    )
   }
 
   return (
@@ -157,30 +149,22 @@ function HistoryPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Typ
-            <select
+            <SelectInput
               value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as 'all' | 'pickup' | 'dropoff' | 'lkw')}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Typen</option>
-              <option value="dropoff">Annahme</option>
-              <option value="pickup">Verkauf</option>
-              <option value="lkw">LKW</option>
-            </select>
+              onChange={(type) => setTypeFilter(type as 'all' | 'pickup' | 'dropoff' | 'lkw')}
+              options={TYPE_FILTER_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as 'all' | RecordStatus)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              {statusStages.map((stage) => (
-                <option key={stage.value} value={stage.value}>{stage.label}</option>
-              ))}
-            </select>
+              onChange={(status) => setStatusFilter(status as 'all' | RecordStatus)}
+              options={[{ value: 'all', label: 'Alle Status' }, ...statusStages]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -189,7 +173,7 @@ function HistoryPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="Baustelle, LS-/RG-/ST-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />

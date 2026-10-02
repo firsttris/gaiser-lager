@@ -1,9 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
 import { adminSessionStatusQueryOptions } from '../server/admin-auth'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
-import { Ban, CheckCircle2, FileSpreadsheet, Receipt } from 'lucide-react'
+import { Ban, CheckCircle2, FileSpreadsheet, Mail, Receipt } from 'lucide-react'
 import { ConfirmDialog } from '../components/confirm-dialog'
+import { InvoiceEmailDialog } from '../components/invoice-email-dialog'
 import { DateRangeFilter, type DateRangeState, initialDateRange, resolveDateRange } from '../components/date-range-filter'
 import { DocLinkButton } from '../components/doc-link-button'
 import { DocumentListTable } from '../components/document-list-table'
@@ -12,37 +14,51 @@ import { SelectionActionBar } from '../components/selection-action-bar'
 import { useDebouncedValue } from '../hooks/use-debounced-value'
 import { useGroupSelection } from '../hooks/use-group-selection'
 import { type RecordItem, useAppState } from '../state/app-state'
-import { downloadCombinedDeliveryNote, downloadInvoicePdf, downloadStornoDoc } from '../utils/delivery-note-utils'
+import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
+import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-download'
 import { createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { listRecordsByDocId } from '../server/records'
+import { berlinIsoDate, formatBerlinDate } from '../utils/berlin-time'
+import { SelectInput } from '../components/select-input'
 
 const DEFAULT_PAGE_SIZE = 25
+
+const INVOICE_STATUS_OPTIONS = [
+  { value: 'all', label: 'Alle Status' },
+  { value: 'offen', label: 'Offen' },
+  { value: 'bezahlt', label: 'Bezahlt' },
+  { value: 'storniert', label: 'Storniert' },
+]
 
 export const Route = createFileRoute('/admin/rechnungen')({
   beforeLoad: async ({ context }) => {
     const { isAdminLoggedIn } = await context.queryClient.ensureQueryData(adminSessionStatusQueryOptions())
-    if (!isAdminLoggedIn) throw redirect({ to: '/admin' })
+    if (!isAdminLoggedIn) throw redirect({ to: '/' })
   },
   component: AdminRechnungenPage,
 })
 
 function AdminRechnungenPage() {
-  const { companies, updateRecordStatus, assignCancel } = useAppState()
+  const { companies, cancelRecords, markInvoicesPaid } = useAppState()
   const [companyFilter, setCompanyFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'offen' | 'bezahlt' | 'storniert'>('all')
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState<DateRangeState>(initialDateRange)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [pendingAction, setPendingAction] = useState<{ action: () => void; title: string; message: string } | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ action: () => Promise<void>; title: string; message: string } | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null)
+  const [emailInvoiceIds, setEmailInvoiceIds] = useState<string[] | null>(null)
+  const queryClient = useQueryClient()
 
   const companyOptions = useMemo(
-    () => companies.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'de')),
+    () => [...companies].sort((a, b) => a.name.localeCompare(b.name, 'de')),
     [companies],
   )
-  const companyId = companyFilter === 'all' ? undefined : companies.find((c) => c.name === companyFilter)?.id
+  const companyId = companyFilter === 'all' ? undefined : companyFilter
+  const companyById = (id: string) => companies.find((c) => c.id === id)
 
   const debouncedSearch = useDebouncedValue(searchText.trim(), 300)
   const { from: dateFrom, to: dateTo } = resolveDateRange(dateRange)
@@ -60,6 +76,7 @@ function AdminRechnungenPage() {
   }
 
   const groupsQuery = useQuery({
+    refetchInterval: LIST_REFETCH_INTERVAL_MS,
     queryKey: ['invoice-groups', filters, page, pageSize] as const,
     queryFn: () => listInvoiceGroupsPage({ data: { ...filters, page, pageSize } }),
     placeholderData: keepPreviousData,
@@ -67,6 +84,19 @@ function AdminRechnungenPage() {
   const totalCountQuery = useQuery({ queryKey: ['invoice-groups', 'count'] as const, queryFn: () => countAllInvoiceGroups() })
 
   const pageGroups = groupsQuery.data?.groups ?? []
+  const emailedAt = groupsQuery.data?.emailedAt ?? {}
+  const cancellationEmailedAt = groupsQuery.data?.cancellationEmailedAt ?? {}
+
+  function extraBadges(items: RecordItem[]) {
+    const invoiceId = items[0].invoiceId ?? ''
+    const sentAt = emailedAt[invoiceId]
+    const stornoSentAt = cancellationEmailedAt[invoiceId]
+    return [
+      ...reverseChargeExtraBadges(items),
+      ...(sentAt ? [{ label: `✉ ${formatBerlinDate(sentAt)}`, className: 'bg-sky-100 text-sky-800' }] : []),
+      ...(stornoSentAt ? [{ label: `✉ Storno ${formatBerlinDate(stornoSentAt)}`, className: 'bg-sky-100 text-sky-800' }] : []),
+    ]
+  }
   const filteredCount = groupsQuery.data?.totalCount ?? 0
   const pageCount = Math.max(1, Math.ceil(filteredCount / pageSize))
 
@@ -77,50 +107,59 @@ function AdminRechnungenPage() {
     [selectedGroups],
   )
 
-  function isSelectableGroup(items: RecordItem[]) {
-    return invoiceBadge(items).label !== 'Storniert'
+  // Cancelled invoices can be selected too: their Stornorechnung can be
+  // e-mailed. Cancelling them again is not possible.
+  function isSelectableGroup(_items: RecordItem[]) {
+    return true
   }
+  const selectionHasCancelled = selectedGroups.some((g) => invoiceBadge(g.items).label === 'Storniert')
 
   const selectablePageGroups = useMemo(() => pageGroups.filter((g) => isSelectableGroup(g.items)), [pageGroups])
   const areAllVisibleSelected = selectablePageGroups.length > 0 && selectablePageGroups.every((g) => selectedIds.has(g.id))
 
-  function cancelGroup(items: RecordItem[]) {
-    const cancelId = `ST-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${items[0].id}`
-    const originalDocId = items[0].invoiceId ?? items[0].deliveryNoteId
-    downloadStornoDoc(items, items[0].company, cancelId, originalDocId)
-    assignCancel(items.map((r) => r.id), cancelId)
-    items.forEach((r) => updateRecordStatus(r.id, 'storniert'))
-  }
-
-  function stornoSelection() {
-    selectedGroups.forEach((g) => cancelGroup(g.items))
+  // One cancellation per invoice, each its own transaction. The Storno PDF is
+  // generated from the records as stored after the cancellation.
+  async function stornoSelection() {
+    const failures: string[] = []
+    for (const group of selectedGroups) {
+      const result = await cancelRecords(group.items.map((r) => r.id))
+      if (!result.ok) {
+        failures.push(`${group.id}: ${result.message}`)
+        continue
+      }
+      const cancelled = await listRecordsByDocId({ data: { field: 'cancel_id', value: result.documentId } })
+      if (cancelled.length) await downloadCancellationPdf(cancelled, companyById(cancelled[0].companyId))
+    }
     clearSelection()
+    setActionError(failures.length ? `Nicht storniert: ${failures.join('; ')}` : null)
   }
 
-  function bezahltSelection() {
-    selectedGroups.forEach((g) => g.items.forEach((r) => updateRecordStatus(r.id, 'bezahlt')))
+  async function bezahltSelection() {
+    const result = await markInvoicesPaid(selectedGroups.map((g) => g.id))
+    if (!result.ok) {
+      setActionError(result.message)
+      return
+    }
+    setActionError(null)
     clearSelection()
   }
 
   function exportSelectedAsCsv() {
     if (selectedGroups.length === 0) return
     const csv = createHistoryCsv(selectedGroups.flatMap((g) => g.items), true)
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadCsvFile(`admin-rechnungen-${stamp}.csv`, csv)
+    downloadCsvFile(`admin-rechnungen-${berlinIsoDate()}.csv`, csv)
   }
 
   async function downloadSelectedInvoices() {
     for (const group of selectedGroups) {
-      const customer = companies.find((c) => c.name === group.items[0].company)
-      const deliveryNoteIds = [...new Set(group.items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
-      await handleInvoiceDownload(group.id, group.items, customer, deliveryNoteIds.join(', '))
+      await handleInvoiceDownload(group.id)
     }
   }
 
-  async function handleInvoiceDownload(id: string, items: RecordItem[], customer: ReturnType<typeof companies.find>, deliveryNoteRefs: string) {
+  async function handleInvoiceDownload(id: string) {
     setDownloadingDocId(id)
     try {
-      await downloadInvoicePdf(items, customer, deliveryNoteRefs, id, items[0].invoiceReverseCharge)
+      await downloadInvoicePdf(id)
     } finally {
       setDownloadingDocId(null)
     }
@@ -138,15 +177,14 @@ function AdminRechnungenPage() {
 
   function renderDateien(id: string, items: RecordItem[]) {
     const cancelId = items.find((r) => r.cancelId)?.cancelId
-    const customer = companies.find((c) => c.name === items[0].company)
+    const customer = companyById(items[0].companyId)
     const deliveryNoteIds = [...new Set(items.map((r) => r.deliveryNoteId).filter(Boolean))] as string[]
-    const deliveryNoteRefs = deliveryNoteIds.join(', ')
     return (
       <>
         <DocLinkButton
           id={id}
           color="blue"
-          onClick={() => void handleInvoiceDownload(id, items, customer, deliveryNoteRefs)}
+          onClick={() => void handleInvoiceDownload(id)}
           loading={downloadingDocId === id}
         />
         {deliveryNoteIds.map((deliveryNoteId) => (
@@ -159,7 +197,7 @@ function AdminRechnungenPage() {
           />
         ))}
         {cancelId && (
-          <DocLinkButton id={cancelId} color="red" onClick={() => downloadStornoDoc(items, items[0].company, cancelId, id)} />
+          <DocLinkButton id={cancelId} color="red" onClick={() => void downloadCancellationPdf(items, customer)} />
         )}
       </>
     )
@@ -181,30 +219,22 @@ function AdminRechnungenPage() {
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <label className="text-sm font-semibold text-slate-700">
             Firma
-            <select
+            <SelectInput
               value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Firmen</option>
-              {companyOptions.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+              onChange={setCompanyFilter}
+              options={[{ value: 'all', label: 'Alle Firmen' }, ...companyOptions.map((company) => ({ value: company.id, label: company.name }))]}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
             Status
-            <select
+            <SelectInput
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-normal outline-none focus:border-slate-800"
-            >
-              <option value="all">Alle Status</option>
-              <option value="offen">Offen</option>
-              <option value="bezahlt">Bezahlt</option>
-              <option value="storniert">Storniert</option>
-            </select>
+              onChange={(status) => setStatusFilter(status as typeof statusFilter)}
+              options={INVOICE_STATUS_OPTIONS}
+              className="mt-2 w-full min-h-12 px-3 py-2 font-normal"
+            />
           </label>
 
           <label className="text-sm font-semibold text-slate-700">
@@ -213,7 +243,7 @@ function AdminRechnungenPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Rechnungs-Nummer"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
+              className="mt-2 w-full min-h-12 rounded-xl border border-slate-300 px-3 py-2 font-normal outline-none focus:border-slate-800"
             />
           </label>
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
@@ -237,8 +267,14 @@ function AdminRechnungenPage() {
               onClick: () => void downloadSelectedInvoices(),
             },
             {
+              label: 'Per E-Mail senden',
+              icon: <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              onClick: () => setEmailInvoiceIds(selectedGroups.map((g) => g.id)),
+            },
+            {
               label: 'Stornieren',
               icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              disabled: selectionHasCancelled,
               onClick: () => setPendingAction({
                 action: stornoSelection,
                 title: 'Rechnungen stornieren',
@@ -259,6 +295,10 @@ function AdminRechnungenPage() {
           ]}
         />
 
+        {actionError && (
+          <p role="alert" className="mt-4 rounded-xl bg-rose-50 p-4 text-sm font-medium text-rose-700">{actionError}</p>
+        )}
+
         {groupsQuery.isLoading ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
         ) : pageGroups.length === 0 ? (
@@ -271,7 +311,7 @@ function AdminRechnungenPage() {
               groups={pageGroups}
               showCompanyColumn
               getBadge={invoiceBadge}
-              getExtraBadges={reverseChargeExtraBadges}
+              getExtraBadges={extraBadges}
               renderDateien={renderDateien}
               selectedIds={selectedIds}
               onSelectionChange={toggleSelection}
@@ -289,9 +329,20 @@ function AdminRechnungenPage() {
         title={pendingAction?.title ?? ''}
         message={pendingAction?.message ?? ''}
         confirmLabel="Ja"
-        onConfirm={() => { pendingAction?.action(); setPendingAction(null) }}
+        onConfirm={() => { void pendingAction?.action(); setPendingAction(null) }}
         onCancel={() => setPendingAction(null)}
       />
+
+      {emailInvoiceIds && (
+        <InvoiceEmailDialog
+          invoiceIds={emailInvoiceIds}
+          onClose={() => setEmailInvoiceIds(null)}
+          onSent={() => {
+            clearSelection()
+            void queryClient.invalidateQueries({ queryKey: ['invoice-groups'] })
+          }}
+        />
+      )}
     </section>
   )
 }

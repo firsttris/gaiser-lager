@@ -12,20 +12,30 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as KundeRouteImport } from './routes/kunde'
+import { Route as MitarbeiterRouteImport } from './routes/mitarbeiter'
+import { Route as PasswortNeuRouteImport } from './routes/passwort-neu'
+import { Route as PasswortVergessenRouteImport } from './routes/passwort-vergessen'
 import { Route as PreislisteRouteImport } from './routes/preisliste'
 import { Route as RegistrierenRouteImport } from './routes/registrieren'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminBaustellenRouteImport } from './routes/admin.baustellen'
+import { Route as AdminEMailRouteImport } from './routes/admin.e-mail'
 import { Route as AdminEinstellungenRouteImport } from './routes/admin.einstellungen'
 import { Route as AdminKundenRouteImport } from './routes/admin.kunden'
+import { Route as AdminLieferscheineRouteImport } from './routes/admin.lieferscheine'
 import { Route as AdminLkwRouteImport } from './routes/admin.lkw'
 import { Route as AdminMaterialRouteImport } from './routes/admin.material'
+import { Route as AdminMitarbeiterRouteImport } from './routes/admin.mitarbeiter'
 import { Route as AdminNeuerVorgangRouteImport } from './routes/admin.neuer-vorgang'
 import { Route as AdminRechnungenRouteImport } from './routes/admin.rechnungen'
 import { Route as AdminVorgaengeRouteImport } from './routes/admin.vorgaenge'
 import { Route as KundeNeuerVorgangRouteImport } from './routes/kunde.neuer-vorgang'
 import { Route as KundeRechnungenRouteImport } from './routes/kunde.rechnungen'
 import { Route as KundeVorgaengeRouteImport } from './routes/kunde.vorgaenge'
+import { Route as MitarbeiterIndexRouteImport } from './routes/mitarbeiter.index'
+import { Route as MitarbeiterBuchungenRouteImport } from './routes/mitarbeiter.buchungen'
+import { Route as MitarbeiterLieferscheineRouteImport } from './routes/mitarbeiter.lieferscheine'
+import { Route as MitarbeiterNeuerVorgangRouteImport } from './routes/mitarbeiter.neuer-vorgang'
 import { Route as KundeNeuerVorgangIndexRouteImport } from './routes/kunde.neuer-vorgang.index'
 import { Route as KundeNeuerVorgangDropoffRouteImport } from './routes/kunde.neuer-vorgang.dropoff'
 import { Route as KundeNeuerVorgangPickupRouteImport } from './routes/kunde.neuer-vorgang.pickup'
@@ -43,6 +53,21 @@ const AdminRoute = AdminRouteImport.update({
 const KundeRoute = KundeRouteImport.update({
   id: '/kunde',
   path: '/kunde',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitarbeiterRoute = MitarbeiterRouteImport.update({
+  id: '/mitarbeiter',
+  path: '/mitarbeiter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortNeuRoute = PasswortNeuRouteImport.update({
+  id: '/passwort-neu',
+  path: '/passwort-neu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortVergessenRoute = PasswortVergessenRouteImport.update({
+  id: '/passwort-vergessen',
+  path: '/passwort-vergessen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreislisteRoute = PreislisteRouteImport.update({
@@ -65,6 +90,11 @@ const AdminBaustellenRoute = AdminBaustellenRouteImport.update({
   path: '/baustellen',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEMailRoute = AdminEMailRouteImport.update({
+  id: '/e-mail',
+  path: '/e-mail',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEinstellungenRoute = AdminEinstellungenRouteImport.update({
   id: '/einstellungen',
   path: '/einstellungen',
@@ -75,6 +105,11 @@ const AdminKundenRoute = AdminKundenRouteImport.update({
   path: '/kunden',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLieferscheineRoute = AdminLieferscheineRouteImport.update({
+  id: '/lieferscheine',
+  path: '/lieferscheine',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLkwRoute = AdminLkwRouteImport.update({
   id: '/lkw',
   path: '/lkw',
@@ -83,6 +118,11 @@ const AdminLkwRoute = AdminLkwRouteImport.update({
 const AdminMaterialRoute = AdminMaterialRouteImport.update({
   id: '/material',
   path: '/material',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMitarbeiterRoute = AdminMitarbeiterRouteImport.update({
+  id: '/mitarbeiter',
+  path: '/mitarbeiter',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminNeuerVorgangRoute = AdminNeuerVorgangRouteImport.update({
@@ -115,6 +155,27 @@ const KundeVorgaengeRoute = KundeVorgaengeRouteImport.update({
   path: '/vorgaenge',
   getParentRoute: () => KundeRoute,
 } as any)
+const MitarbeiterIndexRoute = MitarbeiterIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MitarbeiterRoute,
+} as any)
+const MitarbeiterBuchungenRoute = MitarbeiterBuchungenRouteImport.update({
+  id: '/buchungen',
+  path: '/buchungen',
+  getParentRoute: () => MitarbeiterRoute,
+} as any)
+const MitarbeiterLieferscheineRoute =
+  MitarbeiterLieferscheineRouteImport.update({
+    id: '/lieferscheine',
+    path: '/lieferscheine',
+    getParentRoute: () => MitarbeiterRoute,
+  } as any)
+const MitarbeiterNeuerVorgangRoute = MitarbeiterNeuerVorgangRouteImport.update({
+  id: '/neuer-vorgang',
+  path: '/neuer-vorgang',
+  getParentRoute: () => MitarbeiterRoute,
+} as any)
 const KundeNeuerVorgangIndexRoute = KundeNeuerVorgangIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -136,20 +197,30 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
+  '/mitarbeiter': typeof MitarbeiterRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
+  '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
+  '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
+  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
+  '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin/': typeof AdminIndexRoute
+  '/mitarbeiter/': typeof MitarbeiterIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
   '/kunde/neuer-vorgang/': typeof KundeNeuerVorgangIndexRoute
@@ -157,19 +228,28 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kunde': typeof KundeRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
+  '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
+  '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
+  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
+  '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin': typeof AdminIndexRoute
+  '/mitarbeiter': typeof MitarbeiterIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangIndexRoute
@@ -179,20 +259,30 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/kunde': typeof KundeRouteWithChildren
+  '/mitarbeiter': typeof MitarbeiterRouteWithChildren
+  '/passwort-neu': typeof PasswortNeuRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
   '/preisliste': typeof PreislisteRoute
   '/registrieren': typeof RegistrierenRoute
   '/admin/baustellen': typeof AdminBaustellenRoute
+  '/admin/e-mail': typeof AdminEMailRoute
   '/admin/einstellungen': typeof AdminEinstellungenRoute
   '/admin/kunden': typeof AdminKundenRoute
+  '/admin/lieferscheine': typeof AdminLieferscheineRoute
   '/admin/lkw': typeof AdminLkwRoute
   '/admin/material': typeof AdminMaterialRoute
+  '/admin/mitarbeiter': typeof AdminMitarbeiterRoute
   '/admin/neuer-vorgang': typeof AdminNeuerVorgangRoute
   '/admin/rechnungen': typeof AdminRechnungenRoute
   '/admin/vorgaenge': typeof AdminVorgaengeRoute
   '/kunde/neuer-vorgang': typeof KundeNeuerVorgangRouteWithChildren
   '/kunde/rechnungen': typeof KundeRechnungenRoute
   '/kunde/vorgaenge': typeof KundeVorgaengeRoute
+  '/mitarbeiter/buchungen': typeof MitarbeiterBuchungenRoute
+  '/mitarbeiter/lieferscheine': typeof MitarbeiterLieferscheineRoute
+  '/mitarbeiter/neuer-vorgang': typeof MitarbeiterNeuerVorgangRoute
   '/admin/': typeof AdminIndexRoute
+  '/mitarbeiter/': typeof MitarbeiterIndexRoute
   '/kunde/neuer-vorgang/dropoff': typeof KundeNeuerVorgangDropoffRoute
   '/kunde/neuer-vorgang/pickup': typeof KundeNeuerVorgangPickupRoute
   '/kunde/neuer-vorgang/': typeof KundeNeuerVorgangIndexRoute
@@ -203,20 +293,30 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
+    | '/mitarbeiter'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
+    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
+    | '/admin/mitarbeiter'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
+    | '/mitarbeiter/buchungen'
+    | '/mitarbeiter/lieferscheine'
+    | '/mitarbeiter/neuer-vorgang'
     | '/admin/'
+    | '/mitarbeiter/'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
     | '/kunde/neuer-vorgang/'
@@ -224,19 +324,28 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/kunde'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
+    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
+    | '/admin/mitarbeiter'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
+    | '/mitarbeiter/buchungen'
+    | '/mitarbeiter/lieferscheine'
+    | '/mitarbeiter/neuer-vorgang'
     | '/admin'
+    | '/mitarbeiter'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
     | '/kunde/neuer-vorgang'
@@ -245,20 +354,30 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/kunde'
+    | '/mitarbeiter'
+    | '/passwort-neu'
+    | '/passwort-vergessen'
     | '/preisliste'
     | '/registrieren'
     | '/admin/baustellen'
+    | '/admin/e-mail'
     | '/admin/einstellungen'
     | '/admin/kunden'
+    | '/admin/lieferscheine'
     | '/admin/lkw'
     | '/admin/material'
+    | '/admin/mitarbeiter'
     | '/admin/neuer-vorgang'
     | '/admin/rechnungen'
     | '/admin/vorgaenge'
     | '/kunde/neuer-vorgang'
     | '/kunde/rechnungen'
     | '/kunde/vorgaenge'
+    | '/mitarbeiter/buchungen'
+    | '/mitarbeiter/lieferscheine'
+    | '/mitarbeiter/neuer-vorgang'
     | '/admin/'
+    | '/mitarbeiter/'
     | '/kunde/neuer-vorgang/dropoff'
     | '/kunde/neuer-vorgang/pickup'
     | '/kunde/neuer-vorgang/'
@@ -268,6 +387,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   KundeRoute: typeof KundeRouteWithChildren
+  MitarbeiterRoute: typeof MitarbeiterRouteWithChildren
+  PasswortNeuRoute: typeof PasswortNeuRoute
+  PasswortVergessenRoute: typeof PasswortVergessenRoute
   PreislisteRoute: typeof PreislisteRoute
   RegistrierenRoute: typeof RegistrierenRoute
 }
@@ -293,6 +415,27 @@ declare module '@tanstack/react-router' {
       path: '/kunde'
       fullPath: '/kunde'
       preLoaderRoute: typeof KundeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitarbeiter': {
+      id: '/mitarbeiter'
+      path: '/mitarbeiter'
+      fullPath: '/mitarbeiter'
+      preLoaderRoute: typeof MitarbeiterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-neu': {
+      id: '/passwort-neu'
+      path: '/passwort-neu'
+      fullPath: '/passwort-neu'
+      preLoaderRoute: typeof PasswortNeuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-vergessen': {
+      id: '/passwort-vergessen'
+      path: '/passwort-vergessen'
+      fullPath: '/passwort-vergessen'
+      preLoaderRoute: typeof PasswortVergessenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/preisliste': {
@@ -323,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBaustellenRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/e-mail': {
+      id: '/admin/e-mail'
+      path: '/e-mail'
+      fullPath: '/admin/e-mail'
+      preLoaderRoute: typeof AdminEMailRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/einstellungen': {
       id: '/admin/einstellungen'
       path: '/einstellungen'
@@ -337,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminKundenRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/lieferscheine': {
+      id: '/admin/lieferscheine'
+      path: '/lieferscheine'
+      fullPath: '/admin/lieferscheine'
+      preLoaderRoute: typeof AdminLieferscheineRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/lkw': {
       id: '/admin/lkw'
       path: '/lkw'
@@ -349,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/material'
       fullPath: '/admin/material'
       preLoaderRoute: typeof AdminMaterialRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/mitarbeiter': {
+      id: '/admin/mitarbeiter'
+      path: '/mitarbeiter'
+      fullPath: '/admin/mitarbeiter'
+      preLoaderRoute: typeof AdminMitarbeiterRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/neuer-vorgang': {
@@ -393,6 +557,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KundeVorgaengeRouteImport
       parentRoute: typeof KundeRoute
     }
+    '/mitarbeiter/': {
+      id: '/mitarbeiter/'
+      path: '/'
+      fullPath: '/mitarbeiter/'
+      preLoaderRoute: typeof MitarbeiterIndexRouteImport
+      parentRoute: typeof MitarbeiterRoute
+    }
+    '/mitarbeiter/buchungen': {
+      id: '/mitarbeiter/buchungen'
+      path: '/buchungen'
+      fullPath: '/mitarbeiter/buchungen'
+      preLoaderRoute: typeof MitarbeiterBuchungenRouteImport
+      parentRoute: typeof MitarbeiterRoute
+    }
+    '/mitarbeiter/lieferscheine': {
+      id: '/mitarbeiter/lieferscheine'
+      path: '/lieferscheine'
+      fullPath: '/mitarbeiter/lieferscheine'
+      preLoaderRoute: typeof MitarbeiterLieferscheineRouteImport
+      parentRoute: typeof MitarbeiterRoute
+    }
+    '/mitarbeiter/neuer-vorgang': {
+      id: '/mitarbeiter/neuer-vorgang'
+      path: '/neuer-vorgang'
+      fullPath: '/mitarbeiter/neuer-vorgang'
+      preLoaderRoute: typeof MitarbeiterNeuerVorgangRouteImport
+      parentRoute: typeof MitarbeiterRoute
+    }
     '/kunde/neuer-vorgang/': {
       id: '/kunde/neuer-vorgang/'
       path: '/'
@@ -419,10 +611,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBaustellenRoute: typeof AdminBaustellenRoute
+  AdminEMailRoute: typeof AdminEMailRoute
   AdminEinstellungenRoute: typeof AdminEinstellungenRoute
   AdminKundenRoute: typeof AdminKundenRoute
+  AdminLieferscheineRoute: typeof AdminLieferscheineRoute
   AdminLkwRoute: typeof AdminLkwRoute
   AdminMaterialRoute: typeof AdminMaterialRoute
+  AdminMitarbeiterRoute: typeof AdminMitarbeiterRoute
   AdminNeuerVorgangRoute: typeof AdminNeuerVorgangRoute
   AdminRechnungenRoute: typeof AdminRechnungenRoute
   AdminVorgaengeRoute: typeof AdminVorgaengeRoute
@@ -431,10 +626,13 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBaustellenRoute: AdminBaustellenRoute,
+  AdminEMailRoute: AdminEMailRoute,
   AdminEinstellungenRoute: AdminEinstellungenRoute,
   AdminKundenRoute: AdminKundenRoute,
+  AdminLieferscheineRoute: AdminLieferscheineRoute,
   AdminLkwRoute: AdminLkwRoute,
   AdminMaterialRoute: AdminMaterialRoute,
+  AdminMitarbeiterRoute: AdminMitarbeiterRoute,
   AdminNeuerVorgangRoute: AdminNeuerVorgangRoute,
   AdminRechnungenRoute: AdminRechnungenRoute,
   AdminVorgaengeRoute: AdminVorgaengeRoute,
@@ -472,10 +670,31 @@ const KundeRouteChildren: KundeRouteChildren = {
 
 const KundeRouteWithChildren = KundeRoute._addFileChildren(KundeRouteChildren)
 
+interface MitarbeiterRouteChildren {
+  MitarbeiterBuchungenRoute: typeof MitarbeiterBuchungenRoute
+  MitarbeiterLieferscheineRoute: typeof MitarbeiterLieferscheineRoute
+  MitarbeiterNeuerVorgangRoute: typeof MitarbeiterNeuerVorgangRoute
+  MitarbeiterIndexRoute: typeof MitarbeiterIndexRoute
+}
+
+const MitarbeiterRouteChildren: MitarbeiterRouteChildren = {
+  MitarbeiterBuchungenRoute: MitarbeiterBuchungenRoute,
+  MitarbeiterLieferscheineRoute: MitarbeiterLieferscheineRoute,
+  MitarbeiterNeuerVorgangRoute: MitarbeiterNeuerVorgangRoute,
+  MitarbeiterIndexRoute: MitarbeiterIndexRoute,
+}
+
+const MitarbeiterRouteWithChildren = MitarbeiterRoute._addFileChildren(
+  MitarbeiterRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   KundeRoute: KundeRouteWithChildren,
+  MitarbeiterRoute: MitarbeiterRouteWithChildren,
+  PasswortNeuRoute: PasswortNeuRoute,
+  PasswortVergessenRoute: PasswortVergessenRoute,
   PreislisteRoute: PreislisteRoute,
   RegistrierenRoute: RegistrierenRoute,
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { type PriceCategory } from '../state/app-state'
 
 interface CompanyFormState {
   name: string
@@ -8,7 +7,7 @@ interface CompanyFormState {
   postalCode: string
   city: string
   pin: string
-  priceCategory: PriceCategory
+  email: string
 }
 
 const INITIAL_STATE: CompanyFormState = {
@@ -18,7 +17,7 @@ const INITIAL_STATE: CompanyFormState = {
   postalCode: '',
   city: '',
   pin: '',
-  priceCategory: 'business',
+  email: '',
 }
 
 export function useCompanyForm() {

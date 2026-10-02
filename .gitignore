@@ -8,7 +8,10 @@ dist-ssr
 .tanstack
 .wrangler
 .output
+.vercel
 .vinxi
 __unconfig*
 todos.json
 dev-dist
+# Production credentials for `npm run db:clone` (read-only use) — never commit
+.env.prod

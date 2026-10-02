@@ -2,13 +2,23 @@ import { createServerFn } from '@tanstack/react-start'
 import { queryOptions } from '@tanstack/react-query'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { supabaseBrowser } from '#/lib/supabase/browser-client'
+import { getServiceSupabaseClient } from '#/lib/supabase/service-client.server'
 import { requireAdminSession } from './middleware/require-admin-session'
 import { generateCustomerNumber } from './customer-number.server'
+import { requireAnySession } from './auth-context'
 
 export const PIN_HASH_ROUNDS = 12
 
-export const priceCategorySchema = z.enum(['private', 'business'])
+// Invoices will be e-mailed to this address. Required for new customers;
+// existing customers without one can still be edited (empty = none yet).
+export const companyEmailSchema = z.string().trim().pipe(z.email('Bitte eine gültige E-Mail-Adresse eingeben.'))
+const optionalCompanyEmailSchema = z.union([z.literal(''), companyEmailSchema])
+
+export const COMPANY_COLUMNS = 'id, name, customer_number, street, postal_code, city, email'
+
+// Postgres unique_violation — the only unique constraint on companies that a
+// user can hit is the customer number.
+const UNIQUE_VIOLATION = '23505'
 
 const createCompanySchema = z.object({
   name: z.string().min(1),
@@ -16,8 +26,8 @@ const createCompanySchema = z.object({
   street: z.string(),
   postalCode: z.string(),
   city: z.string(),
+  email: companyEmailSchema,
   pin: z.string().regex(/^\d{4}$/),
-  priceCategory: priceCategorySchema,
 })
 
 const updateCompanySchema = z.object({
@@ -27,7 +37,7 @@ const updateCompanySchema = z.object({
   street: z.string(),
   postalCode: z.string(),
   city: z.string(),
-  priceCategory: priceCategorySchema,
+  email: optionalCompanyEmailSchema,
 })
 
 const setCompanyPinSchema = z.object({
@@ -37,14 +47,14 @@ const setCompanyPinSchema = z.object({
 
 const deleteCompanySchema = z.object({ id: z.string().uuid() })
 
-function toCompany(row: {
+export function toCompany(row: {
   id: string
   name: string
   customer_number: string
   street: string
   postal_code: string
   city: string
-  price_category: 'private' | 'business'
+  email: string | null
 }) {
   return {
     id: row.id,
@@ -53,7 +63,7 @@ function toCompany(row: {
     street: row.street,
     postalCode: row.postal_code,
     city: row.city,
-    priceCategory: row.price_category,
+    email: row.email ?? '',
   }
 }
 
@@ -62,7 +72,7 @@ export const adminListCompanies = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from('companies')
-      .select('id, name, customer_number, street, postal_code, city, price_category')
+      .select(COMPANY_COLUMNS)
       .order('name', { ascending: true })
 
     if (error || !data) return []
@@ -84,11 +94,14 @@ export const adminCreateCompany = createServerFn({ method: 'POST' })
       street: data.street.trim(),
       postal_code: data.postalCode.trim(),
       city: data.city.trim(),
-      price_category: data.priceCategory,
+      email: data.email,
       pin_hash: pinHash,
     })
 
     if (error) {
+      if (error.code === UNIQUE_VIOLATION) {
+        return { ok: false, message: 'Diese Kundennummer ist bereits vergeben.' } as const
+      }
       return { ok: false, message: 'Der Kunde konnte nicht angelegt werden.' } as const
     }
 
@@ -109,11 +122,14 @@ export const adminUpdateCompany = createServerFn({ method: 'POST' })
         street: data.street.trim(),
         postal_code: data.postalCode.trim(),
         city: data.city.trim(),
-        price_category: data.priceCategory,
+        email: data.email || null,
       })
       .eq('id', data.id)
 
     if (error) {
+      if (error.code === UNIQUE_VIOLATION) {
+        return { ok: false, message: 'Diese Kundennummer ist bereits vergeben.' } as const
+      }
       return { ok: false, message: 'Der Kunde konnte nicht aktualisiert werden.' } as const
     }
 
@@ -128,11 +144,11 @@ export const adminSetCompanyPin = createServerFn({ method: 'POST' })
 
     const { error } = await context.supabase
       .from('companies')
-      .update({ pin_hash: pinHash, failed_pin_attempts: 0, pin_locked_until: null })
+      .update({ pin_hash: pinHash, failed_pin_attempts: 0, pin_locked_until: null, pin_changed_at: new Date().toISOString() })
       .eq('id', data.companyId)
 
     if (error) {
-      return { ok: false, message: 'Die PIN konnte nicht geaendert werden.' } as const
+      return { ok: false, message: 'Die PIN konnte nicht geändert werden.' } as const
     }
 
     return { ok: true } as const
@@ -145,7 +161,7 @@ export const adminDeleteCompany = createServerFn({ method: 'POST' })
     const { error } = await context.supabase.from('companies').delete().eq('id', data.id)
 
     if (error) {
-      return { ok: false, message: 'Die Firma konnte nicht geloescht werden.' } as const
+      return { ok: false, message: 'Die Firma konnte nicht gelöscht werden. Firmen mit Vorgängen können nicht gelöscht werden.' } as const
     }
 
     return { ok: true } as const
@@ -157,23 +173,46 @@ export const adminCompaniesQueryOptions = () =>
     queryFn: () => adminListCompanies(),
   })
 
-// Pre-login search box only ever needs id/name — the other Company
-// fields are filled with empty placeholders so this still matches the shape
-// consumed elsewhere in the app.
-export const publicCompaniesQueryOptions = () =>
-  queryOptions({
-    queryKey: ['companies', 'public'] as const,
-    queryFn: async () => {
-      const { data, error } = await supabaseBrowser.from('companies_public').select('id, name')
-      if (error || !data) return []
-      return data.map((row) => ({
-        id: row.id,
-        name: row.name,
-        customerNumber: '',
-        street: '',
-        postalCode: '',
-        city: '',
-        priceCategory: 'business' as const,
-      }))
-    },
+export const COMPANY_SEARCH_MIN_CHARS = 2
+const COMPANY_SEARCH_MAX_RESULTS = 8
+
+const searchCompaniesSchema = z.object({ query: z.string().max(100) })
+
+// LIKE treats % and _ as wildcards; a customer typing them should match them literally.
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
+
+// Company search for the customer login (no session required). Deliberately
+// narrow so the customer list can't be browsed: nothing below the minimum
+// length, few results, only id + name.
+export const searchCompanies = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => searchCompaniesSchema.parse(data))
+  .handler(async ({ data }) => {
+    const query = data.query.trim()
+    if (query.length < COMPANY_SEARCH_MIN_CHARS) return []
+
+    const { data: rows, error } = await getServiceSupabaseClient()
+      .from('companies')
+      .select('id, name')
+      .ilike('name', `%${escapeLikePattern(query)}%`)
+      .order('name', { ascending: true })
+      .limit(COMPANY_SEARCH_MAX_RESULTS)
+
+    if (error || !rows) return []
+    return rows
+  })
+
+const companyForBookingSchema = z.object({ id: z.string().uuid() })
+
+// Full details of the one customer an employee is booking for (needed for
+// the delivery note address). Employees never get the whole customer list.
+export const getCompanyForBooking = createServerFn({ method: 'GET' })
+  .validator((data: unknown) => companyForBookingSchema.parse(data))
+  .handler(async ({ data }) => {
+    const caller = await requireAnySession()
+    if (caller.role === 'customer') throw new Error('FORBIDDEN')
+
+    const { data: row } = await getServiceSupabaseClient().from('companies').select(COMPANY_COLUMNS).eq('id', data.id).maybeSingle()
+    return row ? toCompany(row) : null
   })

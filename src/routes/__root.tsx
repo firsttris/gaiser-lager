@@ -5,6 +5,10 @@ import type { QueryClient } from '@tanstack/react-query'
 import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
 import { Spinner } from '../components/spinner'
+import { EnvironmentBanner } from '../components/environment-banner'
+import { useReloadOnNewVersion } from '../hooks/use-reload-on-new-version'
+import { FONT_SCALE_SCRIPT } from '../components/font-scale-switch'
+import { isDevelopmentDatabase, isDevServerOnRemoteDatabase } from '../utils/environment'
 
 import appCss from '../styles.css?url'
 
@@ -20,11 +24,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         name: 'viewport',
-        content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+        // Zooming stays allowed: many drivers wear glasses.
+        content: 'width=device-width, initial-scale=1',
       },
       {
         name: 'theme-color',
-        content: '#0f172a',
+        content: isDevelopmentDatabase ? '#facc15' : '#0f172a',
       },
       {
         name: 'apple-mobile-web-app-capable',
@@ -39,7 +44,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content: 'yes',
       },
       {
-        title: 'Gaiser Lager',
+        name: 'apple-mobile-web-app-title',
+        content: 'Gaiser',
+      },
+      {
+        title: isDevServerOnRemoteDatabase ? '[PROD!] Gaiser Lager' : isDevelopmentDatabase ? '[DEV] Gaiser Lager' : 'Gaiser Lager',
       },
     ],
     links: [
@@ -53,9 +62,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         rel: 'apple-touch-icon',
+        href: `${import.meta.env.BASE_URL}apple-touch-icon.png`,
+      },
+      {
+        rel: 'icon',
+        href: `${import.meta.env.BASE_URL}favicon.ico`,
+        sizes: '48x48',
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
         href: `${import.meta.env.BASE_URL}logo192.png`,
+        sizes: '192x192',
       },
     ],
+    scripts: [{ children: FONT_SCALE_SCRIPT }],
   }),
   shellComponent: RootDocument,
   notFoundComponent: () => (
@@ -81,6 +102,8 @@ function HydrationGate({ children }: { children: React.ReactNode }) {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useReloadOnNewVersion()
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const base = import.meta.env.BASE_URL
@@ -89,11 +112,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <html lang="de">
+    // data-font-scale is set by an inline script before hydration (see FONT_SCALE_SCRIPT).
+    <html lang="de" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
+        <EnvironmentBanner />
         <AppStateProvider>
           <HydrationGate>{children}</HydrationGate>
         </AppStateProvider>

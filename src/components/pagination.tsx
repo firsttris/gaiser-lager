@@ -1,3 +1,5 @@
+import { SelectInput } from './select-input'
+
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 
 interface Props {
@@ -18,20 +20,18 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
       <div className="flex items-center gap-3">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-600">
           {start}–{end} von {totalCount}
         </p>
-        <label className="flex items-center gap-1.5 text-xs text-slate-500">
+        <label className="flex items-center gap-1.5 text-xs text-slate-600">
           pro Seite
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-slate-800"
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>{size}</option>
-            ))}
-          </select>
+          <SelectInput
+            value={String(pageSize)}
+            onChange={(size) => onPageSizeChange(Number(size))}
+            options={PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) }))}
+            className="min-h-11 px-3 py-1 text-sm font-semibold text-slate-700"
+            label="Einträge pro Seite"
+          />
         </label>
       </div>
       <div className="flex items-center gap-2">
@@ -39,7 +39,7 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Zurück
         </button>
@@ -50,7 +50,7 @@ export function Pagination({ page, pageCount, onPageChange, totalCount, pageSize
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pageCount}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Weiter
         </button>
