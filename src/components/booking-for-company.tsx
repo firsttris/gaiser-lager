@@ -93,7 +93,8 @@ export function BookingForCompany({
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-3">
+    <div className="@container">
+      <div className="grid gap-5 @5xl:grid-cols-3">
       <FlowChoiceButton
         variant="pickup"
         title="Material holen"
@@ -111,7 +112,8 @@ export function BookingForCompany({
         title="LKW-Stunden"
         subtitle="z.B. Anlieferung mit LKW abrechnen."
         onClick={() => setFlowType('lkw')}
-      />
+        />
+      </div>
     </div>
   )
 }

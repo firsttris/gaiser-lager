@@ -223,7 +223,7 @@ export const listRecordsPage = createServerFn({ method: 'GET' })
     if (search) {
       const term = `%${search}%`
       query = query.or(
-        `construction_site_name.ilike.${term},delivery_note_id.ilike.${term},invoice_id.ilike.${term},cancel_id.ilike.${term}`,
+        `company_name.ilike.${term},construction_site_name.ilike.${term},delivery_note_id.ilike.${term},invoice_id.ilike.${term},cancel_id.ilike.${term}`,
       )
     }
 

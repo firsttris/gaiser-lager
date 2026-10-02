@@ -63,19 +63,21 @@ function FlowChoiceCard({
 
 function WizardIndexPage() {
   return (
-    <div className="grid gap-5 md:grid-cols-2">
-      <FlowChoiceCard
-        type="pickup"
-        title="Material holen"
-        subtitle="z.B. Betonrecycling abholen."
-        to="/kunde/neuer-vorgang/pickup"
-      />
-      <FlowChoiceCard
-        type="dropoff"
-        title="Material bringen"
-        subtitle="z.B. Aushub oder Bauschutt anliefern."
-        to="/kunde/neuer-vorgang/dropoff"
-      />
+    <div className="@container">
+      <div className="grid gap-5 @4xl:grid-cols-2">
+        <FlowChoiceCard
+          type="pickup"
+          title="Material holen"
+          subtitle="z.B. Betonrecycling abholen."
+          to="/kunde/neuer-vorgang/pickup"
+        />
+        <FlowChoiceCard
+          type="dropoff"
+          title="Material bringen"
+          subtitle="z.B. Aushub oder Bauschutt anliefern."
+          to="/kunde/neuer-vorgang/dropoff"
+        />
+      </div>
     </div>
   )
 }
