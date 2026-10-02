@@ -11,6 +11,7 @@ import { ConfirmDialog } from '../components/confirm-dialog'
 import { money } from '../utils/history-utils'
 import { fileToBase64 } from '../utils/file-to-base64'
 import type { Product } from '../state/app-state'
+import { InlineMessage, SuccessToast } from '../components/toast'
 
 const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -47,7 +48,7 @@ function ProductImageCell({
       <label
         htmlFor={inputId}
         title="Bild ändern"
-        className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white hover:bg-black"
+        className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-brand-600 text-white hover:bg-brand-700"
       >
         <Camera className="h-3 w-3" strokeWidth={2.5} />
       </label>
@@ -162,7 +163,7 @@ function ProductList({ items, onEdit, onDelete, imageActionProductId, onImageUpl
           </thead>
           <tbody>
             {items.map((product) => (
-              <tr key={product.id} className="odd:bg-white even:bg-slate-50">
+              <tr key={product.id} className="bg-white hover:bg-slate-50">
                 <td>{image(product)}</td>
                 <td className="cell-primary wrap-break-word">{product.name}</td>
                 <td>{product.unit}</td>
@@ -307,7 +308,7 @@ function AdminProductsPage() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">Material</h2>
       <p className="mt-2 text-sm text-slate-700">
         Materialien können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden. Über das Kamera-Symbol
@@ -353,7 +354,7 @@ function AdminProductsPage() {
           <button
             type="submit"
             disabled={isCreatingProduct}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingProduct && <Spinner className="h-4 w-4" />}
             Material anlegen
@@ -361,18 +362,10 @@ function AdminProductsPage() {
         </form>
 
         {createForm.error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>}
-        {createForm.success && (
-          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>
-        )}
+        <SuccessToast text={createForm.success} />
       </div>
 
-      {listMessage && (
-        <p
-          className={`mt-5 rounded-xl p-3 text-sm ${listMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
-        >
-          {listMessage.text}
-        </p>
-      )}
+      <InlineMessage message={listMessage} className="mt-5" />
 
       <div className="mt-6 space-y-8">
         <div>

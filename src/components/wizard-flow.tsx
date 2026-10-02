@@ -150,7 +150,7 @@ export function WizardFlow({
 
   if (step === 1) {
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">Material und Menge</h3>
         {company && (
           <p className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-600">
@@ -171,7 +171,7 @@ export function WizardFlow({
                     onClick={() => setSelectedProductId(p.id)}
                     className={`group relative overflow-hidden rounded-xl border-2 text-left transition-all ${
                       isSelected
-                        ? 'border-amber-500 shadow-lg shadow-amber-100'
+                        ? 'border-brand-600 shadow-lg shadow-brand-100'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -193,7 +193,7 @@ export function WizardFlow({
                       {p.name}
                     </span>
                     {isSelected && (
-                      <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500">
+                      <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600">
                         <svg viewBox="0 0 20 20" className="h-3 w-3 text-white" fill="currentColor" aria-hidden="true">
                           <path d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.02 7.08a1 1 0 0 1-1.42.005L3.293 8.86a1 1 0 1 1 1.414-1.414l4.267 4.267 6.312-6.364a1 1 0 0 1 1.418-.058z" />
                         </svg>
@@ -212,7 +212,7 @@ export function WizardFlow({
               onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
               inputMode="decimal"
               placeholder="z.B. 12,5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-amber-500"
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-brand-600"
             />
           </div>
 
@@ -224,7 +224,7 @@ export function WizardFlow({
             placeholder="z.B. Nordring 12, Berlin"
             required
             helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-amber-500"
+            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-brand-600"
           />
         </div>
 
@@ -244,7 +244,7 @@ export function WizardFlow({
             type="button"
             onClick={() => setStep(2)}
             disabled={!validAmount || !validConstructionSiteName}
-            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Weiter zur Prüfung
           </button>
@@ -256,7 +256,7 @@ export function WizardFlow({
   if (step === 2) {
     const step2Visual = selectedProduct ? getVisual(selectedProduct) : null
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
@@ -322,7 +322,7 @@ export function WizardFlow({
             type="button"
             onClick={submitRecord}
             disabled={!validAmount || !validConstructionSiteName || isCreatingRecord}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
@@ -336,7 +336,7 @@ export function WizardFlow({
     const successProduct = products.find((p) => p.id === successRecord.productId)
     const step3Visual = getVisual({ id: successRecord.productId, imageUrl: successProduct?.imageUrl ?? null })
     return (
-      <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-card">
         <div className="flex items-center gap-3">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <svg viewBox="0 0 20 20" className="h-6 w-6" aria-hidden="true">
@@ -396,7 +396,7 @@ export function WizardFlow({
             type="button"
             onClick={() => void redownloadDeliveryNote()}
             disabled={isDownloadingNote}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
@@ -405,14 +405,14 @@ export function WizardFlow({
             <button
               type="button"
               onClick={onExit}
-              className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800"
+              className="rounded-xl border-2 border-brand-600 bg-white px-6 py-4 text-base font-semibold text-brand-700 hover:bg-brand-50"
             >
               Neuen Vorgang anlegen
             </button>
           ) : (
             <Link
               to="/kunde/neuer-vorgang"
-              className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white no-underline hover:bg-slate-800"
+              className="rounded-xl border-2 border-brand-600 bg-white px-6 py-4 text-base font-semibold text-brand-700 no-underline hover:bg-brand-50"
             >
               Neuen Vorgang anlegen
             </Link>

@@ -17,6 +17,7 @@ import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { createHistoryCsv, downloadCsvFile, statusStages } from '../utils/history-utils'
 import { berlinIsoDate } from '../utils/berlin-time'
 import { LIST_REFETCH_INTERVAL_MS } from '../utils/refresh'
+import { TableSkeleton } from '../components/table-skeleton'
 
 export const Route = createFileRoute('/mitarbeiter/buchungen')({ component: EmployeeBookingsPage })
 
@@ -103,7 +104,7 @@ function EmployeeBookingsPage() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-title text-4xl text-slate-900">Meine Buchungen</h2>
@@ -154,12 +155,12 @@ function EmployeeBookingsPage() {
         actions={[
           {
             label: 'CSV Export',
-            icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
+            icon: <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />,
             onClick: exportSelectedAsCsv,
           },
           {
             label: 'Lieferschein',
-            icon: <FileDown className="h-3.5 w-3.5" strokeWidth={2.25} />,
+            icon: <FileDown className="h-4 w-4" strokeWidth={2.25} />,
             disabled: selectedDeliveryNoteIds.length === 0,
             onClick: () => void downloadSelectedDeliveryNotes(),
           },
@@ -167,7 +168,7 @@ function EmployeeBookingsPage() {
       />
 
       {recordsQuery.isLoading ? (
-        <p className="mt-4 rounded-xl bg-slate-50 p-4 text-slate-700">Lädt…</p>
+        <TableSkeleton />
       ) : pageRecords.length === 0 ? (
         <p className="mt-4 rounded-xl bg-slate-50 p-4 text-slate-700">Keine Buchungen für die aktuellen Filter.</p>
       ) : (

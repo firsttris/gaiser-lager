@@ -108,7 +108,7 @@ function RegistrierenPage() {
     <PageShell>
       <TopNav />
 
-      <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+      <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
         <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-amber-100 blur-3xl"></div>
         <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-100 blur-3xl"></div>
 
@@ -136,7 +136,7 @@ function RegistrierenPage() {
               <button
                 type="submit"
                 disabled={isVerifyingMasterPin}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isVerifyingMasterPin && <Spinner className="h-4 w-4" />}
                 Weiter
@@ -194,7 +194,7 @@ function RegistrierenPage() {
               <button
                 type="submit"
                 disabled={isSigningUp}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSigningUp && <Spinner className="h-4 w-4" />}
                 Konto erstellen

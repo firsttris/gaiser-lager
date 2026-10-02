@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { formatGeneratedNumber, useAppState } from '../state/app-state'
 import { Spinner } from '../components/spinner'
 import { PinInput } from '../components/company-form-inputs'
+import { InlineMessage } from '../components/toast'
 
 export const Route = createFileRoute('/admin/einstellungen')({
   beforeLoad: async ({ context }) => {
@@ -148,7 +149,7 @@ function AdminEinstellungenPage() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">Einstellungen</h2>
       <p className="mt-2 text-sm text-slate-600">
         Lege fest, wie Rechnungs- und Lieferscheinnummern automatisch generiert werden.
@@ -262,7 +263,7 @@ function AdminEinstellungenPage() {
           <button
             type="submit"
             disabled={isUpdatingNumberingSettings}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isUpdatingNumberingSettings && <Spinner className="h-4 w-4" />}
             Speichern
@@ -270,15 +271,7 @@ function AdminEinstellungenPage() {
         </div>
       </form>
 
-      {message && (
-        <p
-          className={`mt-4 rounded-xl p-3 text-sm ${
-            message.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-          }`}
-        >
-          {message.text}
-        </p>
-      )}
+      <InlineMessage message={message} className="mt-4" />
 
       <AdminPasswordSection />
 
@@ -297,22 +290,14 @@ function AdminEinstellungenPage() {
           <button
             type="submit"
             disabled={isSettingMasterPin || !/^\d{4}$/.test(newMasterPin)}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSettingMasterPin && <Spinner className="h-4 w-4" />}
             Master-PIN ändern
           </button>
         </form>
 
-        {masterPinMessage && (
-          <p
-            className={`mt-4 rounded-xl p-3 text-sm ${
-              masterPinMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-            }`}
-          >
-            {masterPinMessage.text}
-          </p>
-        )}
+        <InlineMessage message={masterPinMessage} className="mt-4" />
       </div>
 
       <div className="mt-8 border-t border-slate-200 pt-6">
@@ -352,7 +337,7 @@ function AdminEinstellungenPage() {
           <button
             type="submit"
             disabled={isUpdatingInactivityTimeout}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isUpdatingInactivityTimeout && <Spinner className="h-4 w-4" />}
             Timeout speichern
@@ -361,15 +346,7 @@ function AdminEinstellungenPage() {
 
         <p className="mt-1 text-xs text-slate-600">0 deaktiviert den automatischen Logout.</p>
 
-        {inactivityTimeoutMessage && (
-          <p
-            className={`mt-4 rounded-xl p-3 text-sm ${
-              inactivityTimeoutMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-            }`}
-          >
-            {inactivityTimeoutMessage.text}
-          </p>
-        )}
+        <InlineMessage message={inactivityTimeoutMessage} className="mt-4" />
       </div>
 
       <div className="mt-8 border-t border-slate-200 pt-6">
@@ -383,21 +360,13 @@ function AdminEinstellungenPage() {
           type="button"
           onClick={downloadBackup}
           disabled={isDownloadingBackup}
-          className="mt-4 flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-4 flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isDownloadingBackup && <Spinner className="h-4 w-4" />}
           SQL-Backup herunterladen
         </button>
 
-        {backupMessage && (
-          <p
-            className={`mt-4 rounded-xl p-3 text-sm ${
-              backupMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-            }`}
-          >
-            {backupMessage.text}
-          </p>
-        )}
+        <InlineMessage message={backupMessage} className="mt-4" />
       </div>
     </section>
   )
@@ -485,7 +454,7 @@ function AdminPasswordSection() {
           <button
             type="submit"
             disabled={changePassword.isPending || !currentPassword || !newPassword || !repeatPassword}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {changePassword.isPending && <Spinner className="h-4 w-4" />}
             Passwort ändern
@@ -493,15 +462,7 @@ function AdminPasswordSection() {
         </div>
       </form>
 
-      {message && (
-        <p
-          className={`mt-4 rounded-xl p-3 text-sm ${
-            message.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-          }`}
-        >
-          {message.text}
-        </p>
-      )}
+      <InlineMessage message={message} className="mt-4" />
     </div>
   )
 }

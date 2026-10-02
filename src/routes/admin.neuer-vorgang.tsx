@@ -25,7 +25,7 @@ function AdminNeuerVorgangPage() {
 
   return (
     <section className="space-y-5">
-      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-title text-4xl text-slate-900">Neuer Vorgang</h2>

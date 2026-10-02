@@ -225,7 +225,7 @@ export function SelectInput({
                 : isActive
                   ? 'bg-slate-100 text-slate-900'
                   : 'text-slate-800 active:bg-slate-200'
-            } ${isActive ? 'ring-2 ring-amber-400 ring-inset' : ''}`}
+            } ${isActive ? 'ring-2 ring-brand-300 ring-inset' : ''}`}
           >
             <span className="min-w-0 wrap-break-word">{option.label}</span>
             {isSelected && <Check className="h-5 w-5 shrink-0" strokeWidth={2.75} />}
@@ -253,7 +253,7 @@ export function SelectInput({
           aria-controls={listId}
           aria-activedescendant={visibleOptions[activeIndex] ? `${listId}-${activeIndex}` : undefined}
           autoComplete="off"
-          className="w-full rounded-lg border border-slate-300 py-3 pr-3 pl-10 text-base outline-none focus:border-amber-500"
+          className="w-full rounded-lg border border-slate-300 py-3 pr-3 pl-10 text-base outline-none focus:border-brand-600"
         />
       </div>
     </div>

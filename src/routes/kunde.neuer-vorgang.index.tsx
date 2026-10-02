@@ -20,7 +20,7 @@ function FlowChoiceCard({
   return (
     <Link
       to={to}
-      className={`rounded-3xl border bg-white p-7 text-left no-underline shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 sm:p-8 ${
+      className={`rounded-2xl border bg-white p-7 text-left no-underline shadow-card transition hover:-translate-y-0.5 sm:p-8 ${
         isPickup
           ? 'border-slate-200 hover:border-amber-300'
           : 'border-slate-200 hover:border-slate-300'

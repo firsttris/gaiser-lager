@@ -100,7 +100,7 @@ export function InvoiceEmailDialog({
                 type="button"
                 onClick={() => void sendAll()}
                 disabled={!settingsReady || toSend.length === 0 || isSending}
-                className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSending ? <Spinner className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                 {toSend.length === 1 ? '1 Beleg senden' : `${toSend.length} Belege senden`}

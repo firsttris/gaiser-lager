@@ -27,8 +27,8 @@ export function InactivityLogoutDialog({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Inaktivität erkannt</p>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">Inaktivität erkannt</p>
         <h3 className="mt-2 text-2xl font-semibold text-slate-900">Noch da?</h3>
         <p className="mt-2 text-sm text-slate-600">
           Sie werden in <span className="font-semibold text-slate-900">{secondsRemaining} Sekunden</span> automatisch
@@ -43,7 +43,7 @@ export function InactivityLogoutDialog({
                 cx="50"
                 cy="50"
                 r={radius}
-                className="fill-none stroke-amber-500 transition-[stroke-dashoffset] duration-200"
+                className="fill-none stroke-brand-600 transition-[stroke-dashoffset] duration-200"
                 strokeWidth="10"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
@@ -61,7 +61,7 @@ export function InactivityLogoutDialog({
             type="button"
             onClick={onContinueSession}
             disabled={isLoggingOut}
-            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Angemeldet bleiben
           </button>

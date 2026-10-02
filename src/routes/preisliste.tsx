@@ -41,7 +41,7 @@ function PriceListPage() {
           </Link>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] sm:p-10">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
           <div className="mb-2 flex items-center gap-3">
             <Logo className="h-10" />
           </div>

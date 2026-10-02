@@ -34,7 +34,7 @@ function applyScale(scale: FontScale) {
 // Text size per device: the kiosk tablet can be set to large once and keeps it.
 // "auto" (nothing selected) uses the default from styles.css (larger on big
 // portrait screens).
-export function FontScaleSwitch() {
+export function FontScaleSwitch({ className = '' }: { className?: string }) {
   const [scale, setScale] = useState<FontScale>('auto')
 
   useEffect(() => setScale(readStoredScale()), [])
@@ -46,7 +46,7 @@ export function FontScaleSwitch() {
   }
 
   return (
-    <div role="group" aria-label="Schriftgröße" className="inline-flex items-stretch gap-2 rounded-xl bg-slate-100 p-1">
+    <div role="group" aria-label="Schriftgröße" className={`inline-flex items-stretch gap-2 rounded-xl bg-slate-100 p-1 ${className}`}>
       {OPTIONS.map((option) => (
         <button
           key={option.value}
@@ -56,7 +56,7 @@ export function FontScaleSwitch() {
           aria-pressed={scale === option.value}
           onClick={() => choose(option.value)}
           className={`flex min-h-12 min-w-12 items-center justify-center rounded-lg px-2 font-bold leading-none ${option.className} ${
-            scale === option.value ? 'bg-slate-900 text-white' : 'text-slate-800 hover:bg-white'
+            scale === option.value ? 'bg-brand-600 text-white' : 'text-slate-800 hover:bg-white'
           }`}
         >
           {option.label}

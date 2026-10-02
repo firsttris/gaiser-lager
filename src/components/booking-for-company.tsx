@@ -38,7 +38,7 @@ function FlowChoiceButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-3xl border border-slate-200 bg-white p-7 text-left no-underline shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 sm:p-8 ${borderHover}`}
+      className={`rounded-2xl border border-slate-200 bg-white p-7 text-left no-underline shadow-card transition hover:-translate-y-0.5 sm:p-8 ${borderHover}`}
     >
       <div className="flex min-h-32 items-center gap-5 sm:min-h-40 sm:gap-6">
         <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border sm:h-18 sm:w-18 ${iconWrap}`}>

@@ -18,6 +18,7 @@ import { berlinIsoDate } from '../utils/berlin-time'
 import { companyFilenameSegment, createHistoryCsv, downloadCsvFile, invoiceBadge, reverseChargeExtraBadges } from '../utils/history-utils'
 import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices'
 import { SelectInput } from '../components/select-input'
+import { TableSkeleton } from '../components/table-skeleton'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -107,7 +108,7 @@ function RechnungenPage() {
   return (
     <PageShell>
       <TopNav />
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-title text-5xl text-slate-900">Rechnungen</h1>
@@ -150,19 +151,19 @@ function RechnungenPage() {
           actions={[
             {
               label: 'CSV Export',
-              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
               label: 'Rechnung',
-              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Receipt className="h-4 w-4" strokeWidth={2.25} />,
               onClick: () => void downloadSelectedInvoices(),
             },
           ]}
         />
 
         {groupsQuery.isLoading ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+          <TableSkeleton />
         ) : pageGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Rechnungen für die aktuellen Filter vorhanden.

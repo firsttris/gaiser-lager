@@ -18,6 +18,7 @@ import { berlinIsoDate } from '../utils/berlin-time'
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { SelectionActionBar } from '../components/selection-action-bar'
 import { SelectInput } from '../components/select-input'
+import { TableSkeleton } from '../components/table-skeleton'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -135,7 +136,7 @@ function HistoryPage() {
     <PageShell>
       <TopNav />
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-title text-5xl text-slate-900">Vorgänge</h1>
@@ -188,18 +189,18 @@ function HistoryPage() {
           actions={[
             {
               label: 'CSV Export',
-              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
               label: 'Lieferschein',
-              icon: <FileDown className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileDown className="h-4 w-4" strokeWidth={2.25} />,
               disabled: selectedDeliveryNoteIds.length === 0,
               onClick: () => void downloadSelectedDeliveryNotes(),
             },
             {
               label: 'Rechnung',
-              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Receipt className="h-4 w-4" strokeWidth={2.25} />,
               disabled: selectedInvoiceIds.length === 0,
               onClick: () => void downloadSelectedInvoices(),
             },
@@ -207,7 +208,7 @@ function HistoryPage() {
         />
 
         {recordsQuery.isLoading ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+          <TableSkeleton />
         ) : pageRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Einträge für die aktuellen Filter vorhanden.

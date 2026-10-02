@@ -21,6 +21,7 @@ import { countAllInvoiceGroups, listInvoiceGroupsPage } from '../server/invoices
 import { listRecordsByDocId } from '../server/records'
 import { berlinIsoDate, formatBerlinDate } from '../utils/berlin-time'
 import { SelectInput } from '../components/select-input'
+import { TableSkeleton } from '../components/table-skeleton'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -198,7 +199,7 @@ function AdminRechnungenPage() {
 
   return (
     <section className="space-y-5">
-      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-title text-4xl text-slate-900">Rechnungen</h2>
@@ -251,22 +252,22 @@ function AdminRechnungenPage() {
           actions={[
             {
               label: 'CSV Export',
-              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
               label: 'Rechnung',
-              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Receipt className="h-4 w-4" strokeWidth={2.25} />,
               onClick: () => void downloadSelectedInvoices(),
             },
             {
               label: 'Per E-Mail senden',
-              icon: <Mail className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Mail className="h-4 w-4" strokeWidth={2.25} />,
               onClick: () => setEmailInvoiceIds(selectedGroups.map((g) => g.id)),
             },
             {
               label: 'Stornieren',
-              icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Ban className="h-4 w-4" strokeWidth={2.25} />,
               disabled: selectionHasCancelled,
               onClick: () => setPendingAction({
                 action: stornoSelection,
@@ -276,7 +277,7 @@ function AdminRechnungenPage() {
             },
             {
               label: 'Als bezahlt markieren',
-              icon: <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !selectedAllOpen,
               onClick: () => setPendingAction({
@@ -293,7 +294,7 @@ function AdminRechnungenPage() {
         )}
 
         {groupsQuery.isLoading ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+          <TableSkeleton />
         ) : pageGroups.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Rechnungen für die aktuellen Filter vorhanden.

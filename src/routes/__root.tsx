@@ -6,6 +6,7 @@ import { AppStateProvider, useAppState } from '../state/app-state'
 import { useEffect } from 'react'
 import { Spinner } from '../components/spinner'
 import { EnvironmentBanner } from '../components/environment-banner'
+import { Toaster } from '../components/toast'
 import { useReloadOnNewVersion } from '../hooks/use-reload-on-new-version'
 import { FONT_SCALE_SCRIPT } from '../components/font-scale-switch'
 import { isDevelopmentDatabase, isDevServerOnRemoteDatabase } from '../utils/environment'
@@ -122,6 +123,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AppStateProvider>
           <HydrationGate>{children}</HydrationGate>
         </AppStateProvider>
+        <Toaster />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

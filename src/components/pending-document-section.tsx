@@ -22,7 +22,7 @@ export function PendingDocumentSection({ title, subtitle, groups, variant, showC
   const styles = variantStyles[variant]
 
   return (
-    <article className={`rounded-2xl border ${styles.article} bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]`}>
+    <article className={`rounded-2xl border ${styles.article} bg-white p-6 shadow-card`}>
       <h2 className="font-title text-2xl text-slate-900">{title}</h2>
       <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
       <div className="mt-4 space-y-2">

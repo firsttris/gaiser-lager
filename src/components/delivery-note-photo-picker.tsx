@@ -58,7 +58,7 @@ export function DeliveryNotePhotoPicker({
           type="button"
           onClick={() => setIsCameraOpen(true)}
           disabled={disabled}
-          className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white hover:bg-black disabled:opacity-50"
+          className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-lg font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
         >
           <Camera className="h-6 w-6" strokeWidth={2.2} />
           Kamera öffnen

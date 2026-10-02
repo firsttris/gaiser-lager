@@ -21,6 +21,7 @@ import { downloadCancellationPdf, downloadInvoicePdf } from '../utils/invoice-do
 import { countAllRecords, listRecordsByDocId, listRecordsPage } from '../server/records'
 import { Spinner } from '../components/spinner'
 import { SelectInput } from '../components/select-input'
+import { TableSkeleton } from '../components/table-skeleton'
 
 const DEFAULT_PAGE_SIZE = 25
 
@@ -185,7 +186,7 @@ function AdminVorgaengePage() {
 
   return (
     <section className="space-y-5">
-      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-title text-4xl text-slate-900">Vorgänge</h2>
@@ -197,7 +198,7 @@ function AdminVorgaengePage() {
             </p>
             <Link
               to="/admin/neuer-vorgang"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-900 px-5 py-2 text-sm font-semibold text-white no-underline hover:bg-slate-800"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white no-underline hover:bg-brand-700"
             >
               Neuer Vorgang
             </Link>
@@ -261,24 +262,24 @@ function AdminVorgaengePage() {
           actions={[
             {
               label: 'CSV Export',
-              icon: <FileSpreadsheet className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />,
               onClick: exportSelectedAsCsv,
             },
             {
               label: 'Lieferschein',
-              icon: <FileDown className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FileDown className="h-4 w-4" strokeWidth={2.25} />,
               disabled: selectedDeliveryNoteIds.length === 0,
               onClick: () => void downloadSelectedDeliveryNotes(),
             },
             {
               label: 'Rechnung',
-              icon: <Receipt className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Receipt className="h-4 w-4" strokeWidth={2.25} />,
               disabled: selectedInvoiceIds.length === 0,
               onClick: () => void downloadSelectedInvoices(),
             },
             {
               label: 'Stornieren',
-              icon: <Ban className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <Ban className="h-4 w-4" strokeWidth={2.25} />,
               disabled: !canStorno,
               onClick: () => setPendingAction({
                 action: stornoSelection,
@@ -288,7 +289,7 @@ function AdminVorgaengePage() {
             },
             {
               label: 'Rechnung erstellen',
-              icon: <FilePlus className="h-3.5 w-3.5" strokeWidth={2.25} />,
+              icon: <FilePlus className="h-4 w-4" strokeWidth={2.25} />,
               variant: 'primary',
               disabled: !canCreateInvoice,
               onClick: () => setSammelrechnungOpen(true),
@@ -301,7 +302,7 @@ function AdminVorgaengePage() {
         )}
 
         {recordsQuery.isLoading ? (
-          <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Lädt…</p>
+          <TableSkeleton />
         ) : pageRecords.length === 0 ? (
           <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
             Keine Einträge für die aktuellen Filter vorhanden.

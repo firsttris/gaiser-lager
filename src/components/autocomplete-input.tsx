@@ -151,7 +151,7 @@ export function AutocompleteInput({
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onClick={() => selectOption(option.label)}
                   className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition ${
-                    isHighlighted ? 'bg-amber-50 text-slate-900' : 'text-slate-700 hover:bg-slate-50'
+                    isHighlighted ? 'bg-brand-50 text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <span className="truncate">{option.label}</span>

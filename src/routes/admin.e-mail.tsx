@@ -20,6 +20,7 @@ import {
   unknownPlaceholders,
 } from '../utils/email-template'
 import { SelectInput } from '../components/select-input'
+import { InlineMessage } from '../components/toast'
 
 export const Route = createFileRoute('/admin/e-mail')({
   beforeLoad: async ({ context }) => {
@@ -34,19 +35,14 @@ const LABEL_CLASS = 'block text-sm font-semibold text-slate-700'
 type Message = { kind: 'success' | 'error'; text: string } | null
 
 function MessageBox({ message }: { message: Message }) {
-  if (!message) return null
-  return (
-    <p className={`mt-4 rounded-xl p-3 text-sm ${message.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
-      {message.text}
-    </p>
-  )
+  return <InlineMessage message={message} className="mt-4" />
 }
 
 function AdminEmailSettingsPage() {
   const settingsQuery = useQuery(emailSettingsQueryOptions())
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">E-Mail</h2>
       <p className="mt-2 text-sm text-slate-700">
         Zugangsdaten für den Versand von Rechnungen per E-Mail und die Vorlage für den Text. Das SMTP-Passwort wird
@@ -298,7 +294,7 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
         <button
           type="submit"
           disabled={save.isPending}
-          className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {save.isPending && <Spinner className="h-4 w-4" />}
           Speichern
@@ -323,7 +319,7 @@ function EmailSettingsForm({ initial }: { initial: LoadedSettings }) {
           <button
             type="submit"
             disabled={sendTest.isPending || isDirty}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sendTest.isPending && <Spinner className="h-4 w-4" />}
             Testmail senden

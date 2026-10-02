@@ -22,6 +22,15 @@ interface Props {
   selectable?: boolean
 }
 
+// Rows stay white: the status badge already carries the colour, and tinted
+// rows were restless on the kiosk screen. Selected rows are clearly marked;
+// cancelled ones are faded.
+function rowTone(record: RecordItem, selected: boolean, kind: 'row' | 'card') {
+  if (selected) return kind === 'card' ? 'border-brand-300 bg-brand-50' : 'bg-brand-50'
+  if (record.status === 'storniert') return kind === 'card' ? 'border-slate-200 bg-slate-50 opacity-60' : 'bg-slate-50 opacity-60'
+  return kind === 'card' ? 'border-slate-200 bg-white' : 'bg-white hover:bg-slate-50'
+}
+
 export function HistoryTable({
   records,
   selectedSet,
@@ -75,7 +84,7 @@ export function HistoryTable({
           return (
             <article
               key={record.id}
-              className={`rounded-xl border border-slate-200 p-4 ${record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}`}
+              className={`rounded-xl border p-4 ${rowTone(record, selectedSet.has(record.id), 'card')}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -183,7 +192,7 @@ export function HistoryTable({
               return (
                 <tr
                   key={record.id}
-                  className={record.status === 'storniert' ? 'bg-slate-100 opacity-60' : record.status === 'bezahlt' ? 'bg-emerald-50' : record.status === 'rechnung' ? 'bg-blue-50' : record.status === 'lieferschein' ? 'bg-amber-50' : 'odd:bg-white even:bg-slate-50'}
+                  className={rowTone(record, selectedSet.has(record.id), 'row')}
                 >
                   {selectable && (
                     <td>

@@ -16,7 +16,7 @@ function PriceTable({ title, products }: { title: string; products: PriceListPro
           </thead>
           <tbody>
             {products.map((product) => (
-              <tr key={product.id} className="odd:bg-white even:bg-slate-50">
+              <tr key={product.id} className="bg-white hover:bg-slate-50">
                 <td className="text-slate-900">{product.name}</td>
                 <td>{product.unit}</td>
                 <td className="num font-semibold text-slate-900">{product.price > 0 ? money(product.price) : '—'}</td>

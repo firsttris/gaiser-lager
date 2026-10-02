@@ -46,8 +46,8 @@ export function NavDropdown({
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
-          className={`inline-flex min-h-12 w-full items-center justify-between gap-3 whitespace-nowrap border-l-4 px-3 py-3 text-sm font-semibold transition ${
-            isActive ? 'border-amber-500 bg-amber-50/60 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
+          className={`inline-flex min-h-12 w-full items-center justify-between gap-3 whitespace-nowrap rounded-xl px-3 py-3 text-sm font-semibold transition ${
+            isActive ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200 ring-inset' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
           <span className="inline-flex items-center gap-3">
@@ -75,8 +75,8 @@ export function NavDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className={`inline-flex min-h-12 items-center gap-2 whitespace-nowrap border-b-2 text-sm font-semibold transition ${
-          isActive ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-600 hover:text-slate-800'
+        className={`inline-flex min-h-12 items-center gap-2 whitespace-nowrap rounded-xl px-3 text-sm font-semibold transition ${
+          isActive || isOpen ? 'bg-brand-50 text-brand-800 ring-1 ring-brand-200 ring-inset' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
         }`}
       >
         {icon}
@@ -91,10 +91,7 @@ export function NavDropdown({
               key={item.to}
               to={item.to}
               onClick={() => setIsOpen(false)}
-              className="flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-900"
-              activeProps={{
-                className: 'flex min-h-12 items-center gap-3 rounded-lg bg-amber-50 px-3 py-3 text-sm font-semibold text-amber-700 no-underline',
-              }}
+              className="flex min-h-12 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-600 no-underline transition hover:bg-slate-50 hover:text-slate-900 data-[status=active]:bg-brand-50 data-[status=active]:text-brand-800"
             >
               {item.icon}
               {item.label}

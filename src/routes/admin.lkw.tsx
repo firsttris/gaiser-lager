@@ -10,6 +10,7 @@ import { FormDialog } from '../components/form-dialog'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { money } from '../utils/history-utils'
 import type { Truck } from '../state/app-state'
+import { InlineMessage, SuccessToast } from '../components/toast'
 
 export const Route = createFileRoute('/admin/lkw')({
   beforeLoad: async ({ context }) => {
@@ -105,7 +106,7 @@ function AdminTrucksPage() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">LKW</h2>
       <p className="mt-2 text-sm text-slate-700">
         LKW-Stundenpreise (netto) können hier angelegt, bearbeitet und bei fehlender Historie gelöscht werden.
@@ -138,7 +139,7 @@ function AdminTrucksPage() {
           <button
             type="submit"
             disabled={isCreatingTruck}
-            className="flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingTruck && <Spinner className="h-4 w-4" />}
             LKW anlegen
@@ -146,18 +147,10 @@ function AdminTrucksPage() {
         </form>
 
         {createForm.error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{createForm.error}</p>}
-        {createForm.success && (
-          <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{createForm.success}</p>
-        )}
+        <SuccessToast text={createForm.success} />
       </div>
 
-      {listMessage && (
-        <p
-          className={`mt-5 rounded-xl p-3 text-sm ${listMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
-        >
-          {listMessage.text}
-        </p>
-      )}
+      <InlineMessage message={listMessage} className="mt-5" />
 
       <div className="mt-6 space-y-3">
         {trucks.map((truck) => (

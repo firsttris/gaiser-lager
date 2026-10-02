@@ -7,6 +7,7 @@ import { Spinner } from '../components/spinner'
 import { FormDialog } from '../components/form-dialog'
 import { ConfirmDialog } from '../components/confirm-dialog'
 import { SelectInput } from '../components/select-input'
+import { InlineMessage } from '../components/toast'
 
 export const Route = createFileRoute('/admin/baustellen')({
   beforeLoad: async ({ context }) => {
@@ -105,7 +106,7 @@ function AdminSitesPage() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">Baustellen</h2>
       <p className="mt-2 text-sm text-slate-700">
         Jede Baustelle gehört zu genau einem Kunden und wird nur diesem vorgeschlagen. Baustellen können hier angelegt,
@@ -138,7 +139,7 @@ function AdminSitesPage() {
           <button
             type="submit"
             disabled={isCreatingConstructionSite}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingConstructionSite && <Spinner className="h-4 w-4" />}
             Baustelle anlegen
@@ -146,20 +147,8 @@ function AdminSitesPage() {
         </div>
       </form>
 
-      {createMessage && (
-        <p
-          className={`mt-4 rounded-xl p-3 text-sm ${createMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
-        >
-          {createMessage.text}
-        </p>
-      )}
-      {listMessage && (
-        <p
-          className={`mt-4 rounded-xl p-3 text-sm ${listMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
-        >
-          {listMessage.text}
-        </p>
-      )}
+      <InlineMessage message={createMessage} className="mt-4" />
+      <InlineMessage message={listMessage} className="mt-4" />
 
       <label className="mt-6 block max-w-sm text-sm font-semibold text-slate-700">
         Kunde

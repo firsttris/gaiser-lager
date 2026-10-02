@@ -6,6 +6,7 @@ import { Blocks, Building2, Clock, HardHat, LogOut, Mail, MapPinned, Menu, PlusC
 import { NavLink } from '../components/nav-link'
 import { NavDropdown } from '../components/nav-dropdown'
 import { PageShell } from '../components/page-shell'
+import { FontScaleSwitch } from '../components/font-scale-switch'
 import { useAppState } from '../state/app-state'
 import { Logo } from '../components/logo'
 import { Spinner } from '../components/spinner'
@@ -82,7 +83,7 @@ function AdminPage() {
   if (!isAdminLoggedIn) {
     return (
       <PageShell>
-        <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+        <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
           <div className="absolute -right-28 -top-24 h-56 w-56 rounded-full bg-rose-100 blur-3xl"></div>
           <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-cyan-100 blur-3xl"></div>
 
@@ -124,7 +125,7 @@ function AdminPage() {
               <button
                 type="submit"
                 disabled={isAdminLoggingIn}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isAdminLoggingIn && <Spinner className="h-4 w-4" />}
                 Als Admin anmelden
@@ -153,17 +154,18 @@ function AdminPage() {
   return (
     <PageShell>
       <header className="mb-8">
-        <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] backdrop-blur sm:p-8">
+        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-card backdrop-blur sm:p-8">
           <div className="flex items-start justify-between gap-4 sm:gap-8">
             <div className="flex min-w-0 items-center gap-4">
               <Logo className="h-12 shrink-0 sm:h-16" />
             </div>
 
-            <div className="hidden items-start gap-6 sm:flex">
+            <div className="hidden items-center gap-4 sm:flex">
+              <FontScaleSwitch className="header-font-switch" />
               <div className="text-left">
                 <div className="mb-0.5 flex items-center justify-start gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
-                  <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+                  <ShieldCheck className="h-3.5 w-3.5 text-brand-600" strokeWidth={2.5} />
+                  <p className="text-xs font-semibold tracking-wider text-brand-700 uppercase">Admin</p>
                 </div>
                 <h1 className="font-title text-2xl leading-none text-slate-900">Verwaltung</h1>
               </div>
@@ -185,7 +187,7 @@ function AdminPage() {
                 aria-expanded={isMenuOpen}
                 aria-label={isMenuOpen ? 'Navigation schließen' : 'Navigation öffnen'}
                 onClick={() => setIsMenuOpen((open) => !open)}
-                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-900 transition hover:bg-amber-100"
+                className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-800 transition hover:bg-brand-100"
               >
                 {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.25} /> : <Menu className="h-5 w-5" strokeWidth={2.25} />}
               </button>
@@ -194,8 +196,8 @@ function AdminPage() {
 
           <div className="mt-5 sm:hidden">
             <div className="mb-0.5 flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-amber-600" strokeWidth={2.5} />
-              <p className="text-xs font-semibold tracking-wider text-amber-700 uppercase">Admin</p>
+              <ShieldCheck className="h-3.5 w-3.5 text-brand-600" strokeWidth={2.5} />
+              <p className="text-xs font-semibold tracking-wider text-brand-700 uppercase">Admin</p>
             </div>
             <h1 className="font-title text-2xl leading-tight text-slate-900">Verwaltung</h1>
           </div>
@@ -253,7 +255,7 @@ function AdminPage() {
             </div>
           )}
 
-          <div className="mt-4 hidden flex-wrap border-t border-slate-100 pt-2 sm:flex sm:items-center sm:gap-x-4 sm:gap-y-1">
+          <div className="mt-4 hidden flex-wrap border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-2">
             <NavLink
               to="/admin/neuer-vorgang"
               icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}

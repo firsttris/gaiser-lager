@@ -45,7 +45,7 @@ export function DocumentListTable({
           const badge = getBadge(items)
           const rowSelectable = selectable && (isSelectable?.(items) ?? true)
           return (
-            <article key={id} className={`rounded-xl border border-slate-200 p-4 ${badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'bg-white'}`}>
+            <article key={id} className={`rounded-xl border p-4 ${selectedIds?.has(id) ? 'border-brand-300 bg-brand-50' : badge.label === 'Storniert' ? 'border-slate-200 bg-slate-50 opacity-60' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-2">
                   {selectable && (
@@ -140,7 +140,7 @@ export function DocumentListTable({
               const rowSelectable = selectable && (isSelectable?.(items) ?? true)
               const [date, time] = items[0].createdAt.split(', ')
               return (
-                <tr key={id} className={badge.label === 'Storniert' ? 'bg-slate-100 opacity-60' : 'odd:bg-white even:bg-slate-50'}>
+                <tr key={id} className={selectedIds?.has(id) ? 'bg-brand-50' : badge.label === 'Storniert' ? 'bg-slate-50 opacity-60' : 'bg-white hover:bg-slate-50'}>
                   {selectable && (
                     <td>
                       <label className="cell-check -mx-2.5 -mb-2.5 inline-flex shrink-0 cursor-pointer p-2.5">

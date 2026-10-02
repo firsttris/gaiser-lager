@@ -80,7 +80,7 @@ function App() {
       <TopNav />
 
       {/* One column at full width: the kiosk tablet is used in portrait. */}
-      <section className="relative mx-auto mt-4 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+      <section className="relative mx-auto mt-4 w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
         <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-amber-100 blur-3xl"></div>
         <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-100 blur-3xl"></div>
 
@@ -109,7 +109,7 @@ function App() {
                 inputMode="numeric"
                 autoComplete="off"
                 placeholder="4-stellig"
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest text-slate-900 outline-none transition focus:border-amber-500"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest text-slate-900 outline-none transition focus:border-brand-600"
               />
             </div>
 
@@ -118,7 +118,7 @@ function App() {
             <button
               type="submit"
               disabled={isLoggingIn}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-4 text-lg font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoggingIn && <Spinner className="h-5 w-5" />}
               Anmelden
@@ -141,7 +141,7 @@ function App() {
         </div>
       </section>
 
-      <section className="mx-auto mt-6 w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)] sm:p-10">
+      <section className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
         <h2 className="font-title mb-6 text-4xl text-slate-900">Preisliste</h2>
         {priceListQuery.isLoading ? (
           <div className="flex justify-center py-8">

@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../components/confirm-dialog'
 import { CompanyInput, PinInput } from '../components/company-form-inputs'
 import { FormDialog } from '../components/form-dialog'
 import { Spinner } from '../components/spinner'
+import { InlineMessage, type Message } from '../components/toast'
 
 export const Route = createFileRoute('/admin/mitarbeiter')({
   beforeLoad: async ({ context }) => {
@@ -41,7 +42,7 @@ function AdminEmployeesPage() {
   const [editPin, setEditPin] = useState('')
   const [editActive, setEditActive] = useState(true)
   const [editError, setEditError] = useState('')
-  const [listMessage, setListMessage] = useState('')
+  const [listMessage, setListMessage] = useState<Message>(null)
 
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -78,7 +79,7 @@ function AdminEmployeesPage() {
       setEditError(result.message)
       return
     }
-    setListMessage(`${editName.trim()} wurde gespeichert${editPin ? ', PIN wurde geändert' : ''}.`)
+    setListMessage({ kind: 'success', text: `${editName.trim()} wurde gespeichert${editPin ? ', PIN wurde geändert' : ''}.` })
     setEditing(null)
   }
 
@@ -87,11 +88,11 @@ function AdminEmployeesPage() {
     const employee = deleting
     setDeleting(null)
     const result = await deleteMutation.mutateAsync({ data: { id: employee.id } })
-    setListMessage(result.ok ? `${employee.name} wurde gelöscht.` : result.message)
+    setListMessage(result.ok ? { kind: 'success', text: `${employee.name} wurde gelöscht.` } : { kind: 'error', text: result.message })
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
       <h2 className="font-title text-4xl text-slate-900">Mitarbeiter</h2>
       <p className="mt-2 text-sm text-slate-700">
         Logins für die LKW-Fahrer (Name + 4-stellige PIN). Anmeldung über „Mitarbeiter-Anmeldung“ auf der Startseite.
@@ -107,21 +108,15 @@ function AdminEmployeesPage() {
         <button
           type="submit"
           disabled={createMutation.isPending}
-          className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-black disabled:opacity-60 sm:col-span-3 sm:justify-self-start"
+          className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60 sm:col-span-3 sm:justify-self-start"
         >
           {createMutation.isPending && <Spinner className="h-4 w-4" />}
           Mitarbeiter anlegen
         </button>
-        {createMessage && (
-          <p
-            className={`rounded-xl p-3 text-sm sm:col-span-3 ${createMessage.kind === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}
-          >
-            {createMessage.text}
-          </p>
-        )}
+        <InlineMessage message={createMessage} className="sm:col-span-3" />
       </form>
 
-      {listMessage && <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{listMessage}</p>}
+      <InlineMessage message={listMessage} className="mt-5" />
 
       <div className="mt-6 space-y-3">
         {employees.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-slate-700">Noch keine Mitarbeiter angelegt.</p>}

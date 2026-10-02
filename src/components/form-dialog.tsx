@@ -59,7 +59,7 @@ export function FormDialog({
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving && <Spinner className="h-4 w-4" />}
               {submitLabel}

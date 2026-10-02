@@ -127,7 +127,7 @@ export function TruckWizardFlow({
 
   if (step === 1) {
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">LKW und Stunden</h3>
         <p className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-600">
           Kunde: <strong>{company.name}</strong>
@@ -152,7 +152,7 @@ export function TruckWizardFlow({
               onChange={(e) => setHours(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
               inputMode="decimal"
               placeholder="z.B. 4.5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-amber-500"
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-brand-600"
             />
           </div>
 
@@ -165,7 +165,7 @@ export function TruckWizardFlow({
               placeholder="z.B. Nordring 12, Berlin"
               required
               helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-              inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-amber-500"
+              inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-11 text-lg outline-none focus:border-brand-600"
             />
           </div>
         </div>
@@ -197,7 +197,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={() => setStep(2)}
             disabled={!validHours || !validConstructionSiteName}
-            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             Weiter zur Prüfung
           </button>
@@ -208,7 +208,7 @@ export function TruckWizardFlow({
 
   if (step === 2) {
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
         <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-4">
@@ -257,7 +257,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={submitRecord}
             disabled={!validHours || !validConstructionSiteName || isCreatingTruckRecord}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isCreatingTruckRecord && <Spinner className="h-4 w-4" />}
             Vorgang anlegen
@@ -269,7 +269,7 @@ export function TruckWizardFlow({
 
   if (step === 3 && successRecord) {
     return (
-      <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <div className="space-y-5 rounded-2xl border border-emerald-200 bg-white p-6 shadow-card">
         <div className="flex items-center gap-3">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
             <svg viewBox="0 0 20 20" className="h-6 w-6" aria-hidden="true">
@@ -341,7 +341,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={() => void redownloadDeliveryNote()}
             disabled={isDownloadingNote}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-4 text-base font-semibold text-white hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isDownloadingNote && <Spinner className="h-4 w-4" />}
             Lieferschein herunterladen
@@ -350,7 +350,7 @@ export function TruckWizardFlow({
             type="button"
             onClick={onExit}
             disabled={isUploadingPhotos}
-            className="rounded-xl bg-slate-900 px-6 py-4 text-base font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl border-2 border-brand-600 bg-white px-6 py-4 text-base font-semibold text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Neuen Vorgang anlegen
           </button>

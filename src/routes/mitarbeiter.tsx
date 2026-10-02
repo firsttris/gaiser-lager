@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { ClipboardPlus, History, HardHat, LogOut } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
+import { FontScaleSwitch } from '../components/font-scale-switch'
 import { Logo } from '../components/logo'
 import { NavLink } from '../components/nav-link'
 import { Spinner } from '../components/spinner'
@@ -34,18 +35,19 @@ function EmployeeLayout() {
 
   return (
     <PageShell>
-      <header className="mb-8 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_20px_45px_rgba(15,23,42,0.06)] sm:p-8">
+      <header className="mb-8 rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-card sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <Logo className="h-12 shrink-0 sm:h-16" />
+          <FontScaleSwitch className="header-font-switch ml-auto hidden sm:inline-flex" />
           <div>
             <div className="mb-0.5 flex items-center gap-1.5">
-              <HardHat className="h-4 w-4 text-amber-700" strokeWidth={2.5} />
-              <p className="text-sm font-semibold tracking-wider text-amber-800 uppercase">Mitarbeiter</p>
+              <HardHat className="h-4 w-4 text-brand-600" strokeWidth={2.5} />
+              <p className="text-sm font-semibold tracking-wider text-brand-700 uppercase">Mitarbeiter</p>
             </div>
             <p className="font-title text-3xl leading-none text-slate-900">{employee.name}</p>
           </div>
         </div>
-        <nav className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
+        <nav className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
           <NavLink to="/mitarbeiter/neuer-vorgang" icon={<ClipboardPlus className="h-5 w-5" strokeWidth={2.25} />}>
             Neuer Vorgang
           </NavLink>
@@ -117,7 +119,7 @@ function EmployeeLogin() {
 
   return (
     <PageShell>
-      <section className="mx-auto mt-4 w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] sm:p-10">
+      <section className="mx-auto mt-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Logo className="h-16" />
           <h1 className="font-title text-4xl leading-none text-slate-900">Mitarbeiter-Anmeldung</h1>
@@ -144,7 +146,7 @@ function EmployeeLogin() {
                     setPin('')
                     setError('')
                   }}
-                  className="rounded-2xl border border-slate-300 bg-white px-5 py-5 text-left text-xl font-semibold text-slate-900 hover:border-amber-400 hover:bg-amber-50"
+                  className="rounded-2xl border border-slate-300 bg-white px-5 py-5 text-left text-xl font-semibold text-slate-900 hover:border-brand-300 hover:bg-brand-50"
                 >
                   {entry.name}
                 </button>
@@ -167,7 +169,7 @@ function EmployeeLogin() {
                 value={pin}
                 onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                 placeholder="4-stellig"
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest outline-none focus:border-amber-500"
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest outline-none focus:border-brand-600"
               />
             </div>
             {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
@@ -182,7 +184,7 @@ function EmployeeLogin() {
               <button
                 type="submit"
                 disabled={isEmployeeLoggingIn}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-lg font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isEmployeeLoggingIn && <Spinner className="h-5 w-5" />}
                 Anmelden

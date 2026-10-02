@@ -32,7 +32,7 @@ function ForgotPasswordPage() {
 
   return (
     <PageShell>
-      <section className="mx-auto mt-4 w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] sm:p-10">
+      <section className="mx-auto mt-4 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
         <Logo className="h-14" />
         <h1 className="mt-6 font-title text-4xl leading-none text-slate-900">Admin-Passwort vergessen</h1>
         <p className="mt-3 text-slate-700">
@@ -52,7 +52,7 @@ function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={request.isPending || message?.kind === 'success'}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {request.isPending && <Spinner className="h-4 w-4" />}
             Link anfordern

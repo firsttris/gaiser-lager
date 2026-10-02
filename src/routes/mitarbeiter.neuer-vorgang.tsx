@@ -22,7 +22,7 @@ function EmployeeNewRecordPage() {
 
   return (
     <section className="space-y-5">
-      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h2 className="font-title text-4xl text-slate-900">Neuer Vorgang</h2>
         <p className="mt-1 text-slate-700">Für welchen Kunden?</p>
         <div className="mt-4 max-w-2xl">

@@ -1,6 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 
+/* Gaiser brown from the logo (#784621 = brand-600). On white, brand-600 and
+   darker pass WCAG AA for text and as a button background with white text. */
+@theme {
+  --color-brand-50: #faf5f0;
+  --color-brand-100: #f1e4d6;
+  --color-brand-200: #e2c7aa;
+  --color-brand-300: #cfa27a;
+  --color-brand-500: #9a5f30;
+  --color-brand-600: #784621;
+  --color-brand-700: #5f371a;
+  --color-brand-800: #472914;
+
+  /* Soft card shadow; overlays (menus, dialogs) keep their stronger ones. */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 14px rgb(15 23 42 / 0.05);
+}
+
 :root {
   font-family: 'IBM Plex Sans', sans-serif;
   color: #1f2937;
@@ -41,6 +57,19 @@ html[data-font-scale='large'] {
 
 html[data-font-scale='xlarge'] {
   font-size: 125%;
+}
+
+/* Pages whose header carries the font size switch don't show the one above
+   the header (phones keep that one: the header row has no room there). */
+@media (min-width: 40rem) {
+  main:has(.header-font-switch) .page-font-switch {
+    display: none;
+  }
+}
+
+/* Room for the docked selection bar (SelectionActionBar). */
+body.has-selection-bar main {
+  padding-bottom: 9rem;
 }
 
 /* Browser default placeholders are too pale on the reflective kiosk screen. */
