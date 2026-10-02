@@ -303,14 +303,14 @@ function AdminEinstellungenPage() {
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="font-title text-2xl text-slate-900">Automatischer Logout bei Inaktivität</h3>
         <p className="mt-2 text-sm text-slate-600">
-          Nach dieser Zeit ohne Eingaben wird automatisch abgemeldet und die Kunden-Anmeldung angezeigt. Die letzten
-          30 Sekunden wird ein Countdown als Hinweis angezeigt. Wichtig am Kiosk-Tablet, das sich mehrere Personen
-          teilen.
+          Nach dieser Zeit ohne Eingaben wird automatisch abgemeldet und die Startseite angezeigt. Der Wert für
+          Kunden gilt auch für Mitarbeiter (Fahrer). Die letzten 30 Sekunden wird ein Countdown als Hinweis angezeigt.
+          Wichtig am Kiosk-Tablet, das sich mehrere Personen teilen.
         </p>
 
         <form onSubmit={submitInactivityTimeout} className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="text-sm font-semibold text-slate-700">Kunden (Minuten)</label>
+            <label className="text-sm font-semibold text-slate-700">Kunden und Mitarbeiter (Minuten)</label>
             <input
               type="number"
               inputMode="numeric"
