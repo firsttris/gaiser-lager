@@ -109,8 +109,6 @@ function RegistrierenPage() {
       <TopNav />
 
       <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-amber-100 blur-3xl"></div>
-        <div className="absolute -left-24 bottom-0 h-56 w-56 rounded-full bg-sky-100 blur-3xl"></div>
 
         <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
           <div className="space-y-4">

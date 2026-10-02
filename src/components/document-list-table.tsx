@@ -68,7 +68,7 @@ export function DocumentListTable({
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-1">
-                  <span className={`pill ${badge.className}`}>
+                  <span className={`pill pill-dot ${badge.className}`}>
                     {badge.label}
                   </span>
                   {getExtraBadges?.(items).map((b) => (
@@ -168,7 +168,7 @@ export function DocumentListTable({
                   </td>
                   <td>
                     <div className="cell-badge flex flex-wrap gap-1">
-                      <span className={`pill ${badge.className}`}>{badge.label}</span>
+                      <span className={`pill pill-dot ${badge.className}`}>{badge.label}</span>
                       {getExtraBadges?.(items).map((b) => (
                         <span key={b.label} className={`pill ${b.className}`}>
                           {b.label}

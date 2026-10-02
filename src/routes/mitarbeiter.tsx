@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { ClipboardPlus, History, HardHat, LogOut } from 'lucide-react'
 import { PageShell } from '../components/page-shell'
+import { PinPad } from '../components/pin-pad'
 import { FontScaleSwitch } from '../components/font-scale-switch'
 import { Logo } from '../components/logo'
 import { NavLink } from '../components/nav-link'
@@ -35,19 +36,19 @@ function EmployeeLayout() {
 
   return (
     <PageShell>
-      <header className="mb-8 rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-card sm:p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <Logo className="h-12 shrink-0 sm:h-16" />
+      <header className="sticky top-0 z-30 -mx-4 mb-6 sm:-mt-6 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:-mx-8 sm:px-8 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Logo className="h-10 shrink-0" />
           <FontScaleSwitch className="header-font-switch ml-auto hidden sm:inline-flex" />
           <div>
             <div className="mb-0.5 flex items-center gap-1.5">
               <HardHat className="h-4 w-4 text-brand-600" strokeWidth={2.5} />
               <p className="text-sm font-semibold tracking-wider text-brand-700 uppercase">Mitarbeiter</p>
             </div>
-            <p className="font-title text-3xl leading-none text-slate-900">{employee.name}</p>
+            <p className="font-title text-2xl leading-none text-slate-900">{employee.name}</p>
           </div>
         </div>
-        <nav className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+        <nav className="-mx-3 mt-2 flex flex-wrap items-center gap-1">
           <NavLink to="/mitarbeiter/neuer-vorgang" icon={<ClipboardPlus className="h-5 w-5" strokeWidth={2.25} />}>
             Neuer Vorgang
           </NavLink>
@@ -122,7 +123,7 @@ function EmployeeLogin() {
       <section className="mx-auto mt-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Logo className="h-16" />
-          <h1 className="font-title text-4xl leading-none text-slate-900">Mitarbeiter-Anmeldung</h1>
+          <h1 className="font-title text-4xl text-slate-900">Mitarbeiter-Anmeldung</h1>
         </div>
 
         {isLoading ? (
@@ -165,13 +166,13 @@ function EmployeeLogin() {
                 type="password"
                 inputMode="numeric"
                 autoComplete="off"
-                autoFocus
                 value={pin}
                 onChange={(event) => setPin(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
                 placeholder="4-stellig"
-                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg tracking-widest outline-none focus:border-brand-600"
+                className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-center text-2xl tracking-[0.5em] placeholder:text-lg placeholder:tracking-normal outline-none focus:border-brand-600"
               />
             </div>
+            <PinPad value={pin} onChange={setPin} disabled={isEmployeeLoggingIn} />
             {error && <p className="rounded-xl bg-red-50 p-3 text-red-700">{error}</p>}
             <div className="flex gap-3">
               <button

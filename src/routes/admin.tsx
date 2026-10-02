@@ -84,22 +84,20 @@ function AdminPage() {
     return (
       <PageShell>
         <section className="relative mx-auto mt-8 w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-          <div className="absolute -right-28 -top-24 h-56 w-56 rounded-full bg-rose-100 blur-3xl"></div>
-          <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-cyan-100 blur-3xl"></div>
 
           <div className="relative grid gap-8 p-6 sm:grid-cols-2 sm:p-10">
             <div>
               <Logo className="mb-4 h-16" />
-              <p className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-white uppercase">
+              <p className="inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold tracking-[0.16em] text-brand-700 uppercase ring-1 ring-brand-200 ring-inset">
                 Admin
               </p>
-              <h1 className="font-title mt-3 text-5xl text-slate-900">Gaiser-Lager Verwaltung</h1>
+              <h1 className="font-title mt-3 text-4xl text-slate-900">Gaiser-Lager Verwaltung</h1>
               <p className="mt-3 text-slate-600">
                 Geschützter Bereich für Produktpflege und Kundenanlage.
               </p>
             </div>
 
-            <form onSubmit={submitAdminLogin} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <form onSubmit={submitAdminLogin} className="rounded-xl bg-slate-50 p-5 ring-1 ring-slate-200 ring-inset">
               <label className="text-sm font-semibold text-slate-700">E-Mail</label>
               <input
                 type="email"
@@ -153,11 +151,12 @@ function AdminPage() {
 
   return (
     <PageShell>
-      <header className="mb-8">
-        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-card backdrop-blur sm:p-8">
-          <div className="flex items-start justify-between gap-4 sm:gap-8">
+      {/* Slim app bar across the full width, sticky while scrolling. */}
+      <header className="sticky top-0 z-30 -mx-4 mb-6 sm:-mt-6 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:-mx-8 sm:px-8">
+        <div className="py-3">
+          <div className="flex items-center justify-between gap-4 sm:gap-8">
             <div className="flex min-w-0 items-center gap-4">
-              <Logo className="h-12 shrink-0 sm:h-16" />
+              <Logo className="h-10 shrink-0" />
             </div>
 
             <div className="hidden items-center gap-4 sm:flex">
@@ -194,7 +193,7 @@ function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-5 sm:hidden">
+          <div className="mt-3 pb-1 sm:hidden">
             <div className="mb-0.5 flex items-center gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 text-brand-600" strokeWidth={2.5} />
               <p className="text-xs font-semibold tracking-wider text-brand-700 uppercase">Admin</p>
@@ -203,7 +202,7 @@ function AdminPage() {
           </div>
 
           {isMenuOpen && (
-            <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 sm:hidden">
+            <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 pb-2 sm:hidden">
               <NavLink
                 to="/admin/neuer-vorgang"
                 compact
@@ -255,7 +254,7 @@ function AdminPage() {
             </div>
           )}
 
-          <div className="mt-4 hidden flex-wrap border-t border-slate-100 pt-4 sm:flex sm:items-center sm:gap-2">
+          <div className="-mx-3 mt-2 hidden flex-wrap sm:flex sm:items-center sm:gap-1">
             <NavLink
               to="/admin/neuer-vorgang"
               icon={<PlusCircle className="h-4 w-4" strokeWidth={2.25} />}

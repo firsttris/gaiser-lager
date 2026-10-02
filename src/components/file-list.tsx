@@ -111,7 +111,7 @@ export function FileList({ files }: { files: FileEntry[] }) {
           return (
             <span
               key={badge.color}
-              className={`pill font-bold tracking-wide ring-1 ring-inset ${badge.className}`}
+              className={`pill rounded-md font-bold tracking-wide ring-1 ring-inset ${badge.className}`}
             >
               {badge.short || <Camera className="h-3.5 w-3.5" strokeWidth={2.5} />}
               {(count > 1 || !badge.short) && <span className="font-semibold">{badge.short ? `×${count}` : count}</span>}
@@ -148,7 +148,7 @@ export function FileList({ files }: { files: FileEntry[] }) {
                 }}
                 className="flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-slate-50 disabled:cursor-not-allowed"
               >
-                <span className={`pill shrink-0 ${ROW_COLORS[file.color]}`}>
+                <span className={`pill shrink-0 rounded-md ${ROW_COLORS[file.color]}`}>
                   {file.icon}
                   {file.kind}
                 </span>
