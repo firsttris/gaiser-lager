@@ -1,10 +1,10 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { History, Plus } from 'lucide-react'
+import { History, MapPin } from 'lucide-react'
 import { constructionSitesQueryOptions } from '../server/construction-sites'
 import { recentBookingsQueryOptions, type RecentBooking } from '../server/records'
 import { useMemo, useState } from 'react'
-import { AutocompleteInput } from './autocomplete-input'
+import { SitePickerDialog, sameSiteName } from './site-dialog'
 import { AmountPadDialog, formatAmount } from './amount-dialog'
 import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
@@ -83,17 +83,20 @@ function buildQuickAmounts(history: number[]) {
   return frequent.sort((a, b) => a - b)
 }
 
-// Recently used sites first, then the rest of the company's sites by name.
-function buildSiteChoices(recent: RecentBooking[], allSites: { name: string }[]) {
+// All of the company's sites, recently used first, then the rest by name.
+// Recent bookings may name sites that were renamed or deleted since; only
+// sites that still exist are offered (when the site list is loaded).
+function orderSiteNames(recent: RecentBooking[], allSites: { name: string }[]) {
   const names: string[] = []
+  const add = (name: string) => {
+    if (!names.some((existing) => sameSiteName(existing, name))) names.push(name)
+  }
+  const existing = allSites.map((site) => site.name)
   for (const booking of recent) {
-    if (names.length >= SITE_CHOICE_COUNT) break
-    if (!names.includes(booking.constructionSiteName)) names.push(booking.constructionSiteName)
+    const current = existing.find((name) => sameSiteName(name, booking.constructionSiteName))
+    if (current) add(current)
   }
-  for (const site of allSites) {
-    if (names.length >= SITE_CHOICE_COUNT) break
-    if (!names.includes(site.name)) names.push(site.name)
-  }
+  for (const name of existing) add(name)
   return names
 }
 
@@ -118,7 +121,7 @@ export function WizardFlow({
 
   const [step, setStep] = useState<'form' | 'success'>('form')
   const [isAmountDialogOpen, setIsAmountDialogOpen] = useState(false)
-  const [isSiteInputOpen, setIsSiteInputOpen] = useState(false)
+  const [isSiteDialogOpen, setIsSiteDialogOpen] = useState(false)
   const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(
     () => products.find((p) => p.flow === flowType)?.id ?? 0,
@@ -154,19 +157,23 @@ export function WizardFlow({
     [flowBookings, selectedProduct?.name],
   )
   const isCustomAmount = validAmount && !quickAmounts.includes(parsedAmount)
-  const siteChoices = useMemo(() => buildSiteChoices(recentBookings, constructionSites), [recentBookings, constructionSites])
+  const allSiteNames = useMemo(() => orderSiteNames(recentBookings, constructionSites), [recentBookings, constructionSites])
   const trimmedSiteName = constructionSiteName.trim()
-  // The text field shows whenever there is nothing to tap, or the chosen site
-  // isn't among the buttons (typed, or filled in via "Wie zuletzt").
-  const showSiteInput =
-    isSiteInputOpen || siteChoices.length === 0 || (validConstructionSiteName && !siteChoices.includes(trimmedSiteName))
+  // The most relevant sites as buttons. A chosen site that isn't among them
+  // (picked in the dialog, new, or from "Wie zuletzt") is shown as an extra,
+  // selected button so the choice is always visible in the same place.
+  const siteButtons = useMemo(() => {
+    const buttons = allSiteNames.slice(0, SITE_CHOICE_COUNT)
+    if (trimmedSiteName && !buttons.some((name) => sameSiteName(name, trimmedSiteName))) buttons.push(trimmedSiteName)
+    return buttons
+  }, [allSiteNames, trimmedSiteName])
+  const isNewSite = validConstructionSiteName && !allSiteNames.some((name) => sameSiteName(name, trimmedSiteName))
 
   function applyBooking(booking: RecentBooking) {
     const product = availableProducts.find((p) => p.name === booking.productName)
     if (product) setSelectedProductId(product.id)
     setAmount(String(booking.amount))
-    setConstructionSiteName(booking.constructionSiteName)
-    setIsSiteInputOpen(false)
+    setConstructionSiteName(allSiteNames.find((name) => sameSiteName(name, booking.constructionSiteName)) ?? booking.constructionSiteName)
   }
 
   async function submitRecord() {
@@ -195,7 +202,6 @@ export function WizardFlow({
     setSelectedProductId(products.find((p) => p.flow === flowType)?.id ?? 0)
     setAmount('')
     setConstructionSiteName('')
-    setIsSiteInputOpen(false)
   }
 
   async function redownloadDeliveryNote() {
@@ -215,14 +221,6 @@ export function WizardFlow({
   }
 
   if (step === 'form') {
-    const missingHint =
-      !validAmount && !validConstructionSiteName
-        ? 'Menge und Baustelle wählen, dann anlegen.'
-        : !validAmount
-          ? 'Noch die Menge wählen.'
-          : !validConstructionSiteName
-            ? 'Noch die Baustelle wählen.'
-            : ''
     return (
       <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">Material und Menge</h3>
@@ -331,74 +329,49 @@ export function WizardFlow({
           </div>
 
           <div>
-            {siteChoices.length > 0 && (
-              <>
-              <p className="text-sm font-semibold text-slate-700">Baustelle</p>
-              <div className="mt-2 grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Baustelle">
-                {siteChoices.map((name) => {
-                  const isSelected = trimmedSiteName === name
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => {
-                        setConstructionSiteName(name)
-                        setIsSiteInputOpen(false)
-                      }}
-                      aria-pressed={isSelected}
-                      className={`min-h-14 truncate rounded-xl border-2 px-4 text-left text-base font-semibold transition ${
-                        isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  )
-                })}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (siteChoices.includes(trimmedSiteName)) setConstructionSiteName('')
-                    setIsSiteInputOpen(true)
-                  }}
-                  className={`flex min-h-14 items-center gap-2 rounded-xl border-2 border-dashed px-4 text-base font-semibold transition ${
-                    showSiteInput ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
-                  }`}
-                >
-                  <Plus className="h-5 w-5" strokeWidth={2.5} />
-                  Neue Baustelle
-                </button>
-              </div>
-              </>
-            )}
-            {showSiteInput && (
-              <div className={siteChoices.length > 0 ? 'mt-3' : undefined}>
-                <AutocompleteInput
-                  label={siteChoices.length > 0 ? 'Baustelle eingeben' : 'Baustelle'}
-                  value={constructionSiteName}
-                  onChange={setConstructionSiteName}
-                  options={constructionSites.map((site) => ({ id: site.id, label: site.name, badge: 'bekannt' }))}
-                  placeholder="z.B. Nordring 12, Berlin"
-                  required
-                  autoFocus={isSiteInputOpen}
-                  helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-                  inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-14 text-lg outline-none focus:border-brand-600"
-                />
-              </div>
-            )}
+            <p className="text-sm font-semibold text-slate-700">Baustelle</p>
+            <div className="mt-2 grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Baustelle">
+              {siteButtons.map((name) => {
+                const isSelected = sameSiteName(name, trimmedSiteName)
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setConstructionSiteName(name)}
+                    aria-pressed={isSelected}
+                    className={`min-h-14 rounded-xl border-2 px-4 py-2.5 text-left text-base font-semibold break-words transition ${
+                      isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    {name}
+                    {isSelected && isNewSite && <span className="mt-0.5 block text-xs font-medium text-brand-700">Neu, wird mit dem Vorgang gespeichert</span>}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setIsSiteDialogOpen(true)}
+                className="flex min-h-14 items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 text-base font-semibold text-slate-700 hover:border-slate-400"
+              >
+                <MapPin className="h-5 w-5 shrink-0" strokeWidth={2.25} />
+                {allSiteNames.length > 0 ? 'Andere Baustelle …' : 'Baustelle wählen …'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Replaces the former "Vorgang prüfen" step: everything that will be
             booked is readable right above the button. */}
-        <div className={`rounded-xl p-4 ${isComplete ? 'bg-amber-50' : 'bg-slate-50'}`} aria-live="polite">
-          {isComplete && selectedProduct ? (
+        <div className={`rounded-xl p-4 ${validAmount ? 'bg-amber-50' : 'bg-slate-50'}`} aria-live="polite">
+          {validAmount && selectedProduct ? (
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
               <div className="min-w-0">
                 <p className="text-lg font-semibold text-slate-900">
                   {formatAmount(parsedAmount)} {unit} {selectedProduct.name}
                 </p>
                 <p className="text-slate-700">
-                  {trimmedSiteName} · {money(currentUnitPrice)} / {unit} netto
+                  {validConstructionSiteName ? trimmedSiteName : <span className="text-slate-500">Baustelle fehlt</span>} ·{' '}
+                  {money(currentUnitPrice)} / {unit} netto
                 </p>
               </div>
               <p className="text-2xl font-bold text-amber-800">
@@ -407,7 +380,7 @@ export function WizardFlow({
             </div>
           ) : (
             <p className="text-slate-700">
-              Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {unit} (netto). {missingHint}
+              Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {unit} (netto). Menge wählen, dann erscheint die Summe.
             </p>
           )}
         </div>
@@ -431,6 +404,15 @@ export function WizardFlow({
           </button>
         </div>
 
+        <SitePickerDialog
+          open={isSiteDialogOpen}
+          siteNames={allSiteNames}
+          onClose={() => setIsSiteDialogOpen(false)}
+          onPick={(name) => {
+            setConstructionSiteName(name)
+            setIsSiteDialogOpen(false)
+          }}
+        />
         <AmountPadDialog
           open={isAmountDialogOpen}
           unit={unit}
