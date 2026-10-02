@@ -55,7 +55,7 @@ export function FontScaleSwitch() {
           aria-label={option.title}
           aria-pressed={scale === option.value}
           onClick={() => choose(option.value)}
-          className={`flex min-h-12 min-w-12 items-end justify-center rounded-lg px-2 pb-3 font-bold leading-none ${option.className} ${
+          className={`flex min-h-12 min-w-12 items-center justify-center rounded-lg px-2 font-bold leading-none ${option.className} ${
             scale === option.value ? 'bg-slate-900 text-white' : 'text-slate-800 hover:bg-white'
           }`}
         >
