@@ -1,8 +1,11 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { History, Plus } from 'lucide-react'
 import { constructionSitesQueryOptions } from '../server/construction-sites'
-import { useState } from 'react'
+import { recentBookingsQueryOptions, type RecentBooking } from '../server/records'
+import { useMemo, useState } from 'react'
 import { AutocompleteInput } from './autocomplete-input'
+import { AmountPadDialog, formatAmount } from './amount-dialog'
 import { useAppState, type Company, type FlowType, type RecordItem } from '../state/app-state'
 import { downloadCombinedDeliveryNote } from '../utils/delivery-note-utils'
 import { resolvePublicAssetUrl } from '../utils/public-asset-url'
@@ -60,6 +63,40 @@ function money(value: number) {
   }).format(value)
 }
 
+// One-tap amounts on the kiosk: the amounts this company booked most often
+// for the material, topped up with round defaults until the row is full.
+const DEFAULT_QUICK_AMOUNTS = [5, 10, 15, 20, 25]
+const QUICK_AMOUNT_COUNT = 5
+const SITE_CHOICE_COUNT = 5
+
+function buildQuickAmounts(history: number[]) {
+  const counts = new Map<number, number>()
+  for (const amount of history) counts.set(amount, (counts.get(amount) ?? 0) + 1)
+  const frequent = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+    .slice(0, QUICK_AMOUNT_COUNT)
+    .map(([amount]) => amount)
+  for (const amount of DEFAULT_QUICK_AMOUNTS) {
+    if (frequent.length >= QUICK_AMOUNT_COUNT) break
+    if (!frequent.includes(amount)) frequent.push(amount)
+  }
+  return frequent.sort((a, b) => a - b)
+}
+
+// Recently used sites first, then the rest of the company's sites by name.
+function buildSiteChoices(recent: RecentBooking[], allSites: { name: string }[]) {
+  const names: string[] = []
+  for (const booking of recent) {
+    if (names.length >= SITE_CHOICE_COUNT) break
+    if (!names.includes(booking.constructionSiteName)) names.push(booking.constructionSiteName)
+  }
+  for (const site of allSites) {
+    if (names.length >= SITE_CHOICE_COUNT) break
+    if (!names.includes(site.name)) names.push(site.name)
+  }
+  return names
+}
+
 export function WizardFlow({
   flowType,
   company,
@@ -76,9 +113,12 @@ export function WizardFlow({
   const { products, selectedCompany: loggedInCompany, createRecord, isCreatingRecord } = useAppState()
   const selectedCompany = company ?? loggedInCompany
   const { data: constructionSites = [] } = useQuery(constructionSitesQueryOptions(selectedCompany?.id))
+  const { data: recentBookings = [] } = useQuery(recentBookingsQueryOptions(selectedCompany?.id))
   const navigate = useNavigate()
 
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState<'form' | 'success'>('form')
+  const [isAmountDialogOpen, setIsAmountDialogOpen] = useState(false)
+  const [isSiteInputOpen, setIsSiteInputOpen] = useState(false)
   const [isDownloadingNote, setIsDownloadingNote] = useState(false)
   const [selectedProductId, setSelectedProductId] = useState(
     () => products.find((p) => p.flow === flowType)?.id ?? 0,
@@ -103,6 +143,31 @@ export function WizardFlow({
   const validConstructionSiteName = constructionSiteName.trim().length > 0
   const currentUnitPrice = selectedProduct?.price ?? 0
   const total = validAmount ? parsedAmount * currentUnitPrice : 0
+  const unit = selectedProduct?.unit ?? ''
+  const isComplete = Boolean(selectedProduct) && validAmount && validConstructionSiteName
+
+  const flowBookings = useMemo(() => recentBookings.filter((booking) => booking.type === flowType), [recentBookings, flowType])
+  // "Wie zuletzt" only for a material that is still on offer.
+  const lastBooking = flowBookings.find((booking) => availableProducts.some((p) => p.name === booking.productName))
+  const quickAmounts = useMemo(
+    () => buildQuickAmounts(flowBookings.filter((b) => b.productName === selectedProduct?.name).map((b) => b.amount)),
+    [flowBookings, selectedProduct?.name],
+  )
+  const isCustomAmount = validAmount && !quickAmounts.includes(parsedAmount)
+  const siteChoices = useMemo(() => buildSiteChoices(recentBookings, constructionSites), [recentBookings, constructionSites])
+  const trimmedSiteName = constructionSiteName.trim()
+  // The text field shows whenever there is nothing to tap, or the chosen site
+  // isn't among the buttons (typed, or filled in via "Wie zuletzt").
+  const showSiteInput =
+    isSiteInputOpen || siteChoices.length === 0 || (validConstructionSiteName && !siteChoices.includes(trimmedSiteName))
+
+  function applyBooking(booking: RecentBooking) {
+    const product = availableProducts.find((p) => p.name === booking.productName)
+    if (product) setSelectedProductId(product.id)
+    setAmount(String(booking.amount))
+    setConstructionSiteName(booking.constructionSiteName)
+    setIsSiteInputOpen(false)
+  }
 
   async function submitRecord() {
     if (!selectedProduct || !validAmount || !validConstructionSiteName) return
@@ -126,10 +191,11 @@ export function WizardFlow({
       total,
       record,
     })
-    setStep(3)
+    setStep('success')
     setSelectedProductId(products.find((p) => p.flow === flowType)?.id ?? 0)
     setAmount('')
     setConstructionSiteName('')
+    setIsSiteInputOpen(false)
   }
 
   async function redownloadDeliveryNote() {
@@ -148,17 +214,43 @@ export function WizardFlow({
     }
   }
 
-  if (step === 1) {
+  if (step === 'form') {
+    const missingHint =
+      !validAmount && !validConstructionSiteName
+        ? 'Menge und Baustelle wählen, dann anlegen.'
+        : !validAmount
+          ? 'Noch die Menge wählen.'
+          : !validConstructionSiteName
+            ? 'Noch die Baustelle wählen.'
+            : ''
     return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+      <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h3 className="font-title text-4xl text-slate-900">Material und Menge</h3>
         {company && (
           <p className="rounded-xl bg-slate-50 px-4 py-2 text-sm text-slate-600">
             Kunde: <strong>{company.name}</strong>
           </p>
         )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
+
+        {lastBooking && (
+          <button
+            type="button"
+            onClick={() => applyBooking(lastBooking)}
+            className="flex w-full items-center gap-4 rounded-xl border-2 border-brand-600 bg-brand-50 px-5 py-4 text-left hover:bg-brand-100"
+          >
+            <History className="h-7 w-7 shrink-0 text-brand-700" strokeWidth={2.25} />
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold tracking-wider text-brand-700 uppercase">Wie zuletzt</span>
+              <span className="block truncate text-lg font-semibold text-slate-900">
+                {formatAmount(lastBooking.amount)} {lastBooking.unit} {lastBooking.productName} · {lastBooking.constructionSiteName}
+              </span>
+              <span className="block text-sm text-slate-600">{lastBooking.createdAt}</span>
+            </span>
+          </button>
+        )}
+
+        <div className="grid gap-5">
+          <div>
             <label className="text-sm font-semibold text-slate-700">Material</label>
             <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {availableProducts.map((p) => {
@@ -205,31 +297,117 @@ export function WizardFlow({
             </div>
           </div>
 
+
           <div>
-            <label className="text-sm font-semibold text-slate-700">Menge ({selectedProduct?.unit})</label>
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
-              inputMode="decimal"
-              placeholder="z.B. 12,5"
-              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 text-lg outline-none focus:border-brand-600"
-            />
+            <p className="text-sm font-semibold text-slate-700">Menge ({unit})</p>
+            <div className="mt-2 grid grid-cols-3 gap-2.5 sm:grid-cols-6" role="group" aria-label="Menge">
+              {quickAmounts.map((value) => {
+                const isSelected = validAmount && parsedAmount === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setAmount(String(value))}
+                    aria-pressed={isSelected}
+                    className={`min-h-14 rounded-xl border-2 text-lg font-semibold tabular-nums transition ${
+                      isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
+                    }`}
+                  >
+                    {formatAmount(value)}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={() => setIsAmountDialogOpen(true)}
+                aria-pressed={isCustomAmount}
+                className={`min-h-14 rounded-xl border-2 px-2 text-base font-semibold transition ${
+                  isCustomAmount ? 'border-brand-600 bg-brand-50 text-brand-700 tabular-nums' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                {isCustomAmount ? formatAmount(parsedAmount) : 'Andere …'}
+              </button>
+            </div>
           </div>
 
-          <AutocompleteInput
-            label="Baustelle"
-            value={constructionSiteName}
-            onChange={setConstructionSiteName}
-            options={constructionSites.map((site) => ({ id: site.id, label: site.name, badge: 'bekannt' }))}
-            placeholder="z.B. Nordring 12, Berlin"
-            required
-            helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
-            inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-14 text-lg outline-none focus:border-brand-600"
-          />
+          <div>
+            <p className="text-sm font-semibold text-slate-700">Baustelle</p>
+            {siteChoices.length > 0 && (
+              <div className="mt-2 grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Baustelle">
+                {siteChoices.map((name) => {
+                  const isSelected = trimmedSiteName === name
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => {
+                        setConstructionSiteName(name)
+                        setIsSiteInputOpen(false)
+                      }}
+                      aria-pressed={isSelected}
+                      className={`min-h-14 truncate rounded-xl border-2 px-4 text-left text-base font-semibold transition ${
+                        isSelected ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  )
+                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (siteChoices.includes(trimmedSiteName)) setConstructionSiteName('')
+                    setIsSiteInputOpen(true)
+                  }}
+                  className={`flex min-h-14 items-center gap-2 rounded-xl border-2 border-dashed px-4 text-base font-semibold transition ${
+                    showSiteInput ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
+                  }`}
+                >
+                  <Plus className="h-5 w-5" strokeWidth={2.5} />
+                  Neue Baustelle
+                </button>
+              </div>
+            )}
+            {showSiteInput && (
+              <div className="mt-3">
+                <AutocompleteInput
+                  label={siteChoices.length > 0 ? 'Baustelle eingeben' : 'Baustelle'}
+                  value={constructionSiteName}
+                  onChange={setConstructionSiteName}
+                  options={constructionSites.map((site) => ({ id: site.id, label: site.name, badge: 'bekannt' }))}
+                  placeholder="z.B. Nordring 12, Berlin"
+                  required
+                  autoFocus={isSiteInputOpen}
+                  helperText="Neue Baustelle wird beim Anlegen dieses Vorgangs gespeichert."
+                  inputClassName="mt-2 w-full rounded-xl border border-slate-300 px-4 py-4 pr-14 text-lg outline-none focus:border-brand-600"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
-          Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {selectedProduct?.unit} (netto)
+        {/* Replaces the former "Vorgang prüfen" step: everything that will be
+            booked is readable right above the button. */}
+        <div className={`rounded-xl p-4 ${isComplete ? 'bg-amber-50' : 'bg-slate-50'}`} aria-live="polite">
+          {isComplete && selectedProduct ? (
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+              <div className="min-w-0">
+                <p className="text-lg font-semibold text-slate-900">
+                  {formatAmount(parsedAmount)} {unit} {selectedProduct.name}
+                </p>
+                <p className="text-slate-700">
+                  {trimmedSiteName} · {money(currentUnitPrice)} / {unit} netto
+                </p>
+              </div>
+              <p className="text-2xl font-bold text-amber-800">
+                {money(total)} <span className="text-sm font-semibold">netto</span>
+              </p>
+            </div>
+          ) : (
+            <p className="text-slate-700">
+              Einheitspreis: <strong>{money(currentUnitPrice)}</strong> / {unit} (netto). {missingHint}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -242,97 +420,30 @@ export function WizardFlow({
           </button>
           <button
             type="button"
-            onClick={() => setStep(2)}
-            disabled={!validAmount || !validConstructionSiteName}
-            className="rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            Weiter zur Prüfung
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 2) {
-    const step2Visual = selectedProduct ? getVisual(selectedProduct) : null
-    return (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-        <h3 className="font-title text-4xl text-slate-900">Vorgang prüfen</h3>
-        <dl className="grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Typ</dt>
-            <dd className="font-semibold">{flowType === 'pickup' ? 'Material holen' : 'Material bringen'}</dd>
-          </div>
-          {step2Visual ? (
-            <div className="relative overflow-hidden rounded-xl">
-              {step2Visual.imagePath ? (
-                <img
-                  src={resolveVisualImageUrl(step2Visual.imagePath)}
-                  alt={selectedProduct?.name}
-                  className="w-full aspect-video object-cover"
-                />
-              ) : (
-                <div className={`flex w-full aspect-video items-center justify-center bg-linear-to-br ${step2Visual.gradient}`}>
-                  <span className="text-3xl">{step2Visual.emoji}</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 px-3 py-2">
-                <p className="text-xs text-white/70">Material</p>
-                <p className="text-sm font-semibold text-white drop-shadow">{selectedProduct?.name}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl bg-slate-50 p-4">
-              <dt className="text-slate-600">Material</dt>
-              <dd className="font-semibold">{selectedProduct?.name}</dd>
-            </div>
-          )}
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Menge</dt>
-            <dd className="font-semibold">
-              {amount} {selectedProduct?.unit}
-            </dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Baustelle</dt>
-            <dd className="font-semibold">{constructionSiteName.trim()}</dd>
-          </div>
-          <div className="rounded-xl bg-slate-50 p-4">
-            <dt className="text-slate-600">Einzelpreis</dt>
-            <dd className="font-semibold">
-              {money(currentUnitPrice)} (netto)
-            </dd>
-          </div>
-          <div className="rounded-xl bg-amber-50 p-4">
-            <dt className="text-amber-700">Gesamtsumme</dt>
-            <dd className="text-lg font-bold text-amber-800">{money(total)}</dd>
-          </div>
-        </dl>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setStep(1)}
-            className="rounded-xl bg-slate-100 px-6 py-4 text-base font-semibold text-slate-700 hover:bg-slate-200"
-          >
-            Zurück
-          </button>
-          <button
-            type="button"
             onClick={submitRecord}
-            disabled={!validAmount || !validConstructionSiteName || isCreatingRecord}
-            className="flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-base font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!isComplete || isCreatingRecord}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-4 text-lg font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isCreatingRecord && <Spinner className="h-4 w-4" />}
+            {isCreatingRecord && <Spinner className="h-5 w-5" />}
             Vorgang anlegen
           </button>
         </div>
+
+        <AmountPadDialog
+          open={isAmountDialogOpen}
+          unit={unit}
+          initialValue={amount}
+          onClose={() => setIsAmountDialogOpen(false)}
+          onApply={(value) => {
+            setAmount(value)
+            setIsAmountDialogOpen(false)
+          }}
+        />
       </div>
     )
   }
 
-  if (step === 3 && successRecord) {
+  if (step === 'success' && successRecord) {
     const successProduct = products.find((p) => p.id === successRecord.productId)
     const step3Visual = getVisual({ id: successRecord.productId, imageUrl: successProduct?.imageUrl ?? null })
     return (

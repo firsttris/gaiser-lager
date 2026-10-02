@@ -17,6 +17,7 @@ export function AutocompleteInput({
   emptyStateText = 'Keine Treffer gefunden.',
   helperText,
   createHint,
+  autoFocus = false,
   inputClassName = 'mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 pr-11 outline-none focus:border-slate-800',
 }: {
   label: string
@@ -29,6 +30,7 @@ export function AutocompleteInput({
   emptyStateText?: string
   helperText?: string
   createHint?: string
+  autoFocus?: boolean
   inputClassName?: string
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -112,6 +114,7 @@ export function AutocompleteInput({
         }}
         placeholder={placeholder}
         autoComplete="off"
+        autoFocus={autoFocus}
         aria-expanded={showMenu}
         aria-controls={`${label}-options`}
         required={required}
