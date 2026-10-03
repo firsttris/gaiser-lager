@@ -23,6 +23,7 @@ import {
 //   vorzeigen/       presentable screens with "Muster Bau GmbH" (for customers)
 //   normal/…         all pages at the default text size
 //   gross/…          the kiosk pages (customer, driver) at A++
+//   handy/           the start page on a phone
 const SCREENS_DIR = path.resolve('screenshots')
 
 async function shoot(page: Page, testInfo: TestInfo, file: string) {
@@ -89,6 +90,21 @@ test.describe.serial('Vorzeigebilder (Muster Bau GmbH)', () => {
     await page.getByRole('button', { name: /Wie zuletzt/ }).tap()
     await expect(page.getByRole('button', { name: 'Vorgang anlegen' })).toBeEnabled()
     await shoot(page, testInfo, 'vorzeigen/3-lkw-stunden.png')
+  })
+})
+
+// Customers also open the start page on their own phones: there the login
+// has to come right after the heading, before the other ways in.
+test.describe('Handy', () => {
+  test.use({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2 })
+
+  test('Startseite', async ({ page }, testInfo) => {
+    await page.goto('/')
+    await expect(page.getByRole('table').first()).toBeVisible()
+    const loginTop = (await page.getByRole('combobox').boundingBox())!.y
+    const driverTop = (await page.getByRole('link', { name: /Mitarbeiter-Anmeldung/ }).boundingBox())!.y
+    expect(loginTop, 'Firmen-Login steht vor der Fahrer-Anmeldung').toBeLessThan(driverTop)
+    await shoot(page, testInfo, 'handy/01-start-login.png')
   })
 })
 
