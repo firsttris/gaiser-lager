@@ -27,7 +27,7 @@ export async function useFontScale(page: Page, scale: FontScale) {
 // Fails with a list of what is wrong when, on the current screen, the page
 // scrolls sideways, two tap targets overlap, or a label spills out of its
 // button. Intentionally cut-off text (ellipsis) is fine.
-export async function expectCleanLayout(page: Page, screen: string) {
+export async function expectCleanLayout(page: Page, screen: string, { soft = false }: { soft?: boolean } = {}) {
   await page.waitForLoadState('networkidle')
   const problems = await page.evaluate(() => {
     const found: string[] = []
@@ -62,7 +62,7 @@ export async function expectCleanLayout(page: Page, screen: string) {
     }
     return found
   })
-  expect(problems, `Layout-Probleme auf „${screen}“`).toEqual([])
+  ;(soft ? expect.soft : expect)(problems, `Layout-Probleme auf „${screen}“`).toEqual([])
 }
 
 // Test data created by global-setup.ts for this run.

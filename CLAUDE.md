@@ -24,7 +24,8 @@ Kontext, der in jeder Sitzung gilt. Details zu Setup und Datenbank stehen in der
   ergänzen.
 - `e2e/screenshots.spec.ts` fotografiert bei jedem CI-Lauf alle Seiten (normal und die
   Kiosk-Seiten in A++) und die Vorzeigebilder mit „Muster Bau GmbH“. Sie liegen als
-  Artefakt `screenshots` am Lauf. Neue Seiten dort ergänzen. Nach UI-Änderungen die
+  Artefakt `screenshots` am Lauf. Jedes Bild durchläuft dieselbe Layout-Prüfung. Neue
+  Seiten dort ergänzen. Nach UI-Änderungen die
   Bilder aus dem Artefakt ansehen.
 - Vor jedem Push: `npx tsc --noEmit -p tsconfig.json`, `npm test`, `npm run build`.
   Die E2E-Tests (`npm run e2e`) brauchen die lokale Supabase (`npm run db:start`). In der

@@ -6,6 +6,7 @@ import {
   chooseMaterial,
   chooseSite,
   expect,
+  expectCleanLayout,
   type FontScale,
   loginAsAdmin,
   loginAsCustomer,
@@ -16,7 +17,8 @@ import {
 } from './support'
 
 // Screenshots of every page in the tablet's resolution, so a look at the CI
-// artifact "screenshots" shows whether everything looks right. Folders:
+// artifact "screenshots" shows whether everything looks right; each one is
+// also checked for overlaps (see expectCleanLayout). Folders:
 //   vorzeigen/       presentable screens with "Muster Bau GmbH" (for customers)
 //   normal/…         all pages at the default text size
 //   gross/…          the kiosk pages (customer, driver) at A++
@@ -33,6 +35,9 @@ async function shoot(page: Page, testInfo: TestInfo, file: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
   await page.screenshot({ path: target, fullPage: true })
   await testInfo.attach(file, { path: target, contentType: 'image/png' })
+  // Every photographed screen is also checked for overlaps; soft, so all
+  // screens of the test are still taken and every problem is reported.
+  await expectCleanLayout(page, file, { soft: true })
 }
 
 async function bookMaterial(page: Page, material: string, amount: string, site: string) {

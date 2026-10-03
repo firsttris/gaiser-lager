@@ -57,8 +57,9 @@ herunter, Registrierung mit Master-PIN. Voraussetzung ist `npm run db:start`.
   jedem Lauf alle Seiten (öffentlich, Kunde, Fahrer, Admin) und die wichtigsten
   Dialoge nach `screenshots/`: `normal/` in normaler Schrift, `gross/` die
   Kiosk-Seiten in A++, `vorzeigen/` Kunden-Login, „Material holen“ und
-  „LKW-Stunden“ mit der Vorzeigefirma „Muster Bau GmbH“ zum Weitergeben. In der
-  CI liegen sie als Artefakt `screenshots` am Lauf (30 Tage).
+  „LKW-Stunden“ mit der Vorzeigefirma „Muster Bau GmbH“ zum Weitergeben. Jede
+  fotografierte Seite durchläuft dabei dieselbe Layout-Prüfung. In der CI liegen
+  sie als Artefakt `screenshots` am Lauf (30 Tage).
 - **Login wie am Kiosk.** Jeder Test meldet sich über die echte Oberfläche an
   (Firma suchen, PIN-Pad bzw. E-Mail/Passwort), Helfer in `e2e/support.ts`.
 - **CI.** `.github/workflows/ci.yml` führt bei jedem PR Typecheck,
