@@ -48,6 +48,18 @@ herunter, Registrierung mit Master-PIN. Voraussetzung ist `npm run db:start`.
   neue Testfirma (PIN `2468`), einen Testfahrer (PIN `1357`) und den Admin
   `e2e-admin@gaiser.local` an und setzt die Master-PIN auf `1234`. So hängen
   die Tests nicht vom vorhandenen Datenstand ab. Aufräumen: `npm run db:reset`.
+- **Auflösung des Kiosk-Tablets.** Alle Tests laufen wie auf dem XORO MegaPAD
+  2154 V7 (21,5", Full HD) hochkant: 1080×1920, Touch.
+- **Layout-Prüfung.** `e2e/kiosk-layout.spec.ts` prüft die wichtigsten Seiten
+  bei allen drei Schriftgrößen (A, A+, A++): nichts scrollt seitlich, keine
+  Schaltflächen überlappen, kein Text ragt aus seinem Knopf.
+- **Screenshots aller Seiten.** `e2e/screenshots.spec.ts` fotografiert bei
+  jedem Lauf alle Seiten (öffentlich, Kunde, Fahrer, Admin) und die wichtigsten
+  Dialoge nach `screenshots/`: `normal/` in normaler Schrift, `gross/` die
+  Kiosk-Seiten in A++, `vorzeigen/` Kunden-Login, „Material holen“ und
+  „LKW-Stunden“ mit der Vorzeigefirma „Muster Bau GmbH“ zum Weitergeben. Jede
+  fotografierte Seite durchläuft dabei dieselbe Layout-Prüfung. In der CI liegen
+  sie als Artefakt `screenshots` am Lauf (30 Tage).
 - **Login wie am Kiosk.** Jeder Test meldet sich über die echte Oberfläche an
   (Firma suchen, PIN-Pad bzw. E-Mail/Passwort), Helfer in `e2e/support.ts`.
 - **CI.** `.github/workflows/ci.yml` führt bei jedem PR Typecheck,

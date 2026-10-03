@@ -54,3 +54,12 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+      # Every page as an image (see e2e/screenshots.spec.ts), to look over.
+      - name: Screenshots hochladen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          retention-days: 30
