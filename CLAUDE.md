@@ -22,9 +22,10 @@ Kontext, der in jeder Sitzung gilt. Details zu Setup und Datenbank stehen in der
 - `e2e/kiosk-layout.spec.ts` prüft bei allen drei Schriftgrößen auf seitliches Scrollen,
   überlappende Schaltflächen und Text, der aus seinem Knopf ragt. Neue Kiosk-Seiten dort
   ergänzen.
-- `e2e/kiosk-screens.spec.ts` erzeugt die Vorzeige-Screenshots (Kunden-Login mit
-  Preisliste, Material holen, LKW-Stunden) mit „Muster Bau GmbH“. In der CI liegen sie
-  als Artefakt `kiosk-screenshots` am Lauf.
+- `e2e/screenshots.spec.ts` fotografiert bei jedem CI-Lauf alle Seiten (normal und die
+  Kiosk-Seiten in A++) und die Vorzeigebilder mit „Muster Bau GmbH“. Sie liegen als
+  Artefakt `screenshots` am Lauf. Neue Seiten dort ergänzen. Nach UI-Änderungen die
+  Bilder aus dem Artefakt ansehen.
 - Vor jedem Push: `npx tsc --noEmit -p tsconfig.json`, `npm test`, `npm run build`.
   Die E2E-Tests (`npm run e2e`) brauchen die lokale Supabase (`npm run db:start`). In der
   Cloud-Umgebung lädt Docker die Supabase-Images nicht, dort laufen sie nur in der CI.

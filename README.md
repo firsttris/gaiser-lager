@@ -53,10 +53,12 @@ herunter, Registrierung mit Master-PIN. Voraussetzung ist `npm run db:start`.
 - **Layout-Prüfung.** `e2e/kiosk-layout.spec.ts` prüft die wichtigsten Seiten
   bei allen drei Schriftgrößen (A, A+, A++): nichts scrollt seitlich, keine
   Schaltflächen überlappen, kein Text ragt aus seinem Knopf.
-- **Screenshots.** `e2e/kiosk-screens.spec.ts` speichert Kunden-Login (mit
-  Preisliste), „Material holen“ und „LKW-Stunden“ mit der Vorzeigefirma
-  „Muster Bau GmbH“ nach `kiosk-screens/`. In der CI liegen sie als Artefakt
-  `kiosk-screenshots` am Lauf.
+- **Screenshots aller Seiten.** `e2e/screenshots.spec.ts` fotografiert bei
+  jedem Lauf alle Seiten (öffentlich, Kunde, Fahrer, Admin) und die wichtigsten
+  Dialoge nach `screenshots/`: `normal/` in normaler Schrift, `gross/` die
+  Kiosk-Seiten in A++, `vorzeigen/` Kunden-Login, „Material holen“ und
+  „LKW-Stunden“ mit der Vorzeigefirma „Muster Bau GmbH“ zum Weitergeben. In der
+  CI liegen sie als Artefakt `screenshots` am Lauf (30 Tage).
 - **Login wie am Kiosk.** Jeder Test meldet sich über die echte Oberfläche an
   (Firma suchen, PIN-Pad bzw. E-Mail/Passwort), Helfer in `e2e/support.ts`.
 - **CI.** `.github/workflows/ci.yml` führt bei jedem PR Typecheck,

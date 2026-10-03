@@ -20,4 +20,4 @@ dev-dist
 /test-results/
 /playwright-report/
 /e2e/.data/
-/kiosk-screens/
+/screenshots/
