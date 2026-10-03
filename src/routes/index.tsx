@@ -88,11 +88,12 @@ function App() {
     <PageShell>
       <TopNav />
 
-      {/* Two halves on the tablet: who we are and where to go on the left, the
-          login with an on-screen PIN pad on the right. The price list stays
-          below. */}
-      <section className="mx-auto mt-4 grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:grid-cols-2">
-        <div className="flex flex-col gap-6 p-6 sm:p-10 md:border-r md:border-slate-200">
+      {/* Tablet: two halves, who we are and where else to go on the left, the
+          login with its PIN pad on the right. Phone: one column with the login
+          right below the heading and the other ways in after it (that is also
+          the order in the markup). The price list stays below. */}
+      <section className="mx-auto mt-4 grid w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:grid-cols-2 md:grid-rows-[1fr_auto]">
+        <div className="flex flex-col gap-6 p-6 sm:p-10 md:col-start-1 md:row-start-1 md:border-r md:border-slate-200">
           {/* Not a visible control on purpose: see ADMIN_GESTURE_TAPS. */}
           <div onClick={handleLogoTap} className="inline-block select-none self-start">
             <Logo className="h-16 sm:h-20" />
@@ -101,25 +102,9 @@ function App() {
             <h1 className="font-title text-4xl text-slate-900">Material ohne Umwege.</h1>
             <p className="text-lg text-slate-600">Firma suchen, PIN eingeben, Vorgang anlegen, Lieferschein herunterladen.</p>
           </div>
-
-          <div className="mt-auto grid gap-3">
-            <Link
-              to="/mitarbeiter"
-              className="flex min-h-16 items-center justify-center gap-3 rounded-xl border-2 border-brand-600 bg-white px-5 text-lg font-semibold text-brand-700 no-underline hover:bg-brand-50"
-            >
-              <HardHat className="h-6 w-6" strokeWidth={2.25} />
-              Mitarbeiter-Anmeldung (Fahrer)
-            </Link>
-            <Link
-              to="/registrieren"
-              className="flex min-h-14 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 font-semibold text-slate-800 no-underline hover:bg-slate-50"
-            >
-              Neu hier? Jetzt registrieren
-            </Link>
-          </div>
         </div>
 
-        <form onSubmit={submitLogin} className="space-y-5 bg-slate-50 p-6 sm:p-10">
+        <form onSubmit={submitLogin} className="space-y-5 bg-slate-50 p-6 sm:p-10 md:col-start-2 md:row-span-2 md:row-start-1">
           <CompanySearchInput onSelect={(company) => setSelectedCompanyId(company?.id ?? null)} />
 
           <PinEntry
@@ -145,6 +130,22 @@ function App() {
             Anmelden
           </button>
         </form>
+
+        <div className="grid gap-3 p-6 sm:p-10 md:col-start-1 md:row-start-2 md:border-r md:border-slate-200 md:pt-0">
+          <Link
+            to="/mitarbeiter"
+            className="flex min-h-16 items-center justify-center gap-3 rounded-xl border-2 border-brand-600 bg-white px-5 text-lg font-semibold text-brand-700 no-underline hover:bg-brand-50"
+          >
+            <HardHat className="h-6 w-6" strokeWidth={2.25} />
+            Mitarbeiter-Anmeldung (Fahrer)
+          </Link>
+          <Link
+            to="/registrieren"
+            className="flex min-h-14 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 font-semibold text-slate-800 no-underline hover:bg-slate-50"
+          >
+            Neu hier? Jetzt registrieren
+          </Link>
+        </div>
       </section>
 
       <section className="mx-auto mt-6 w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-10">

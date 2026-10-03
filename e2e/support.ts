@@ -48,7 +48,12 @@ export async function expectCleanLayout(page: Page, screen: string, { soft = fal
     // underneath is covered and doesn't count.
     const modals = [...document.querySelectorAll('[aria-modal="true"]')].filter(isShown)
     const scope: ParentNode = modals.at(-1) ?? document
-    const targets = [...scope.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea')].filter(isShown)
+    // The TanStack devtools button floats over the page in `npm run dev` only
+    // (the build removes it), so it is not part of the app's layout.
+    const isDevtools = (el: Element) => /TanStack Devtools/i.test(el.getAttribute('aria-label') ?? '')
+    const targets = [...scope.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea')].filter(
+      (el) => isShown(el) && !isDevtools(el),
+    )
 
     for (let i = 0; i < targets.length; i++) {
       const a = targets[i].getBoundingClientRect()
