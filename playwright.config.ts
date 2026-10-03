@@ -24,11 +24,14 @@ export default defineConfig({
   },
   projects: [
     {
-      // The kiosk: an Android tablet in portrait, used by touch.
-      name: 'kiosk-tablet',
+      // The kiosk: XORO MegaPAD 2154 V7, 21.5" Full HD, mounted in portrait,
+      // used by touch. 1080×1920 CSS pixels assumes the Android display
+      // density of 1.0 that this panel size usually ships with.
+      name: 'kiosk-xoro-hochkant',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 800, height: 1280 },
+        viewport: { width: 1080, height: 1920 },
+        deviceScaleFactor: 1,
         hasTouch: true,
         isMobile: true,
         // Cloud dev containers ship Chromium here instead of Playwright's cache.

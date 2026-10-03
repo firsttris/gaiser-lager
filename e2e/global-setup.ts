@@ -34,6 +34,7 @@ export default async function globalSetup() {
     driver: { name: `E2E Fahrer ${runId}`, pin: '1357' },
     admin: { email: 'e2e-admin@gaiser.local', password: 'e2e-passwort-123' },
     masterPin: '1234',
+    showcase: { company: { name: 'Muster Bau GmbH', pin: '4711' }, driver: { name: 'Max Mustermann', pin: '0815' } },
   }
 
   const { error: companyError } = await supabase
@@ -45,6 +46,28 @@ export default async function globalSetup() {
     .from('employees')
     .insert({ name: fixtures.driver.name, pin_hash: bcrypt.hashSync(fixtures.driver.pin, 4) })
   if (driverError) throw new Error(`Testfahrer: ${driverError.message}`)
+
+  // Presentable company and driver for the screenshots: stable names, so they
+  // are reused (with the PIN reset) when the local database already has them.
+  const showcasePinHash = (pin: string) => bcrypt.hashSync(pin, 4)
+  const { data: showcaseCompany } = await supabase.from('companies').select('id').eq('name', fixtures.showcase.company.name).maybeSingle()
+  const companyWrite = showcaseCompany
+    ? await supabase
+        .from('companies')
+        .update({ pin_hash: showcasePinHash(fixtures.showcase.company.pin), failed_pin_attempts: 0, pin_locked_until: null })
+        .eq('id', showcaseCompany.id)
+    : await supabase
+        .from('companies')
+        .insert({ name: fixtures.showcase.company.name, pin_hash: showcasePinHash(fixtures.showcase.company.pin), email: 'info@example.com' })
+  if (companyWrite.error) throw new Error(`Vorzeigefirma: ${companyWrite.error.message}`)
+  const { data: showcaseDriver } = await supabase.from('employees').select('id').eq('name', fixtures.showcase.driver.name).maybeSingle()
+  const driverWrite = showcaseDriver
+    ? await supabase
+        .from('employees')
+        .update({ pin_hash: showcasePinHash(fixtures.showcase.driver.pin), active: true, failed_pin_attempts: 0, pin_locked_until: null })
+        .eq('id', showcaseDriver.id)
+    : await supabase.from('employees').insert({ name: fixtures.showcase.driver.name, pin_hash: showcasePinHash(fixtures.showcase.driver.pin) })
+  if (driverWrite.error) throw new Error(`Vorzeigefahrer: ${driverWrite.error.message}`)
 
   // Known master PIN and no lockout from earlier runs (local database only).
   const { error: settingsError } = await supabase
