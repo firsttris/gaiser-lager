@@ -31,8 +31,11 @@ export async function expectCleanLayout(page: Page, screen: string, { soft = fal
   await page.waitForLoadState('networkidle')
   const problems = await page.evaluate(() => {
     const found: string[] = []
-    const root = document.documentElement
-    if (root.scrollWidth > window.innerWidth + 1) found.push(`Seite scrollt seitlich (${root.scrollWidth}px > ${window.innerWidth}px)`)
+    const root = document.scrollingElement ?? document.documentElement
+    // The layout viewport (1080 on the tablet); on touch devices window.innerWidth
+    // grows with content that is too wide, so it can't be the yardstick.
+    const viewportWidth = document.documentElement.clientWidth
+    if (root.scrollWidth > viewportWidth + 1) found.push(`Seite scrollt seitlich (${root.scrollWidth}px > ${viewportWidth}px)`)
 
     const isShown = (el: Element) => {
       const rect = el.getBoundingClientRect()
@@ -41,7 +44,11 @@ export async function expectCleanLayout(page: Page, screen: string, { soft = fal
     }
     const name = (el: Element) =>
       `${el.tagName.toLowerCase()} „${(el.getAttribute('aria-label') || el.textContent || (el as HTMLInputElement).placeholder || '').replace(/\s+/g, ' ').trim().slice(0, 40)}“`
-    const targets = [...document.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea')].filter(isShown)
+    // With a modal dialog open, only its content can be tapped; the page
+    // underneath is covered and doesn't count.
+    const modals = [...document.querySelectorAll('[aria-modal="true"]')].filter(isShown)
+    const scope: ParentNode = modals.at(-1) ?? document
+    const targets = [...scope.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea')].filter(isShown)
 
     for (let i = 0; i < targets.length; i++) {
       const a = targets[i].getBoundingClientRect()

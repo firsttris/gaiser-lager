@@ -13,6 +13,7 @@ import {
   loginAsDriver,
   tapPin,
   test,
+  uniqueSite,
   useFontScale,
 } from './support'
 
@@ -132,7 +133,7 @@ for (const { scale, folder, kioskOnly } of SCALE_FOLDERS) {
       await shoot(page, testInfo, `${folder}/kunde/03-mengen-dialog.png`)
       await page.getByRole('button', { name: 'Abbrechen' }).tap()
       await page.getByRole('button', { name: /Baustelle …|Baustelle wählen …/ }).tap()
-      await page.getByLabel('Baustelle suchen oder neu eingeben').fill(`Testweg ${data.runId}`)
+      await page.getByLabel('Baustelle suchen oder neu eingeben').fill(uniqueSite('Testweg'))
       await shoot(page, testInfo, `${folder}/kunde/04-baustellen-dialog.png`)
       await page.getByRole('button', { name: /als neue Baustelle anlegen/ }).tap()
       await shoot(page, testInfo, `${folder}/kunde/05-material-holen-ausgefuellt.png`)
@@ -156,7 +157,7 @@ for (const { scale, folder, kioskOnly } of SCALE_FOLDERS) {
       await shoot(page, testInfo, `${folder}/fahrer/03-lkw-stunden-leer.png`)
       await page.getByRole('group', { name: 'LKW' }).getByRole('button').first().tap()
       await chooseAmount(page, 'Stunden', '4')
-      await chooseSite(page, `Deponie ${data.runId}`)
+      await chooseSite(page, uniqueSite('Deponie'))
       await page.locator('input[type="file"]').setInputFiles('e2e/files/lieferschein.jpg')
       await shoot(page, testInfo, `${folder}/fahrer/04-lkw-stunden-mit-foto.png`)
       await page.getByRole('button', { name: 'Vorgang anlegen' }).tap()
